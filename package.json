@@ -1,0 +1,61 @@
+{
+  "name": "xylemview-pro",
+  "version": "1.0.11",
+  "description": "XylemView Pro — A premium drawing & order viewer for Xylem",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "dist": "electron-builder --win --mac"
+  },
+  "author": "William Boissonnault",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.xylem.xylemview-pro",
+    "productName": "XylemView Pro",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "icons/**/*",
+      "birthdays.csv"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icons/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "icons/icon.png",
+      "category": "public.app-category.business"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "artifactName": "XylemView Pro Setup.${ext}",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "extraResources": [
+      {
+        "from": "birthdays.csv",
+        "to": "birthdays.csv",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
+  },
+  "dependencies": {
+    "mdb-reader": "^3.2.0",
+    "pdf-parse": "^1.1.1"
+  }
+}
