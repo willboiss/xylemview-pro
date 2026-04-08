@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>XylemView Pro</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root {
   --bg: #101014; --bg-grad: radial-gradient(ellipse at 25% 0%, #181830 0%, #101014 55%);
@@ -27,22 +27,22 @@
   --amber: #f5a623; --amber-soft: rgba(245,166,35,0.08);
 }
 [data-theme="light"] {
-  --bg: #edeef3; --bg-grad: radial-gradient(ellipse at 20% 0%, #dfe4f2 0%, #edeef3 50%);
-  --glass: rgba(255,255,255,0.18); --glass-border: rgba(255,255,255,0.50);
-  --glass-strong: rgba(255,255,255,0.30); --glass-inner: rgba(255,255,255,0.12);
+  --bg: #eaecf4; --bg-grad: radial-gradient(ellipse at 20% 0%, #d8dff5 0%, #e4e7f0 40%, #eaecf4 70%);
+  --glass: rgba(255,255,255,0.22); --glass-border: rgba(255,255,255,0.60);
+  --glass-strong: rgba(255,255,255,0.32); --glass-inner: rgba(255,255,255,0.15);
   --text: #0f0f1a; --text2: #5c5c72; --text3: #9898a8;
   --accent: #007aff; --accent-soft: rgba(0,122,255,0.09);
   --dwg: #006070; --pdf: #991830; --link: #5c40d0; --xls: #166e2a; --doc: #1a5098;
   --cnt-active: rgba(0,131,123,0.88); --cnt-dim: rgba(0,0,0,0.06); --cnt-dim-tx: #8a8a96;
   --sel-bg: rgba(0,122,255,0.10); --sel-border: rgba(0,122,255,0.5);
   --seg: rgba(0,0,0,0.04); --seg-active: #007aff; --seg-tx: #fff; --seg-tx2: #444460;
-  --input-bg: rgba(255,255,255,0.55); --input-border: rgba(0,0,0,0.06);
+  --input-bg: rgba(255,255,255,0.50); --input-border: rgba(0,0,0,0.05);
   --input-focus: rgba(0,122,255,0.25);
-  --shadow: 0 1px 24px rgba(0,0,0,0.04); --shadow-lg: 0 8px 40px rgba(0,0,0,0.06);
-  --top-hl: inset 0 1px 0 rgba(255,255,255,0.9);
+  --shadow: 0 1px 20px rgba(0,0,0,0.04),0 4px 12px rgba(0,60,160,0.03); --shadow-lg: 0 8px 40px rgba(0,40,120,0.06);
+  --top-hl: inset 0 1px 0 rgba(255,255,255,0.95);
   --teal: #00837b; --danger: #ff3b30; --success: #28a745;
-  --row-hover: rgba(0,0,0,0.025); --noise: 0.015;
-  --orb1: rgba(0,122,255,0.07); --orb2: rgba(0,180,160,0.05);
+  --row-hover: rgba(0,0,0,0.025); --noise: 0.018;
+  --orb1: rgba(0,110,255,0.10); --orb2: rgba(0,190,160,0.08);
   --glow: none; --amber: #e8941a; --amber-soft: rgba(232,148,26,0.07);
 }
 [data-theme="tron"] {
@@ -64,6 +64,28 @@
   --orb1: rgba(0,239,255,0.12); --orb2: rgba(255,130,20,0.09);
   --glow: 0 0 30px rgba(0,239,255,0.30); --amber: #ffa030; --amber-soft: rgba(255,160,48,0.12);
 }
+/* Light mode — enhanced translucency & ambient effects */
+[data-theme="light"] .bg-layer{opacity:0.45}
+[data-theme="light"] .glass{backdrop-filter:blur(28px) saturate(1.8);-webkit-backdrop-filter:blur(28px) saturate(1.8);box-shadow:var(--shadow),var(--top-hl),0 0 0 0.5px rgba(255,255,255,0.5) inset}
+[data-theme="light"] .glass::before{background:linear-gradient(135deg,rgba(255,255,255,0.55) 0%,rgba(255,255,255,0.15) 30%,transparent 50%,rgba(255,255,255,0.08) 100%)}
+[data-theme="light"] .glass::after{background:conic-gradient(from 180deg,rgba(120,160,255,0.06),rgba(100,220,200,0.04),rgba(200,140,255,0.05),rgba(255,180,120,0.04),rgba(120,200,255,0.06),rgba(180,255,200,0.04),rgba(120,160,255,0.06));filter:blur(8px);opacity:0.8}
+[data-theme="light"] .glass-strong{backdrop-filter:blur(32px) saturate(2.0);-webkit-backdrop-filter:blur(32px) saturate(2.0);box-shadow:var(--shadow-lg),var(--top-hl),0 0 0 0.5px rgba(255,255,255,0.6) inset}
+[data-theme="light"] .glass-strong::before{background:linear-gradient(160deg,rgba(255,255,255,0.65) 0%,rgba(255,255,255,0.20) 20%,transparent 40%,rgba(255,255,255,0.10) 100%)}
+[data-theme="light"] .glass-strong::after{background:conic-gradient(from 220deg at 40% 30%,rgba(100,140,255,0.05),rgba(80,220,200,0.04),rgba(180,120,255,0.05),rgba(255,200,100,0.04),rgba(100,180,255,0.05),rgba(140,255,180,0.04),rgba(100,140,255,0.05));filter:blur(10px);opacity:0.9;animation:refract 30s linear infinite}
+[data-theme="light"] .orb-1{width:600px;height:600px;filter:blur(50px);background:radial-gradient(circle,rgba(0,100,255,0.09),rgba(100,160,255,0.04) 40%,transparent 65%) !important}
+[data-theme="light"] .orb-2{width:550px;height:550px;filter:blur(50px);background:radial-gradient(circle,rgba(0,190,170,0.07),rgba(80,200,180,0.03) 40%,transparent 65%) !important}
+@keyframes lightShimmer{0%,100%{opacity:0.3;transform:translateX(-10%) scaleX(0.8)}50%{opacity:0.55;transform:translateX(10%) scaleX(1.2)}}
+[data-theme="light"] .side-btn{backdrop-filter:blur(16px) saturate(1.6);box-shadow:0 1px 6px rgba(0,0,0,0.03),inset 0 1px 0 rgba(255,255,255,0.7)}
+[data-theme="light"] .side-btn:hover{box-shadow:0 2px 10px rgba(0,40,120,0.06),inset 0 1px 0 rgba(255,255,255,0.8);background:rgba(255,255,255,0.35)}
+[data-theme="light"] .file-row:hover{background:rgba(0,80,200,0.03)}
+[data-theme="light"] .file-row.selected{background:var(--sel-bg);box-shadow:inset 0 0 0 1px rgba(0,122,255,0.18),0 1px 8px rgba(0,80,200,0.04)}
+[data-theme="light"] .otp-box{box-shadow:0 1px 4px rgba(0,0,0,0.03),inset 0 1px 0 rgba(255,255,255,0.8)}
+[data-theme="light"] .otp-box.active{box-shadow:0 0 0 2.5px var(--input-focus),0 2px 8px rgba(0,80,200,0.06)}
+[data-theme="light"] .recent-pill{border-color:rgba(0,0,0,0.06);background:rgba(255,255,255,0.4);box-shadow:0 1px 4px rgba(0,0,0,0.03),inset 0 1px 0 rgba(255,255,255,0.7)}
+[data-theme="light"] .recent-pill:hover{background:rgba(255,255,255,0.55);box-shadow:0 2px 8px rgba(0,40,120,0.06),inset 0 1px 0 rgba(255,255,255,0.85)}
+[data-theme="light"] .seg{border-color:rgba(0,0,0,0.06);background:rgba(255,255,255,0.25);backdrop-filter:blur(12px);box-shadow:0 1px 4px rgba(0,0,0,0.03),inset 0 1px 0 rgba(255,255,255,0.6)}
+[data-theme="light"] .btn-glass{background:rgba(255,255,255,0.35);border-color:rgba(255,255,255,0.6);backdrop-filter:blur(16px) saturate(1.6);box-shadow:0 1px 6px rgba(0,0,0,0.03),inset 0 1px 0 rgba(255,255,255,0.7)}
+[data-theme="light"] .btn-icon{background:rgba(255,255,255,0.30);border-color:rgba(255,255,255,0.55);backdrop-filter:blur(16px) saturate(1.6);box-shadow:0 1px 4px rgba(0,0,0,0.03),inset 0 1px 0 rgba(255,255,255,0.65)}
 /* Tron glow effects — same fonts as other themes, just with neon text-shadow */
 [data-theme="tron"] .titlebar .app-name{text-shadow:0 0 20px rgba(0,239,255,0.65),0 0 40px rgba(0,239,255,0.2)}
 [data-theme="tron"] .field-label{text-shadow:0 0 6px rgba(0,239,255,0.25)}
@@ -147,6 +169,24 @@ button:focus,button:focus-visible,.btn-icon:focus,.btn-icon:focus-visible,.side-
 body { font-family:'DM Sans',-apple-system,sans-serif; background:transparent; color:var(--text); overflow:hidden; height:100vh; -webkit-app-region:drag; user-select:none; transition:background-color .5s }
 .bg-layer{position:fixed;inset:0;z-index:-1;background:var(--bg);background-image:var(--bg-grad);opacity:0.55;transition:opacity .5s}
 input,button,.no-drag{-webkit-app-region:no-drag}
+body.maximized .glass,body.maximized .glass-strong{border-radius:0}
+body.maximized .glass::before,body.maximized .glass-strong::before{border-radius:0}
+body.maximized .glass::after,body.maximized .glass-strong::after{border-radius:0}
+body.maximized .app{padding:0 12px 8px}
+
+/* Win10 fallback — designed-solid panels (no OS acrylic to blur through) */
+body.win10 .bg-layer{opacity:1}
+body.win10 .glass{background:rgba(28,28,38,0.88);backdrop-filter:blur(12px) saturate(1.2);-webkit-backdrop-filter:blur(12px) saturate(1.2)}
+body.win10 .glass-strong{background:rgba(36,36,50,0.92);backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3)}
+body.win10[data-theme="light"] .bg-layer{opacity:1;background:#eaecf4;background-image:radial-gradient(ellipse at 20% 8%,rgba(165,200,255,0.5) 0%,transparent 55%),radial-gradient(ellipse at 85% 90%,rgba(130,220,210,0.38) 0%,transparent 50%),radial-gradient(ellipse at 55% 45%,rgba(200,190,240,0.18) 0%,transparent 45%),linear-gradient(160deg,#e4eaf6 0%,#eaecf4 40%,#e6f0ef 70%,#edeaf4 100%)}
+body.win10[data-theme="light"] .glass{background:rgba(255,255,255,0.35)}
+body.win10[data-theme="light"] .glass-strong{background:rgba(255,255,255,0.45)}
+body.win10[data-theme="tron"] .bg-layer{opacity:1}
+body.win10[data-theme="tron"] .glass{background:rgba(0,14,28,0.85)}
+body.win10[data-theme="tron"] .glass-strong{background:rgba(0,10,24,0.90)}
+body.win10[data-theme="disco"] .bg-layer{opacity:1}
+body.win10[data-theme="disco"] .glass{background:rgba(60,0,60,0.75)}
+body.win10[data-theme="disco"] .glass-strong{background:rgba(40,0,50,0.82)}
 
 @keyframes orbFloat1{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-20px) scale(1.05)}66%{transform:translate(-15px,15px) scale(.97)}}
 @keyframes orbFloat2{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(-25px,20px) scale(.96)}66%{transform:translate(20px,-10px) scale(1.04)}}
@@ -196,7 +236,7 @@ input,button,.no-drag{-webkit-app-region:no-drag}
 .wn-hero{padding:16px 20px 0;flex-shrink:0}
 .wn-hero h3{font:700 19px/1.1 'DM Sans',sans-serif;margin:0 0 2px;letter-spacing:-0.3px}
 .wn-hero-sub{font:400 10px/1.4 'DM Sans',sans-serif;color:var(--text3);margin-bottom:10px}
-.wn-scroll{flex:1;overflow-y:auto;scrollbar-gutter:stable;-webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 calc(100% - 24px),transparent 100%);mask-image:linear-gradient(to bottom,#000 0%,#000 calc(100% - 24px),transparent 100%);padding:0 20px 24px;border-top:1px solid color-mix(in srgb,var(--text) 6%,transparent)}
+.wn-scroll{flex:1;min-height:0;overflow-y:auto;scrollbar-gutter:stable;-webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 calc(100% - 24px),transparent 100%);mask-image:linear-gradient(to bottom,#000 0%,#000 calc(100% - 24px),transparent 100%);padding:0 20px 24px;border-top:1px solid color-mix(in srgb,var(--text) 6%,transparent)}
 .wn-scroll::-webkit-scrollbar{width:5px}
 .wn-scroll::-webkit-scrollbar-track{background:transparent}
 .wn-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--text) 18%,transparent);border-radius:3px}
@@ -282,7 +322,7 @@ input,button,.no-drag{-webkit-app-region:no-drag}
 .btn-icon{width:34px;height:34px;border-radius:10px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text2);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(12px);transition:all .2s}
 .btn-icon:hover{background:var(--accent-soft);color:var(--accent)}
 /* Theme popover */
-.theme-pop{position:fixed;z-index:50;padding:8px;border-radius:14px;border:1px solid var(--glass-border);background:var(--glass-strong);backdrop-filter:blur(24px);box-shadow:var(--shadow-lg);opacity:0;transform:translateY(6px);transition:opacity .2s ease,transform .2s ease;pointer-events:none}
+.theme-pop{position:fixed;z-index:50;padding:8px;border-radius:14px;border:1px solid var(--glass-border);background:var(--glass-strong);backdrop-filter:blur(24px);box-shadow:var(--shadow-lg);opacity:0;transform:translateY(-6px);transition:opacity .2s ease,transform .2s ease;pointer-events:none}
 .theme-pop.open{opacity:1;transform:translateY(0);pointer-events:auto}
 
 /* Loading spinner for file open */
@@ -300,15 +340,20 @@ input,button,.no-drag{-webkit-app-region:no-drag}
 [data-tip]::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);font:600 9px/1 'DM Sans',sans-serif;color:var(--text);white-space:nowrap;opacity:0;transition:opacity .15s;pointer-events:none;padding:4px 8px;border-radius:6px;background:rgba(10,10,20,0.85);border:1px solid rgba(255,255,255,0.12);z-index:100;backdrop-filter:blur(16px);box-shadow:0 4px 12px rgba(0,0,0,0.3)}
 [data-theme="light"] [data-tip]::after{background:rgba(255,255,255,0.92);color:#1a1a2e;border-color:rgba(0,0,0,0.1);box-shadow:0 4px 12px rgba(0,0,0,0.12)}
 [data-tip]:hover::after{opacity:1}
+#weather[data-tip]::after{bottom:auto;top:calc(100% + 6px)}
 #btn-whats-new[data-tip]::after{bottom:auto;top:calc(100% + 6px)}
 #user-badge[data-tip]::after{bottom:auto;top:calc(100% + 6px);text-transform:none}
 .sidebar [data-tip]{overflow:visible}
 .sidebar [data-tip]::after{bottom:auto;top:50%;left:auto;right:calc(100% + 8px);transform:translateY(-50%)}
-#btn-install-oda[data-tip]::after{left:auto;right:calc(100% + 8px);bottom:auto;top:50%;transform:translateY(-50%)}
+#btn-install-oda[data-tip]::after{top:auto;bottom:calc(100% + 6px);left:50%;right:auto;transform:translateX(-50%)}
 .sidebar div[style*="flex"] [data-tip]:last-child::after{right:auto;left:50%;top:auto;bottom:calc(100% + 6px);transform:translateX(-50%)}
 
 /* Toolbar */
-.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-shrink:0}
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-shrink:0;z-index:5}
+.toolbar-utils{display:inline-flex;gap:1px;padding:3px;border-radius:11px;border:1px solid var(--glass-border);background:var(--seg);position:absolute;right:0;top:50%;transform:translateY(-50%)}
+.toolbar-utils button{width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;position:relative}
+.toolbar-utils button:hover{background:var(--accent-soft);color:var(--accent)}
+.toolbar-utils [data-tip]::after{bottom:auto;top:calc(100% + 8px);left:50%;right:auto;transform:translateX(-50%)}
 .status{display:flex;padding:0 4px;font-size:11.5px;margin-bottom:2px;flex-shrink:0}
 
 /* Sidebar buttons */
@@ -419,7 +464,6 @@ input,button,.no-drag{-webkit-app-region:no-drag}
 
 /* Modal */
 .modal-overlay{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.4);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;animation:fadeIn .2s;-webkit-app-region:no-drag}
-.modal-overlay::before{content:'';position:fixed;top:0;left:0;right:0;height:38px;-webkit-app-region:drag;pointer-events:auto}
 .modal{width:440px;padding:24px;border-radius:20px;animation:fadeIn .25s}
 [data-theme="light"] .modal.glass-strong{background:rgba(255,255,255,0.85);backdrop-filter:blur(30px) saturate(1.8)}
 .fade-in{animation:fadeIn .35s ease both}
@@ -475,6 +519,11 @@ input,button,.no-drag{-webkit-app-region:no-drag}
 /* Chat room */
 .chat-container{display:none;flex:1;min-height:0;flex-direction:column;padding:14px 18px;border-radius:18px}
 .chat-container.active{display:flex}
+.marketing-container{display:none;flex:1;min-height:0;flex-direction:column;padding:14px 18px;border-radius:18px}
+.marketing-container.active{display:flex}
+.mkt-results{flex:1;overflow-y:auto;padding:8px 0;min-height:0;min-width:0;scrollbar-gutter:stable}
+.mkt-line-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;background:var(--glass);border:1px solid var(--glass-border);margin-bottom:4px;cursor:pointer;transition:background .15s}
+.mkt-line-item:hover{background:var(--accent-soft)}
 .chat-messages{flex:1;overflow-y:auto;padding:8px 0;min-height:0;margin:0 -8px;padding-left:8px;padding-right:8px}
 .chat-msg{display:flex;gap:10px;padding:8px 8px;animation:fadeIn .2s ease}
 .chat-avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font:700 11px/28px 'DM Sans',sans-serif;text-align:center;flex-shrink:0;text-transform:uppercase}
@@ -485,12 +534,17 @@ input,button,.no-drag{-webkit-app-region:no-drag}
 .chat-msg.mine{flex-direction:row-reverse}
 .chat-msg.mine .chat-bubble{text-align:right}
 .chat-msg.mine .chat-name{display:none}
+.chat-msg.system{justify-content:center;padding:4px 8px}
+.chat-msg.system .chat-text{font:500 11px/1.4 'DM Sans',sans-serif;color:var(--text3);text-align:center}
 .chat-input-row{display:flex;gap:8px;padding:8px 0;flex-shrink:0}
 .chat-input{flex:1;height:36px;border-radius:10px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font:400 13px/1 'DM Sans',sans-serif;padding:0 12px;outline:none}
 .chat-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--input-focus)}
 .chat-send{height:36px;padding:0 16px;border-radius:10px;border:none;background:var(--seg-active);color:var(--seg-tx);font:700 12px/1 'DM Sans',sans-serif;cursor:pointer}
 
 /* Order comments */
+.bpcs-history-section{flex-shrink:0}
+#bpcs-history-table tbody tr:hover{background:rgba(255,255,255,0.04)}
+#bpcs-history-table tbody td{user-select:text}
 .comments-section{flex-shrink:0;padding:0;max-height:140px;display:flex;flex-direction:column}
 .comments-toggle{font:600 10px/1 'DM Sans',sans-serif;color:var(--text3);cursor:pointer;padding:4px 0;letter-spacing:.5px}
 .comments-toggle:hover{color:var(--accent)}
@@ -620,25 +674,131 @@ input,button,.no-drag{-webkit-app-region:no-drag}
 [data-theme="disco"] .orb-1{background:radial-gradient(circle,rgba(255,20,147,0.12),transparent 65%) !important;animation:orbFloat1 8s ease-in-out infinite !important}
 [data-theme="disco"] .orb-2{background:radial-gradient(circle,rgba(255,215,0,0.10),transparent 65%) !important;animation:orbFloat2 10s ease-in-out infinite !important}
 [data-theme="disco"] .cnt-btn.active{animation:discoHue 2s linear infinite}
-@keyframes discoFloat{0%,100%{transform:translateX(-50%) translateY(0) rotate(-5deg)}25%{transform:translateX(-50%) translateY(-4px) rotate(4deg)}50%{transform:translateX(-50%) translateY(1px) rotate(-3deg)}75%{transform:translateX(-50%) translateY(-3px) rotate(6deg)}}
-@keyframes discoRing{0%,100%{box-shadow:0 0 12px rgba(255,20,147,0.6),inset 0 0 8px rgba(255,20,147,0.3),0 0 0 2px rgba(255,20,147,0.25)}50%{box-shadow:0 0 18px rgba(0,191,255,0.7),inset 0 0 12px rgba(0,191,255,0.4),0 0 0 2px rgba(0,191,255,0.3)}}
-.disco-mute-btn{font-size:34px;line-height:1;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;text-align:center;user-select:none;transition:opacity .2s,filter .2s;filter:drop-shadow(0 0 6px rgba(255,20,147,0.5));border-radius:50%}
-.disco-mute-btn:hover{filter:drop-shadow(0 0 12px rgba(255,20,147,0.8)) brightness(1.2)}
+[data-theme="disco"] .oda-key{animation:odaGlow 4s ease-in-out infinite,discoHue 3s linear infinite;stroke:currentColor}
+[data-theme="disco"] #btn-install-oda{color:#ff1493;animation:discoText 2s linear infinite}
+@keyframes discoFloat{0%,100%{transform:translateY(0) rotate(-3deg)}25%{transform:translateY(-2px) rotate(3deg)}50%{transform:translateY(1px) rotate(-2deg)}75%{transform:translateY(-2px) rotate(4deg)}}
+@keyframes discoRing{0%,100%{box-shadow:0 0 8px rgba(255,20,147,0.5),inset 0 0 4px rgba(255,20,147,0.2)}50%{box-shadow:0 0 10px rgba(0,191,255,0.6),inset 0 0 6px rgba(0,191,255,0.3)}}
+.disco-mute-btn{user-select:none;transition:opacity .2s,filter .2s;filter:drop-shadow(0 0 4px rgba(255,20,147,0.5));border-radius:50%}
+.disco-mute-btn:hover{filter:drop-shadow(0 0 8px rgba(255,20,147,0.8)) brightness(1.2)}
 [data-theme="disco"] .disco-mute-btn{animation:discoText 2s linear infinite,discoFloat 1.5s ease-in-out infinite,discoRing 3s ease-in-out infinite}
-[data-theme="disco"] .disco-mute-btn.muted{animation:discoText 4s linear infinite;transform:translateX(-50%);opacity:0.4;filter:none;box-shadow:none}
+[data-theme="disco"] .disco-mute-btn.muted{animation:discoText 4s linear infinite;opacity:0.4;filter:none;box-shadow:none}
 [data-theme="disco"] .chat-avatar{animation:discoHue 3s linear infinite;box-shadow:0 0 10px rgba(255,20,147,0.4)}
 [data-theme="disco"] .chat-name{animation:discoText 2s linear infinite}
+
+/* ═══ Classic (XylemView) theme ═══ */
+[data-theme="classic"]{--bg:#c0c0c0;--bg-grad:none;--glass:#c0c0c0;--glass-border:#808080;--glass-strong:#c0c0c0;--glass-inner:transparent;--text:#000;--text2:#404040;--text3:#808080;--accent:#0a246a;--accent-soft:rgba(10,36,106,0.08);--dwg:#00006e;--pdf:#8b0000;--link:#5b2d8e;--xls:#006400;--doc:#00006e;--cnt-active:rgba(0,100,100,0.85);--cnt-dim:rgba(0,0,0,0.06);--cnt-dim-tx:#808080;--sel-bg:#0a246a;--sel-border:#0a246a;--seg:transparent;--seg-active:#0a246a;--seg-tx:#fff;--seg-tx2:#000;--input-bg:#fff;--input-border:#7f7f7f;--input-focus:rgba(10,36,106,0.25);--shadow:none;--shadow-lg:none;--top-hl:none;--teal:#008080;--danger:#c00;--success:#006400;--row-hover:rgba(10,36,106,0.06);--noise:0;--orb1:transparent;--orb2:transparent;--glow:none;--amber:#808000;--amber-soft:rgba(128,128,0,0.08)}
+/* Kill modern effects */
+[data-theme="classic"] body{background:#c0c0c0 !important;font-family:'Tahoma','Microsoft Sans Serif',sans-serif !important}
+[data-theme="classic"] .bg-layer,[data-theme="classic"] .orb-1,[data-theme="classic"] .orb-2{display:none !important}
+[data-theme="classic"] .glass,[data-theme="classic"] .glass-strong{background:#c0c0c0 !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;border:2px outset #dfdfdf !important;border-radius:2px !important;box-shadow:none !important}
+[data-theme="classic"] .glass::before,[data-theme="classic"] .glass::after,[data-theme="classic"] .glass-strong::before,[data-theme="classic"] .glass-strong::after{display:none !important}
+/* Font override */
+[data-theme="classic"] *{font-family:'Tahoma','Microsoft Sans Serif',sans-serif !important}
+[data-theme="classic"] .file-num,[data-theme="classic"] .otp-box,[data-theme="classic"] .field-input{font-family:'Consolas','Courier New',monospace !important}
+/* Title bar */
+[data-theme="classic"] .titlebar{background:#c0c0c0}
+[data-theme="classic"] .titlebar .app-name{font-weight:700;letter-spacing:0;text-shadow:none}
+[data-theme="classic"] .titlebar .beta{display:none}
+[data-theme="classic"] .titlebar .logo-color,[data-theme="classic"] .titlebar .logo-white{display:none}
+/* Mode segment → radio buttons */
+[data-theme="classic"] #mode-seg{border:2px groove #c0c0c0 !important;background:#c0c0c0 !important;border-radius:0 !important;padding:4px 8px !important;gap:8px !important}
+[data-theme="classic"] #mode-seg .pill{display:none !important}
+[data-theme="classic"] #mode-seg button{background:transparent !important;border:none !important;border-radius:0 !important;color:#000 !important;font:400 12px/1 'Tahoma','Microsoft Sans Serif',sans-serif !important;padding:2px 4px 2px 18px !important;letter-spacing:0 !important;position:relative}
+[data-theme="classic"] #mode-seg button::after{display:none !important}
+[data-theme="classic"] #mode-seg button::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:12px;height:12px;border-radius:50%;border:1px solid #808080;background:#fff;box-shadow:inset 1px 1px 2px rgba(0,0,0,0.15)}
+[data-theme="classic"] #mode-seg button.active::after{display:block !important;content:'';position:absolute;left:3px;top:50%;transform:translateY(-50%);width:8px;height:8px;border-radius:50%;background:#000;bottom:auto;opacity:1;padding:0;border:none;box-shadow:none}
+/* Segment label */
+[data-theme="classic"] #mode-seg::before{content:'Look In';position:absolute;top:-8px;left:8px;font:700 11px/1 'Tahoma',sans-serif;color:#000;background:#c0c0c0;padding:0 4px;z-index:1}
+[data-theme="classic"] .toolbar{margin-bottom:6px}
+/* OTP boxes → classic text input */
+[data-theme="classic"] .otp-container{gap:2px}
+[data-theme="classic"] .otp-box{border:2px inset #c0c0c0 !important;border-radius:0 !important;background:#fff !important;color:#000 !important;box-shadow:none !important;font-weight:400 !important}
+[data-theme="classic"] .otp-box.active{border-color:#000 !important}
+[data-theme="classic"] .otp-box.pop{transform:none !important}
+[data-theme="classic"] .otp-dash{color:#000}
+/* Field input */
+[data-theme="classic"] .field-input{border:2px inset #c0c0c0 !important;border-radius:0 !important;background:#fff !important;color:#000 !important;box-shadow:none !important}
+[data-theme="classic"] .field-label{color:#000 !important;font-size:11px !important;letter-spacing:0 !important;font-weight:700 !important}
+/* File list */
+[data-theme="classic"] .file-list-card{border:2px inset #c0c0c0 !important;border-radius:0 !important;background:#fff !important}
+[data-theme="classic"] .file-list-card.card-glow{box-shadow:none !important}
+[data-theme="classic"] .file-row{border-radius:0 !important;border:none !important;padding:1px 4px !important}
+[data-theme="classic"] .file-row:hover{background:rgba(10,36,106,0.08) !important}
+[data-theme="classic"] .file-row.selected{background:#0a246a !important;border:none !important;box-shadow:none !important}
+[data-theme="classic"] .file-row.selected *{color:#fff !important}
+[data-theme="classic"] .file-row.selected .file-num{color:#fff !important}
+/* Sidebar buttons → classic 3D */
+[data-theme="classic"] .side-btn{border:2px outset #dfdfdf !important;border-radius:0 !important;background:#c0c0c0 !important;color:#000 !important;backdrop-filter:none !important;box-shadow:none !important;text-shadow:none !important;font:400 12px/1 'Tahoma',sans-serif !important}
+[data-theme="classic"] .side-btn:hover{background:#d4d0c8 !important;box-shadow:none !important}
+[data-theme="classic"] .side-btn:active{border-style:inset !important}
+[data-theme="classic"] .side-btn.ready:not(:disabled),[data-theme="classic"] .cnt-btn.active{background:#c0c0c0 !important;border:2px outset #dfdfdf !important;color:#000 !important;box-shadow:none !important}
+[data-theme="classic"] .cnt-btn.active::after{background:#c00 !important;box-shadow:none !important}
+/* Buttons */
+[data-theme="classic"] .btn-glass{border:2px outset #dfdfdf !important;border-radius:0 !important;background:#c0c0c0 !important;color:#000 !important;backdrop-filter:none !important;box-shadow:none !important}
+[data-theme="classic"] .btn-glass:hover{background:#d4d0c8 !important}
+[data-theme="classic"] .btn-glass:active{border-style:inset !important}
+[data-theme="classic"] .btn-accent{border:2px outset #dfdfdf !important;border-radius:0 !important;background:#c0c0c0 !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}
+[data-theme="classic"] .btn-accent:hover{background:#d4d0c8 !important}
+[data-theme="classic"] .btn-accent:active{border-style:inset !important}
+/* Recent pills */
+[data-theme="classic"] .recent-pill{border:2px outset #dfdfdf !important;border-radius:0 !important;background:#c0c0c0 !important;color:#000 !important;box-shadow:none !important}
+[data-theme="classic"] .recent-pill:hover{background:#d4d0c8 !important}
+[data-theme="classic"] .recent-pill.active{border-style:inset !important}
+/* Sibling line pills */
+[data-theme="classic"] .line-pill{border:2px outset #dfdfdf !important;border-radius:0 !important;background:#c0c0c0 !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}
+[data-theme="classic"] .line-pill.active{border-style:inset !important;background:#d4d0c8 !important}
+/* Modals */
+[data-theme="classic"] .modal{background:#c0c0c0 !important;border:2px outset #dfdfdf !important;border-radius:0 !important;color:#000 !important;box-shadow:none !important}
+[data-theme="classic"] .modal-overlay{background:rgba(0,0,0,0.25) !important;backdrop-filter:none !important}
+/* Search card */
+[data-theme="classic"] #search-card-wrap .glass{border:2px groove #c0c0c0 !important}
+/* Status */
+[data-theme="classic"] .status{color:#000}
+/* Scrollbar */
+[data-theme="classic"] ::-webkit-scrollbar{width:16px;background:#c0c0c0}
+[data-theme="classic"] ::-webkit-scrollbar-thumb{background:#c0c0c0;border:2px outset #dfdfdf}
+[data-theme="classic"] ::-webkit-scrollbar-button{background:#c0c0c0;border:2px outset #dfdfdf;height:16px}
+[data-theme="classic"] ::-webkit-scrollbar-track{background:#fff;border:1px solid #808080}
+/* Chat */
+[data-theme="classic"] .chat-container{border:2px inset #c0c0c0 !important;border-radius:0 !important;background:#c0c0c0 !important}
+[data-theme="classic"] .chat-messages{background:#fff;border:2px inset #c0c0c0;border-radius:0}
+[data-theme="classic"] .chat-input{border:2px inset #c0c0c0 !important;border-radius:0 !important;background:#fff !important;color:#000 !important}
+[data-theme="classic"] .chat-send{border:2px outset #dfdfdf !important;border-radius:0 !important;background:#c0c0c0 !important;color:#000 !important}
+[data-theme="classic"] .chat-avatar{border-radius:0 !important;font-family:'Tahoma',sans-serif !important}
+/* Marketing container */
+[data-theme="classic"] .marketing-container{border:2px inset #c0c0c0 !important;border-radius:0 !important;background:#c0c0c0 !important}
+[data-theme="classic"] .mkt-line-item{border:none !important;border-radius:0 !important;background:#fff !important;border-bottom:1px solid #c0c0c0 !important}
+[data-theme="classic"] .mkt-line-item:hover{background:#e8e8e8 !important}
+/* Rev banner, comments section */
+[data-theme="classic"] .rev-banner{border-radius:0 !important;background:#c0c0c0 !important;border:2px outset #dfdfdf !important}
+[data-theme="classic"] #comments-section{border-radius:0 !important}
+/* Theme popover */
+[data-theme="classic"] .theme-pop{border:2px outset #dfdfdf !important;border-radius:0 !important;background:#c0c0c0 !important;backdrop-filter:none !important}
+/* Drawing result cards */
+[data-theme="classic"] .dwg-result{border:2px outset #dfdfdf !important;border-radius:0 !important;background:#c0c0c0 !important}
+[data-theme="classic"] .dwg-result:hover{box-shadow:none !important}
+[data-theme="classic"] .dwg-result::after{display:none !important}
+/* Toolbar buttons */
+[data-theme="classic"] .toolbar-utils button{color:#000}
+/* Offline banner */
+[data-theme="classic"] .offline-banner{border-radius:0 !important}
+/* Context menu */
+[data-theme="classic"] .ctx-menu{border:2px outset #dfdfdf !important;border-radius:0 !important;background:#c0c0c0 !important;backdrop-filter:none !important;box-shadow:none !important}
+[data-theme="classic"] .ctx-menu button{border-radius:0 !important;color:#000 !important}
+[data-theme="classic"] .ctx-menu button:hover{background:#0a246a !important;color:#fff !important}
+/* Splash */
+[data-theme="classic"] .splash-title{text-shadow:none !important}
 
 /* Splash screen */
 #splash{position:fixed;inset:-2px;z-index:9999;display:flex;align-items:center;justify-content:center;background:#101014;opacity:1;pointer-events:none}
 #splash.fading{opacity:0;transition:opacity 1s ease}
-#splash .splash-content{opacity:0;transform:scale(0.85);transition:opacity 0.8s ease,transform 0.8s ease}
+#splash .splash-content{opacity:0;transform:scale(0.80);transition:opacity 1.6s ease,transform 1.6s ease}
 #splash .splash-content.show{opacity:1;transform:scale(1)}
 .splash-title{font:700 34px/1 'DM Sans',sans-serif;letter-spacing:-0.5px;color:#e8e8f4;text-align:center}
 .splash-title .splash-pro{font-weight:900;background:linear-gradient(135deg,#0a84ff,#a060ff,#e06080,#f5a623,#34d399,#0a84ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;background-size:300% 100%;animation:splashRainbow 4s linear infinite}
 @keyframes splashRainbow{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 .splash-sub{font:500 10px/1 'DM Sans',sans-serif;letter-spacing:3.5px;text-transform:uppercase;color:var(--text3);margin-top:12px;text-align:center}
-.splash-beta{font:800 11px/1 'DM Sans',sans-serif;letter-spacing:5px;margin-top:14px;color:var(--accent);opacity:0.7}
+.splash-beta{font:800 15px/1 'DM Sans',sans-serif;letter-spacing:6px;margin-top:14px;color:var(--accent);opacity:0.7}
 [data-theme="tron"] .splash-title .splash-pro{background:linear-gradient(135deg,#00efff,#d050ff,#ff2878,#00ff98,#00efff);-webkit-background-clip:text;background-clip:text;background-size:300% 100%;filter:drop-shadow(0 0 10px rgba(0,239,255,0.4))}
 [data-theme="tron"] .splash-title{text-shadow:0 0 30px rgba(0,223,252,0.35)}
 [data-theme="tron"] .splash-beta{color:#00efff;text-shadow:0 0 8px rgba(0,239,255,0.5)}
@@ -655,7 +815,13 @@ input,button,.no-drag{-webkit-app-region:no-drag}
 
 /* Route button — epic glow effect */
 @property --route-angle{syntax:'<angle>';initial-value:0deg;inherits:false}
+@property --charge-angle{syntax:'<angle>';initial-value:0deg;inherits:false}
 @keyframes routeOrbit{to{--route-angle:360deg}}
+@keyframes routeCharge{from{--charge-angle:0deg}to{--charge-angle:360deg}}
+@keyframes routeChargedPulse{0%,100%{filter:drop-shadow(0 0 6px rgba(220,230,255,0.9)) drop-shadow(0 0 16px rgba(160,180,255,0.5));opacity:0.85}50%{filter:drop-shadow(0 0 10px rgba(240,245,255,1)) drop-shadow(0 0 24px rgba(180,200,255,0.65));opacity:1}}
+.route-charge-ring{position:absolute;inset:-4px;border-radius:14px;padding:3px;background:conic-gradient(from -90deg,rgba(255,255,255,0.9) 0deg,rgba(255,255,255,0.9) calc(var(--charge-angle) - 6deg),#fff var(--charge-angle),transparent calc(var(--charge-angle) + 0.5deg),transparent 360deg);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:2;animation:routeCharge 6s cubic-bezier(0.25,0.1,0.25,1) 0.12s forwards;filter:drop-shadow(0 0 6px rgba(200,220,255,0.9)) drop-shadow(0 0 14px rgba(160,180,255,0.4));opacity:0;transition:opacity .25s ease-in}
+.route-charge-ring.active{opacity:1}
+.route-charge-ring.charged{animation:routeChargedPulse 2.5s ease-in-out infinite;--charge-angle:360deg;background:conic-gradient(from -90deg,rgba(255,255,255,0.9) 0deg,rgba(255,255,255,0.9) 360deg)}
 @keyframes routePulse{0%,100%{opacity:.45;transform:scale(1)}50%{opacity:.85;transform:scale(1.08)}}
 @keyframes routeTextGlow{0%,100%{text-shadow:0 0 8px rgba(120,180,255,0.5),0 0 20px rgba(120,140,255,0.2)}50%{text-shadow:0 0 14px rgba(120,200,255,0.8),0 0 30px rgba(140,160,255,0.35)}}
 #btn-route{transition:all .4s ease}
@@ -688,14 +854,29 @@ input,button,.no-drag{-webkit-app-region:no-drag}
 @keyframes tronNotFoundSweep{0%{transform:translateX(-30%)}100%{transform:translateX(30%)}}
 
 /* Contingency viewer — industrial-utilitarian document aesthetic */
-.cnt-viewer{width:520px;max-height:85vh;overflow:hidden;color:var(--text);padding:0;text-align:left;display:flex;flex-direction:column}
+.cnt-viewer{width:520px;max-height:85vh;overflow:hidden;color:var(--text);padding:0;text-align:left;display:flex;flex-direction:column;user-select:text;cursor:text}
 .cnt-head{padding:20px 24px 0;flex-shrink:0}
-.cnt-head h2{font:800 12px/1 'DM Sans',sans-serif;letter-spacing:2.5px;text-transform:uppercase;color:var(--text2);margin:0 0 8px}
+.cnt-head h2{font:800 12px/1 'DM Sans',sans-serif;letter-spacing:2.5px;text-transform:uppercase;color:var(--text2);margin:0}
 .cnt-order{font:700 28px/1 'DM Sans',sans-serif;color:var(--text);letter-spacing:-0.5px;margin-bottom:10px}
 .cnt-detail{display:flex;flex-wrap:wrap;gap:4px 16px;font:500 11px/1.5 'DM Sans',sans-serif;color:var(--text2);padding-bottom:14px;border-bottom:1px solid var(--glass-border)}
 .cnt-detail b{color:var(--text);font-weight:600}
 .cnt-detail .cnt-nowrap{white-space:nowrap}
-.cnt-scroll{flex:1;overflow-y:auto;scrollbar-gutter:stable;padding:4px 24px 24px;-webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 calc(100% - 20px),transparent 100%);mask-image:linear-gradient(to bottom,#000 0%,#000 calc(100% - 20px),transparent 100%)}
+.cnt-head-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.cnt-badge{display:inline-block;padding:4px 12px;border-radius:5px;font:700 10px/1.2 'DM Sans',sans-serif;letter-spacing:1.5px;text-transform:uppercase;flex-shrink:0;white-space:nowrap}
+.cnt-badge-code{background:rgba(255,59,48,0.12);color:#ff453a;border:1px solid rgba(255,59,48,0.25)}
+.cnt-badge-noncode{background:color-mix(in srgb,var(--text) 8%,transparent);color:var(--text3);border:1px solid var(--glass-border)}
+.cnt-info{font:500 11px/1.3 'DM Sans',sans-serif;color:var(--text2);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cnt-info b{color:var(--text);font-weight:600}
+.cnt-bp-toggle{display:flex;align-items:center;gap:6px;font:500 10px/1 'DM Sans',sans-serif;color:var(--text3);cursor:pointer;user-select:none}
+.cnt-std-proc{text-align:center;padding:32px 24px}
+.cnt-std-proc-title{font:600 18px/1.2 'DM Sans',sans-serif;color:var(--text)}
+.cnt-std-proc-sub{font:400 12px/1.4 'DM Sans',sans-serif;color:var(--text3);margin-top:6px}
+.cnt-bp-toggle input{display:none}
+.cnt-bp-switch{width:28px;height:16px;border-radius:8px;background:color-mix(in srgb,var(--text) 15%,transparent);position:relative;transition:background .2s;flex-shrink:0}
+.cnt-bp-switch::after{content:'';position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:50%;background:var(--text3);transition:all .2s}
+.cnt-bp-toggle input:checked+.cnt-bp-switch{background:var(--accent)}
+.cnt-bp-toggle input:checked+.cnt-bp-switch::after{left:14px;background:#fff}
+.cnt-scroll{flex:1;min-height:0;overflow-y:auto;scrollbar-gutter:stable;padding:4px 24px 24px;-webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 calc(100% - 20px),transparent 100%);mask-image:linear-gradient(to bottom,#000 0%,#000 calc(100% - 20px),transparent 100%)}
 .cnt-scroll::-webkit-scrollbar{width:5px}
 .cnt-scroll::-webkit-scrollbar-track{background:transparent}
 .cnt-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--text) 18%,transparent);border-radius:3px}
@@ -715,6 +896,7 @@ input,button,.no-drag{-webkit-app-region:no-drag}
 [data-theme="tron"] .cnt-actions button:not(#cnt-close){border-color:rgba(0,230,255,0.15);background:rgba(0,200,240,0.05)}
 [data-theme="tron"] .cnt-actions button:not(#cnt-close):hover{border-color:rgba(0,230,255,0.4);box-shadow:0 0 10px rgba(0,230,255,0.1)}
 [data-theme="tron"] .cnt-order{text-shadow:0 0 20px color-mix(in srgb,var(--accent) 30%,transparent)}
+[data-theme="tron"] .cnt-badge-code{background:rgba(255,59,48,0.15);border-color:rgba(255,59,48,0.35);text-shadow:0 0 8px rgba(255,59,48,0.3)}
 @media print{
   @page{size:letter portrait;margin:0.6in 0.75in}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -731,6 +913,10 @@ input,button,.no-drag{-webkit-app-region:no-drag}
   .cnt-viewer .cnt-section-body .cnt-label{color:#000 !important;font-weight:700 !important;font-size:8pt !important}
   .cnt-viewer .cnt-empty{color:#888 !important}
   .cnt-viewer .cnt-footer{color:#444 !important;border-color:#888 !important;font-size:8pt !important;padding-bottom:0 !important}
+  .cnt-badge{font-size:8pt !important;padding:2px 8px !important}
+  .cnt-badge-code{background:#ffebee !important;color:#c00 !important;border:1px solid #c00 !important}
+  .cnt-badge-noncode{background:#f5f5f5 !important;color:#666 !important;border:1px solid #999 !important}
+  .cnt-info{font-size:9pt !important;color:#333 !important}
   .cnt-sticky-footer{display:none !important}
 }
 
@@ -802,6 +988,7 @@ input,button,.no-drag{-webkit-app-region:no-drag}
     <span class="app-name">XylemView Pro</span>
     <span class="beta" id="app-version">BETA</span>
     <div class="spacer"></div>
+    <span id="weather" class="no-drag" data-tip="" style="display:none;align-items:center;gap:3px;margin-right:6px;cursor:default;opacity:0;transition:opacity .5s"><span id="weather-icon" style="font-size:13px;line-height:1"></span><span id="weather-temp" style="font:600 10px/1 'DM Sans',sans-serif;color:var(--text2)"></span></span>
     <button class="no-drag" id="btn-whats-new" data-tip="What's new"><span class="wn-bell">&#128276;</span><span class="wn-dot"></span></button>
     <div id="user-badge" class="no-drag" data-tip="" style="width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font:700 8.5px/1 'DM Sans',sans-serif;text-align:center;cursor:default;flex-shrink:0;margin-right:6px;text-transform:uppercase;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center"></div>
     <div class="no-drag win-btns" style="display:flex;align-items:center;margin-left:auto;margin-right:-10px">
@@ -818,6 +1005,7 @@ input,button,.no-drag{-webkit-app-region:no-drag}
       <button data-val="dark" class="active">Dark</button>
       <button data-val="tron">Tron</button>
       <button data-val="disco">Disco</button>
+      <button data-val="classic" id="btn-theme-classic" style="display:none">Classic</button>
     </div>
   </div>
 
@@ -828,12 +1016,16 @@ input,button,.no-drag{-webkit-app-region:no-drag}
   <div class="toolbar no-drag" style="position:relative">
     <div class="seg no-drag" id="mode-seg">
       <div class="pill"></div>
-      <button data-val="orders" data-hint="Ctrl+1" class="active">Orders</button>
-      <button data-val="drawings" data-hint="Ctrl+2">Drawings</button>
-      <button data-val="chat" data-hint="Ctrl+3">Chat</button>
+      <button data-val="orders" data-hint="Shortcut: o" class="active">Orders</button>
+      <button data-val="drawings" data-hint="Shortcut: d">Drawings</button>
+      <button data-val="marketing" data-hint="Shortcut: m" id="btn-mode-marketing" style="display:none">Marketing</button>
+      <button data-val="chat" data-hint="Shortcut: c">Chat</button>
     </div>
-    <div class="no-drag" id="btn-install-oda" style="display:none;position:absolute;right:0;top:50%;transform:translateY(-50%);cursor:pointer;padding:4px" data-tip="Expansion pack">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="oda-key"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+    <div class="toolbar-utils no-drag">
+      <button class="no-drag disco-mute-btn" id="btn-disco-mute" data-tip="Mute music" style="display:none;font-size:14px;line-height:1">&#9835;</button>
+      <button class="no-drag" id="btn-theme" data-tip="Theme"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5.5"/><path d="M7 1.5v11"/><path d="M7 1.5 A5.5 5.5 0 0 1 7 12.5" fill="currentColor"/></svg></button>
+      <button class="no-drag" id="btn-contact" data-tip="Contact"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="10" rx="2"/><path d="M1 3l7 5 7-5"/></svg></button>
+      <button class="no-drag" id="btn-settings" data-tip="Settings"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6.6 1h2.8l.4 2.2a5.2 5.2 0 0 1 1.4.8l2.1-.7 1.4 2.4-1.7 1.5a5.3 5.3 0 0 1 0 1.6l1.7 1.5-1.4 2.4-2.1-.7a5.2 5.2 0 0 1-1.4.8L9.4 15H6.6l-.4-2.2a5.2 5.2 0 0 1-1.4-.8l-2.1.7-1.4-2.4 1.7-1.5a5.3 5.3 0 0 1 0-1.6L1.3 5.7l1.4-2.4 2.1.7a5.2 5.2 0 0 1 1.4-.8L6.6 1z"/><circle cx="8" cy="8" r="2.5"/></svg></button>
     </div>
   </div>
 
@@ -911,11 +1103,32 @@ input,button,.no-drag{-webkit-app-region:no-drag}
         <button class="side-btn no-drag" id="btn-dxf" disabled style="opacity:.4;padding:8px 4px;font-size:10.5px">DXF</button>
       </div>
       <div style="flex:1"></div>
-      <div id="btn-disco-mute" class="disco-mute-btn no-drag" data-tip="Mute music" style="display:none;text-align:center;margin-bottom:4px">&#9835;</div>
-      <div style="display:flex;gap:4px;justify-content:center;position:relative">
-        <button class="btn-icon no-drag" id="btn-theme" data-tip="Theme" style="width:26px;height:26px;border-radius:7px"><svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5.5"/><path d="M7 1.5v11"/><path d="M7 1.5 A5.5 5.5 0 0 1 7 12.5" fill="currentColor"/></svg></button>
-        <button class="btn-icon no-drag" id="btn-contact" data-tip="Contact" style="width:26px;height:26px;border-radius:7px"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="10" rx="2"/><path d="M1 3l7 5 7-5"/></svg></button>
-        <button class="btn-icon no-drag" id="btn-settings" data-tip="Settings" style="width:26px;height:26px;border-radius:7px"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6.6 1h2.8l.4 2.2a5.2 5.2 0 0 1 1.4.8l2.1-.7 1.4 2.4-1.7 1.5a5.3 5.3 0 0 1 0 1.6l1.7 1.5-1.4 2.4-2.1-.7a5.2 5.2 0 0 1-1.4.8L9.4 15H6.6l-.4-2.2a5.2 5.2 0 0 1-1.4-.8l-2.1.7-1.4-2.4 1.7-1.5a5.3 5.3 0 0 1 0-1.6L1.3 5.7l1.4-2.4 2.1.7a5.2 5.2 0 0 1 1.4-.8L6.6 1z"/><circle cx="8" cy="8" r="2.5"/></svg></button>
+      <div class="no-drag" id="btn-install-oda" style="display:none;cursor:pointer;padding:6px;text-align:center" data-tip="Expansion pack">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="oda-key"><circle cx="8" cy="8" r="5"/><line x1="12.5" y1="11.5" x2="22" y2="21"/><line x1="19.5" y1="18.5" x2="22" y2="16"/><line x1="17" y1="16" x2="19.5" y2="13.5"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- BPCS Drawing History — full-width below main area -->
+  <div class="bpcs-history-section glass-strong no-drag" id="bpcs-history-section" style="display:none;margin:0 10px;border-radius:12px;overflow:hidden;flex-shrink:0">
+    <div class="bpcs-history-toggle no-drag" id="bpcs-history-toggle" style="font:700 9px/1 'DM Sans',sans-serif;letter-spacing:1px;color:var(--text3);padding:8px 14px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      ORDER HISTORY &#x25BE;
+    </div>
+    <div id="bpcs-history-body" style="display:none;overflow:hidden;max-height:200px;display:none">
+      <div id="bpcs-history-status" style="font:500 10px/1.4 'DM Sans',sans-serif;color:var(--text3);padding:4px 14px"></div>
+      <div style="overflow-y:auto;max-height:180px;scrollbar-gutter:stable">
+        <table id="bpcs-history-table" style="width:100%;border-collapse:collapse;font:400 10px/1.3 'IBM Plex Mono',monospace;display:none">
+          <thead style="position:sticky;top:0;z-index:1"><tr style="font:600 8px/1 'DM Sans',sans-serif;letter-spacing:.5px;color:var(--text3);text-align:left;background:var(--bg)">
+            <th style="padding:4px 6px">ORDER</th>
+            <th style="padding:4px 6px">ITEM #</th>
+            <th style="padding:4px 4px">DATE</th>
+            <th style="padding:4px 4px">CUSTOMER</th>
+            <th style="padding:4px 3px">CLS</th>
+            <th style="padding:4px 6px;text-align:right">QTY</th>
+          </tr></thead>
+          <tbody id="bpcs-history-rows"></tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -931,6 +1144,9 @@ input,button,.no-drag{-webkit-app-region:no-drag}
       <button class="chat-send no-drag" id="chat-send">Send</button>
     </div>
   </div>
+
+  <!-- Marketing container (shown only in marketing mode) -->
+  <div class="marketing-container glass-strong no-drag" id="marketing-container" style="display:none"></div>
 </div>
 
 <!-- Context menu (hidden) -->
@@ -958,10 +1174,40 @@ let S = {
   otpDigits: [],
   otpComplete: false,
   dwgResult: null,  // structured drawing search result
+  mktDigits: [],
+  mktComplete: false,
+  mktResult: null,
+  mktOrder: null,
 };
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
+
+// Click-outside-to-close for modals — allows title bar dragging without closing
+function modalDismiss(overlay) {
+  overlay.classList.add('no-drag');
+  // Re-enable drag on the logo+title area of the title bar so window can still be moved
+  const titleDrag = document.createElement('div');
+  const appName = document.querySelector('.titlebar .app-name');
+  if (appName) {
+    const r = appName.getBoundingClientRect();
+    const w = Math.ceil(r.right + 20);
+    const gripSvg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='16'%3E%3Ccircle cx='1.5' cy='2' r='1' fill='%23888'/%3E%3Ccircle cx='4.5' cy='2' r='1' fill='%23888'/%3E%3Ccircle cx='1.5' cy='6' r='1' fill='%23888'/%3E%3Ccircle cx='4.5' cy='6' r='1' fill='%23888'/%3E%3Ccircle cx='1.5' cy='10' r='1' fill='%23888'/%3E%3Ccircle cx='4.5' cy='10' r='1' fill='%23888'/%3E%3Ccircle cx='1.5' cy='14' r='1' fill='%23888'/%3E%3Ccircle cx='4.5' cy='14' r='1' fill='%23888'/%3E%3C/svg%3E")`;
+    titleDrag.style.cssText = `position:fixed;top:0;left:0;width:${w}px;height:38px;-webkit-app-region:drag;z-index:1;background:${gripSvg} no-repeat right 4px center`;
+    overlay.prepend(titleDrag);
+  }
+  let dx, dy;
+  overlay.addEventListener('mousedown', e => {
+    if (e.target.closest('.modal') || e.target === titleDrag) return;
+    if (e.clientY < 38) { dx = e.clientX; dy = e.clientY; return; }
+    overlay.remove();
+  });
+  overlay.addEventListener('mouseup', e => {
+    if (e.target.closest('.modal') || e.target === titleDrag || dx == null) return;
+    if (Math.abs(e.clientX - dx) < 5 && Math.abs(e.clientY - dy) < 5) overlay.remove();
+    dx = dy = null;
+  });
+}
 
 // Global error logging — sends to shared network drive
 window.onerror = (msg, src, line, col) => { try { window.api.logError(`${msg} at ${src}:${line}:${col}`); } catch(e) {} };
@@ -1650,7 +1896,7 @@ function renderDrawingResult() {
   const cardParent = $('#file-list-card');
   if (!card) return;
   const r = S.dwgResult;
-  if (!r) { card.innerHTML = ''; return; }
+  if (!r) { card.innerHTML = ''; hideBpcsHistory(); return; }
   // Auto-height for card mode (don't stretch vertically), keep full width for sidebar alignment
   if (cardParent) { cardParent.style.flex = '1'; cardParent.style.alignSelf = 'flex-start'; cardParent.style.minWidth = '0'; }
 
@@ -1721,6 +1967,13 @@ function renderDrawingResult() {
     cardParent.classList.add('card-glow');
     const inp = $('#inp-dwg');
     if (inp) inp.classList.add('dimmed');
+  }
+
+  // Show BPCS order history section for this drawing
+  if (r.base && !r.wildcard) {
+    showBpcsHistorySection(r.base);
+  } else {
+    hideBpcsHistory();
   }
 }
 
@@ -1859,6 +2112,10 @@ function updateCnt() {
     btn.textContent = 'Contingency';
     ident.textContent = '';
   }
+  if (btn._cntLoading) {
+    btn._origText = btn._origText || 'Contingency';
+    btn.innerHTML = '<span class="deep-spinner" style="width:12px;height:12px"></span>';
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1869,26 +2126,53 @@ function showContextMenu(e, idx) {
   const f = S.files[idx]; if (!f) return;
   const menu = $('#ctx-menu');
   const isDwg = ['DWG','DXF','PLT','BAK','MVW'].includes(f.ext.replace(']',''));
+  const isAutocadDefault = S.config && S.config.default_dwg_action === 'autocad';
   let items = [];
-  items.push({ label: 'Copy file', action: () => window.api.copyFileToClipboard(f.filepath) });
-  if (S.currentFolder) items.push({ label: 'Paste file here', action: doPaste });
-  items.push('sep');
-  items.push({ label: 'Copy file path', action: async () => { const r = await window.api.copyText(f.filepath); setStatus(r.ok ? 'Path copied' : 'Copy failed'); } });
-  if (f.isLink) items.push({ label: 'Copy source drawing', action: async () => {
-    const target = await window.api.readLink(f.filepath);
-    if (target) { window.api.copyFileToClipboard(target); setStatus('Source drawing copied'); }
-    else setStatus('⚠  Could not read link target');
-  }});
-  if (f.displayName !== f.name) items.push({ label: 'Copy drawing number', action: async () => { const r = await window.api.copyText(f.displayName.replace(/-/g, '')); setStatus(r.ok ? 'Drawing number copied' : 'Copy failed'); } });
-  if (isDwg) {
-    items.push('sep');
-    items.push({ label: 'Open in Viewer', action: () => window.api.openInViewer(f.filepath) });
-    items.push({ label: 'Open in AutoCAD', action: async () => {
-      const r = await window.api.openInAutocad(f.filepath);
-      if (!r.ok) setStatus('⚠  ' + r.msg);
-      else if (r.autoDetected) setStatus('AutoCAD found: ' + r.autoDetected);
-    }});
 
+  if (f.isLink) {
+    // Link file context menu
+    items.push({ label: 'Copy source drawing', action: async () => {
+      const target = await window.api.readLink(f.filepath);
+      if (target) { window.api.copyFileToClipboard(target); setStatus('Source drawing copied'); }
+      else setStatus('⚠  Could not read link target');
+    }});
+    items.push({ label: 'Copy link file', action: () => window.api.copyFileToClipboard(f.filepath) });
+    if (S.currentFolder) items.push({ label: 'Paste file here', action: doPaste });
+    items.push('sep');
+    if (f.displayName !== f.name) items.push({ label: 'Copy drawing number', action: async () => { const r = await window.api.copyText(f.displayName.replace(/-/g, '')); setStatus(r.ok ? 'Drawing number copied' : 'Copy failed'); } });
+    items.push({ label: 'Copy drawing file path', action: async () => {
+      const target = await window.api.readLink(f.filepath);
+      if (target) { const r = await window.api.copyText(target); setStatus(r.ok ? 'Path copied' : 'Copy failed'); }
+      else setStatus('⚠  Could not read link target');
+    }});
+    if (e.shiftKey) items.push({ label: 'Copy link file path', action: async () => { const r = await window.api.copyText(f.filepath); setStatus(r.ok ? 'Path copied' : 'Copy failed'); } });
+    if (isDwg) {
+      items.push('sep');
+      items.push(isAutocadDefault
+        ? { label: 'Open in Viewer', action: () => window.api.openInViewer(f.filepath) }
+        : { label: 'Open in AutoCAD', action: async () => {
+            const r = await window.api.openInAutocad(f.filepath);
+            if (!r.ok) setStatus('⚠  ' + r.msg);
+            else if (r.autoDetected) setStatus('AutoCAD found: ' + r.autoDetected);
+          }});
+    }
+  } else {
+    // Regular file context menu
+    items.push({ label: 'Copy file', action: () => window.api.copyFileToClipboard(f.filepath) });
+    if (S.currentFolder) items.push({ label: 'Paste file here', action: doPaste });
+    items.push('sep');
+    if (f.displayName !== f.name) items.push({ label: 'Copy drawing number', action: async () => { const r = await window.api.copyText(f.displayName.replace(/-/g, '')); setStatus(r.ok ? 'Drawing number copied' : 'Copy failed'); } });
+    items.push({ label: 'Copy file path', action: async () => { const r = await window.api.copyText(f.filepath); setStatus(r.ok ? 'Path copied' : 'Copy failed'); } });
+    if (isDwg) {
+      items.push('sep');
+      items.push(isAutocadDefault
+        ? { label: 'Open in Viewer', action: () => window.api.openInViewer(f.filepath) }
+        : { label: 'Open in AutoCAD', action: async () => {
+            const r = await window.api.openInAutocad(f.filepath);
+            if (!r.ok) setStatus('⚠  ' + r.msg);
+            else if (r.autoDetected) setStatus('AutoCAD found: ' + r.autoDetected);
+          }});
+    }
   }
   menu.innerHTML = items.map(it => it === 'sep' ? '<div class="ctx-sep"></div>'
     : `<div class="ctx-item">${it.label}</div>`).join('');
@@ -1954,7 +2238,7 @@ async function applyTheme(t) {
       muteBtn.textContent = '♫';
     }
   } else {
-    document.body.dataset.theme = effective === 'tron' ? 'tron' : (effective === 'dark' ? 'dark' : 'light');
+    document.body.dataset.theme = ['tron','classic'].includes(effective) ? effective : (effective === 'dark' ? 'dark' : 'light');
     stopDisco();
     const muteBtn = $('#btn-disco-mute');
     if (muteBtn) muteBtn.style.display = 'none';
@@ -2191,6 +2475,14 @@ function fixName(raw) {
   if (m2) return m2[1].trim();
   return raw;
 }
+// Resolve display name: check shared nicknames by username first, then parse AD name
+function resolveName(user, adName) {
+  if (user) {
+    const nick = _nicknames[user.toLowerCase().trim()];
+    if (nick) return nick;
+  }
+  return fixName(adName || user || '');
+}
 
 function getInitials(name) {
   const fixed = fixName(name);
@@ -2235,6 +2527,11 @@ function renderChatMessages(msgs) {
   const el = $('#chat-messages');
   const me = _cachedUsername || '';
   el.innerHTML = msgs.map(m => {
+    if (m.system) {
+      return `<div class="chat-msg system">
+        <div class="chat-text">${escHtml(resolveName(m.user, m.name))} ${escHtml(m.text)}</div>
+      </div>`;
+    }
     const initials = getInitials(m.name || m.user || '?');
     const ago = timeAgo(m.ts);
     const color = userColor(m.name || m.user || '?');
@@ -2243,7 +2540,7 @@ function renderChatMessages(msgs) {
     return `<div class="chat-msg${isMine ? ' mine' : ''}">
       <div class="chat-avatar" style="background:${color};--user-color:${color}">${escHtml(initials)}</div>
       <div class="chat-bubble">
-        <div class="chat-name" style="color:${color}">${escHtml(fixName(m.name || m.user))}</div>
+        <div class="chat-name" style="color:${color}">${escHtml(resolveName(m.user, m.name))}</div>
         <div class="chat-text"${bigEmoji ? ' style="font-size:28px;line-height:1.2"' : ''}>${escHtml(m.text)}</div>
         <div class="chat-time">${ago}</div>
       </div>
@@ -2273,7 +2570,7 @@ async function pollChat() {
           const onChatTab = S.mode === 'chat';
           if (!focused || !onChatTab) {
             const last = fromOthers[fromOthers.length - 1];
-            const name = fixName(last.name || last.user);
+            const name = resolveName(last.user, last.name);
             window.api.notifyChat('XylemView Pro', name + ': ' + last.text);
           }
         }
@@ -2380,7 +2677,14 @@ function playStartupChime() {
   try {
     const ctx = getSfxCtx();
     const t = ctx.currentTime;
-    const DUR = 5.5;
+    const DUR = 4.5;
+
+    // Master gain — single clean fade kills ALL oscillators, prevents cumulative static
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(1, t);
+    master.gain.setValueAtTime(1, t + DUR - 0.4);
+    master.gain.linearRampToValueAtTime(0, t + DUR);
+    master.connect(ctx.destination);
 
     // ── Sub-bass: C2 — felt more than heard, grounds the sound
     const subOsc = ctx.createOscillator();
@@ -2388,43 +2692,48 @@ function playStartupChime() {
     subOsc.type = 'sine';
     subOsc.frequency.setValueAtTime(65.41, t);
     subGain.gain.setValueAtTime(0, t);
-    subGain.gain.linearRampToValueAtTime(0.09, t + 0.8);
-    subGain.gain.setValueAtTime(0.07, t + 3.0);
-    subGain.gain.exponentialRampToValueAtTime(0.001, t + DUR);
-    subOsc.connect(subGain).connect(ctx.destination);
-    subOsc.start(t); subOsc.stop(t + DUR + 0.1);
+    subGain.gain.linearRampToValueAtTime(0.09, t + 1.0);
+    subGain.gain.setValueAtTime(0.07, t + 4.5);
+    subGain.gain.exponentialRampToValueAtTime(0.001, t + DUR - 0.1);
+    subGain.gain.linearRampToValueAtTime(0, t + DUR);
+    subOsc.connect(subGain).connect(master);
+    subOsc.start(t); subOsc.stop(t + DUR + 0.05);
 
     // ── Main chord: Cmaj9 (C3–E3–G3–B3–D4), each note blooms in sequence
+    // Chord fades out earlier; high shimmer carries the tail
     const notes = [130.81, 164.81, 196, 246.94, 293.66];
     notes.forEach((freq, i) => {
-      const delay = i * 0.07;
+      const delay = i * 0.09;
       ['sine', 'triangle'].forEach((type, j) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = type;
         osc.frequency.setValueAtTime(freq * (1 + j * 0.002), t + delay);
-        osc.frequency.linearRampToValueAtTime(freq * (1 + j * 0.002) * 1.002, t + delay + 2.5);
+        osc.frequency.linearRampToValueAtTime(freq * (1 + j * 0.002) * 1.002, t + delay + 3.0);
         gain.gain.setValueAtTime(0, t + delay);
-        gain.gain.linearRampToValueAtTime(type === 'sine' ? 0.11 : 0.04, t + delay + 0.5);
-        gain.gain.setValueAtTime(type === 'sine' ? 0.09 : 0.035, t + delay + 2.5);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + DUR);
-        osc.connect(gain).connect(ctx.destination);
-        osc.start(t + delay); osc.stop(t + DUR + 0.1);
+        gain.gain.linearRampToValueAtTime(type === 'sine' ? 0.11 : 0.04, t + delay + 0.6);
+        gain.gain.setValueAtTime(type === 'sine' ? 0.08 : 0.03, t + delay + 1.8);
+        gain.gain.linearRampToValueAtTime(type === 'sine' ? 0.04 : 0.015, t + DUR - 0.8);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + DUR - 0.15);
+        osc.connect(gain).connect(master);
+        osc.start(t + delay); osc.stop(t + DUR + 0.05);
       });
     });
 
-    // ── High shimmer: C5–E5–G5–B5, drifting in — last notes overlap with splash fade
+    // ── High shimmer: C5–E5–G5–B5, drifting in — these carry the tail after chord fades
     const highs = [523.25, 659.25, 783.99, 987.77];
     highs.forEach((freq, i) => {
-      const delay = 0.5 + i * 0.35;
+      const delay = 0.6 + i * 0.4;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, t + delay);
       gain.gain.setValueAtTime(0, t + delay);
-      gain.gain.linearRampToValueAtTime(0.03, t + delay + 0.5);
+      gain.gain.linearRampToValueAtTime(0.035, t + delay + 0.6);
+      gain.gain.setValueAtTime(0.025, t + delay + 1.5);
       gain.gain.exponentialRampToValueAtTime(0.001, t + DUR - 0.3);
-      osc.connect(gain).connect(ctx.destination);
+      gain.gain.linearRampToValueAtTime(0, t + DUR - 0.1);
+      osc.connect(gain).connect(master);
       osc.start(t + delay); osc.stop(t + DUR);
     });
   } catch (e) {}
@@ -2505,13 +2814,13 @@ function _startRouteHumNow() {
     const now = ctx.currentTime;
 
     const sub1 = ctx.createOscillator(); sub1.type = 'sine'; sub1.frequency.value = 36;
-    const sub2 = ctx.createOscillator(); sub2.type = 'sine'; sub2.frequency.value = 39;
+    const sub2 = ctx.createOscillator(); sub2.type = 'sine'; sub2.frequency.value = 38.1;
     const hum = ctx.createOscillator(); hum.type = 'sawtooth'; hum.frequency.value = 50;
     const humLpf = ctx.createBiquadFilter(); humLpf.type = 'lowpass'; humLpf.frequency.value = 100; humLpf.Q.value = 3;
     const w1 = ctx.createOscillator(); w1.type = 'sine'; w1.frequency.value = 70;
-    const w1b = ctx.createOscillator(); w1b.type = 'sine'; w1b.frequency.value = 73;
+    const w1b = ctx.createOscillator(); w1b.type = 'sine'; w1b.frequency.value = 71.7;
     const w2 = ctx.createOscillator(); w2.type = 'sine'; w2.frequency.value = 105;
-    const w2b = ctx.createOscillator(); w2b.type = 'triangle'; w2b.frequency.value = 107;
+    const w2b = ctx.createOscillator(); w2b.type = 'triangle'; w2b.frequency.value = 106.3;
 
     const gSub1 = ctx.createGain(); gSub1.gain.setValueAtTime(0, now);
     const gSub2 = ctx.createGain(); gSub2.gain.setValueAtTime(0, now);
@@ -2530,11 +2839,11 @@ function _startRouteHumNow() {
     gW1.gain.linearRampToValueAtTime(0.45, now + 2);
     gW1b.gain.linearRampToValueAtTime(0.35, now + 2);
     w1.frequency.linearRampToValueAtTime(150, now + 2.5);
-    w1b.frequency.linearRampToValueAtTime(154, now + 2.5);
+    w1b.frequency.linearRampToValueAtTime(152.3, now + 2.5);
     gW2.gain.linearRampToValueAtTime(0.15, now + 2);
     gW2b.gain.linearRampToValueAtTime(0.1, now + 2);
     w2.frequency.linearRampToValueAtTime(200, now + 2.5);
-    w2b.frequency.linearRampToValueAtTime(204, now + 2.5);
+    w2b.frequency.linearRampToValueAtTime(201.9, now + 2.5);
     humLpf.frequency.linearRampToValueAtTime(150, now + 2.5);
     gHum.gain.linearRampToValueAtTime(0.12, now + 2.5);
 
@@ -2544,11 +2853,11 @@ function _startRouteHumNow() {
     gW1.gain.linearRampToValueAtTime(0.55, now + 5);
     gW1b.gain.linearRampToValueAtTime(0.45, now + 5);
     w1.frequency.linearRampToValueAtTime(240, now + 6);
-    w1b.frequency.linearRampToValueAtTime(245, now + 6);
+    w1b.frequency.linearRampToValueAtTime(243.1, now + 6);
     gW2.gain.linearRampToValueAtTime(0.3, now + 5);
-    gW2b.gain.linearRampToValueAtTime(0.22, now + 5);
+    gW2b.gain.linearRampToValueAtTime(0.18, now + 5);
     w2.frequency.linearRampToValueAtTime(320, now + 6);
-    w2b.frequency.linearRampToValueAtTime(326, now + 6);
+    w2b.frequency.linearRampToValueAtTime(322.7, now + 6);
     gHum.gain.linearRampToValueAtTime(0.1, now + 6);
     humLpf.frequency.linearRampToValueAtTime(180, now + 6);
 
@@ -3131,6 +3440,109 @@ const GPHE_MODELS = [
   ['P201', 478,18,24,24,165,300,10,  93.75,225,37.5,  0,60,   10, 4,12.5,56.25,137.5,150,187.5],
 ];
 
+// ─── GPHE DXF BOM Extraction ──────────────────────────────────────────
+function gpheExtractBomData(parsed) {
+  const bomItems = [];
+  let current = {};
+  for (const a of parsed.attribs) {
+    if (a.tag === 'ITEM') {
+      if (current.ITEM) bomItems.push(current);
+      current = { ITEM: a.value };
+    } else if (['QTY', 'DESC', 'MATL', 'SPEC', 'PATT', 'PN'].includes(a.tag)) {
+      current[a.tag] = a.value;
+    }
+  }
+  if (current.ITEM) bomItems.push(current);
+
+  // Port liners: PN starting with 3-340 (expanded liners on the top-level BOM)
+  let linerCount = 0;
+  for (const item of bomItems) {
+    if ((item.PN || '').startsWith('3-340')) {
+      linerCount += parseFloat(item.QTY) || 0;
+    }
+  }
+
+  // Tightening bolts: sum QTY, extract diameter and length from DESC
+  let boltCount = 0;
+  const boltDetails = [];
+  for (const item of bomItems) {
+    const desc = (item.DESC || '').toUpperCase();
+    if (desc.includes('TIGHTENING BOLT')) {
+      const qty = parseFloat(item.QTY) || 0;
+      boltCount += qty;
+      const m = desc.match(/([\d.]+)\s*DIA\s*X\s*([\d.]+)\s*LG/);
+      if (m) boltDetails.push({ qty, dia: parseFloat(m[1]), len: parseFloat(m[2]) });
+    }
+  }
+
+  // Kanban parts: only specific PNs from the kanban table get machining operations
+  const KANBAN_CARRY    = new Set(['4338049010600','4338049011000','4338049011300']);
+  const KANBAN_GUIDE    = new Set(['4548049020600','4548049021000','4548049021300']);
+  const KANBAN_SUPPORT  = new Set(['465801022002','465801047001']);
+  let hasCarryBar = false, hasGuideBar = false, hasSupportColumn = false;
+  for (const item of bomItems) {
+    const pn = (item.PN || '').replace(/-/g, '');
+    if (KANBAN_CARRY.has(pn)) hasCarryBar = true;
+    if (KANBAN_GUIDE.has(pn)) hasGuideBar = true;
+    if (KANBAN_SUPPORT.has(pn)) hasSupportColumn = true;
+  }
+
+  return {
+    linerCount: Math.round(linerCount),
+    boltCount: Math.round(boltCount),
+    boltDetails,
+    hasCarryBar,
+    hasGuideBar,
+    hasSupportColumn,
+    bomItemCount: bomItems.length,
+  };
+}
+
+function gpheResolveDwgPath() {
+  // Drawing mode — primary file or altFormat
+  if (S.mode === 'drawings' && S.dwgResult) {
+    if (S.dwgResult.primary) {
+      const p = S.dwgResult.primary;
+      if (p.ext && p.ext.replace(']', '').toUpperCase() === 'DWG') return p.filepath;
+    }
+    if (S.dwgResult.altFormat) {
+      const a = S.dwgResult.altFormat;
+      if (a.ext && a.ext.replace(']', '').toUpperCase() === 'DWG') return a.filepath;
+    }
+    // Wildcard: selected file
+    if (S.dwgResult.wildcard && S.selected >= 0) {
+      const sel = S.files[S.selected];
+      if (sel && sel.ext && sel.ext.replace(']', '').toUpperCase() === 'DWG') return sel.filepath;
+    }
+  }
+  // Order mode — gpheFile is DWG or find DWG near DRS
+  if (S.routeScan && S.routeScan.gphe && S.routeScan.gpheFile) {
+    const gf = S.routeScan.gpheFile;
+    if (gf.ext && gf.ext.replace(']', '').toUpperCase() === 'DWG') return gf.filepath;
+    // DRS-identified: find a DWG in the file list
+    if (S.files) {
+      const dwg = S.files.find(f =>
+        f.type !== 'section-header' &&
+        f.ext && f.ext.replace(']', '').toUpperCase() === 'DWG'
+      );
+      if (dwg) return dwg.filepath;
+    }
+  }
+  return null;
+}
+
+async function gpheAttemptDxfEnhancement(dwgPath) {
+  if (!dwgPath) return null;
+  try {
+    const result = await window.api.convertDwgDxfText(dwgPath);
+    if (!result.ok) return null;
+    const parsed = rtParseDXF(result.text);
+    const bomData = gpheExtractBomData(parsed);
+    if (bomData.bomItemCount === 0) return null;
+    return bomData;
+  } catch { return null; }
+}
+
 function gpheBaseDigits(input) {
   // Strip brackets, file extension, and revision suffix (rNN/RNN) to get just the drawing number
   let clean = input.replace(/^\[|\]$/g, '').replace(/\.\w+$/i, '').replace(/[rR]\d+$/, '');
@@ -3151,7 +3563,7 @@ function isGpheDrawing(drawingNum) {
   return false;
 }
 
-function gpheCalculateRouting(drawingNum) {
+function gpheCalculateRouting(drawingNum, bomData) {
   const digits = gpheBaseDigits(drawingNum);
   if (!isGpheDrawing(drawingNum)) return null;
 
@@ -3173,7 +3585,9 @@ function gpheCalculateRouting(drawingNum) {
 
   const pEntry = GPHE_PRESSURE.find(p => p[0] === pressureDigit) || [0, 0, 0];
   const psigHigh = pEntry[2];
-  const bolts = (psigHigh > (mawp150 || 999) && b300 > 0) ? b300 : (b150 || b300);
+  const boltsFromDrawing = (psigHigh > (mawp150 || 999) && b300 > 0) ? b300 : (b150 || b300);
+  const hasBom = bomData && bomData.bomItemCount > 0;
+  const bolts = (hasBom && bomData.boltCount > 0) ? bomData.boltCount : boltsFromDrawing;
 
   const m2h = v => v / 60;
   const ops = [];
@@ -3181,44 +3595,60 @@ function gpheCalculateRouting(drawingNum) {
   // Assemble frame
   if (assyR > 0) ops.push({ wc: 707, op: 'ASSEMBLE FRAME', run: m2h(assyR), setup: m2h(assyS) });
 
-  // Hang plates
+  // All formulas below use per-model lookups from GPHE calculator Data tab.
+  // Port-based grouping is unreliable — many models are exceptions within their port size.
+  const _s = new Set;  // reusable set builder
+  const _in = (...ms) => { _s.clear(); ms.forEach(m => _s.add(m)); return _s.has(model); };
+
+  // Hang plates — run is hangC * plates / 60 (hangC already per-model in GPHE_MODELS)
+  // Setup: flat 12.5, flat 15, or =1.25*IF(Plates<=100, C, C*Plates/100) where C=10/15/16
   if (hangC > 0 && plates > 0) {
-    let hangSetup = 12.5;
-    if (port >= 4 && port < 8) hangSetup = 1.25 * Math.max(10, 10 * plates / 100);
-    else if (port >= 8) hangSetup = 1.25 * Math.max(15, 15 * plates / 100);
-    if (port <= 3) hangSetup = 12.5;
+    let hangSetup;
+    const FLAT15 = _in('P19','P31','P21','P22','WP26','P45');
+    if (FLAT15) { hangSetup = 15; }
+    else if (port <= 3) { hangSetup = 12.5; }
+    else {
+      const HSC = { 'P188':16,'P251':16,'P352':16,'P145':16,'P210':16,'P201':16,
+                    'P100':15,'P100X':15,'FP101':15,'P130':15,'P152':15,'P220':15,'P113':15,'P81':15,'P121':15 };
+      const c = HSC[model] || 10;
+      hangSetup = 1.25 * Math.max(c, c * plates / 100);
+    }
     ops.push({ wc: 707, op: 'HANG PLATES', run: m2h(hangC * plates / 60), setup: m2h(hangSetup) });
   }
 
-  // Peen bolts
+  // Peen bolts — =1.25 * peenC * bolts (peenC already per-model in GPHE_MODELS)
   if (peenC > 0 && bolts > 0)
     ops.push({ wc: 707, op: 'PEEN BOLTS', run: m2h(1.25 * peenC * bolts), setup: 0 });
 
-  // Tighten plate pack
+  // Tighten plate pack — per-model formulas from Data tab
   if (plates > 0 && bolts > 0) {
-    let tigRun = 18.75;
-    if (port >= 4 && port < 6) tigRun = 50;
-    else if (port === 6) tigRun = 1.25 * (plates <= 200 ? 40 : 30 * plates / 100);
-    else if (port >= 8 && port < 12) tigRun = 1.25 * (plates <= 150 ? 60 : 50 * plates / 100);
-    else if (port >= 12) tigRun = 1.25 * (plates <= 150 ? 120 : 120 * plates / 100);
+    let tigRun;
+    if (_in('P47','P55','P64','P41','P42','WP54')) tigRun = 50;
+    else if (_in('P62','P86','P110','P43','P65')) tigRun = 1.25 * (plates <= 200 ? 40 : 30 * plates / 100);
+    else if (_in('P100','P100X','FP101','P130','P152','P220','P113','P81','P121')) tigRun = 1.25 * (plates <= 150 ? 60 : 50 * plates / 100);
+    else if (_in('P188','P251','P352','P145','P210','P201')) tigRun = 1.25 * (plates <= 150 ? 120 : 120 * plates / 100);
+    else tigRun = 18.75;
 
-    let tigSetup = 1.25 * tigSC * bolts;
-    if (port >= 6 && port < 8) tigSetup = 1.25 * (plates <= 200 ? 2 * bolts : 30);
-    else if (port >= 8 && port <= 10) tigSetup = 1.25 * (plates <= 150 ? 30 : 50);
-    else if (port === 12 && (model === 'P81' || model === 'P121')) tigSetup = 1.25 * (plates <= 150 ? 20 : 40);
-    else if (port >= 12) tigSetup = 1.25 * (plates <= 150 ? 25 : 40);
+    let tigSetup;
+    if (_in('P62')) tigSetup = 1.25 * (plates <= 200 ? 16 : 30);
+    else if (_in('P86','P110','P43')) tigSetup = 1.25 * (plates <= 200 ? 2 * bolts : 30);
+    else if (_in('P65','P100','P100X','FP101','P130','P152','P220','P113')) tigSetup = 1.25 * (plates <= 150 ? 30 : 50);
+    else if (_in('P81','P121')) tigSetup = 1.25 * (plates <= 150 ? 20 : 40);
+    else if (_in('P188','P251','P352','P145')) tigSetup = 1.25 * (plates <= 150 ? 25 : 40);
+    else if (_in('P210','P201')) tigSetup = 1.25 * (plates <= 150 ? 30 : 50);
+    else tigSetup = 1.25 * tigSC * bolts;
 
     ops.push({ wc: 707, op: 'TIGHTEN PLATE PACK', run: m2h(tigRun), setup: m2h(tigSetup) });
   }
 
-  // Hydro test
+  // Hydro test — per-model formulas from Data tab
   if (plates > 0) {
     let testMins;
-    if (port <= 3) testMins = 1.25 * ((0.3 * plates) + 40);
-    else if (port === 4) testMins = 1.25 * (psigHigh <= 200 ? (0.36 * plates) + 36 : (0.36 * plates) + 60);
-    else if (port >= 6 && port <= 10 && model !== 'P43') testMins = 1.25 * (psigHigh <= 200 ? (0.42 * plates) + 52 : (0.42 * plates) + 99);
-    else if (model === 'P43') testMins = 1.25 * (psigHigh <= 200 ? (0.42 * plates) + 32 : (0.42 * plates) + 45);
-    else testMins = 1.25 * (psigHigh <= 200 ? (0.45 * plates) + 70 : (0.42 * plates) + 90);
+    if (_in('P43')) testMins = 1.25 * (psigHigh <= 200 ? (0.42 * plates) + 32 : (0.42 * plates) + 45);
+    else if (_in('P47','P55','P64','P41','P42','WP54','P62','P86','P110')) testMins = 1.25 * (psigHigh <= 200 ? (0.36 * plates) + 36 : (0.36 * plates) + 60);
+    else if (_in('P65','P100','P100X','FP101','P130','P152','P220','P113','P81','P121')) testMins = 1.25 * (psigHigh <= 200 ? (0.42 * plates) + 52 : (0.42 * plates) + 99);
+    else if (_in('P188','P251','P352','P145','P210','P201')) testMins = 1.25 * (psigHigh <= 200 ? (0.45 * plates) + 70 : (0.42 * plates) + 90);
+    else testMins = 1.25 * ((0.3 * plates) + 40);
     ops.push({ wc: 707, op: 'HYDRO TEST', run: m2h(testMins), setup: 0 });
   }
 
@@ -3235,16 +3665,32 @@ function gpheCalculateRouting(drawingNum) {
   const pkgMins = plates < 500 ? skid : flat;
   if (pkgMins > 0) ops.push({ wc: 707, op: 'PACKAGE', run: m2h(pkgMins), setup: 0 });
 
-  // Extra operations
+  // Extra / DXF-confirmed operations
+  // When DXF is available, machining goes at the start of ops and liners go after assembly.
+  // Without DXF, these stay in extras as "if applicable".
   const extras = [];
-  // Expand liners (certain models with large port sizes)
-  if (expLin > 0) extras.push({ op: 'EXPAND LINERS', run: m2h(expLin) });
-  // Machine carry bar (port 2.5, 3, or 4)
-  if (port === 2.5 || port === 3 || port === 4) extras.push({ op: 'MACHINE CARRY BAR', run: 0.4 });
-  // Machine guide bar (port 2.5, 3, or 4)
-  if (port === 2.5 || port === 3 || port === 4) extras.push({ op: 'MACHINE GUIDE BAR', run: 0.25 });
-  // Machine support column (P21, P22, P47)
-  if (model === 'P21' || model === 'P22' || model === 'P47') extras.push({ op: 'MACHINE SUPPORT COLUMN', run: 0.25 });
+  if (hasBom) {
+    // Machining ops — insert at the beginning of ops (before assembly)
+    const preOps = [];
+    if (bomData.hasCarryBar) preOps.push({ wc: 710, op: 'MACHINE CARRY BAR', run: 0.4, setup: 0 });
+    if (bomData.hasGuideBar) preOps.push({ wc: 710, op: 'MACHINE GUIDE BAR', run: 0.25, setup: 0 });
+    if (bomData.hasSupportColumn) preOps.push({ wc: 710, op: 'MACHINE SUPPORT COLUMN', run: 0.25, setup: 0 });
+    if (preOps.length) ops.unshift(...preOps);
+    // Expand liners — insert right after assembly
+    if (expLin > 0 && bomData.linerCount > 0) {
+      const perLiner = expLin / 4;
+      const linerOp = { wc: 707, op: 'EXPAND LINERS', run: m2h(perLiner * bomData.linerCount), setup: 0, note: bomData.linerCount + ' liners' };
+      const assyIdx = ops.findIndex(o => o.op === 'ASSEMBLE FRAME');
+      if (assyIdx >= 0) ops.splice(assyIdx + 1, 0, linerOp);
+      else ops.unshift(linerOp);
+    }
+  } else {
+    // No DXF — extras section (if applicable)
+    if (expLin > 0) extras.push({ op: 'EXPAND LINERS', run: m2h(expLin) });
+    if (port === 2.5 || port === 3 || port === 4) extras.push({ op: 'MACHINE CARRY BAR', run: 0.4 });
+    if (port === 2.5 || port === 3 || port === 4) extras.push({ op: 'MACHINE GUIDE BAR', run: 0.25 });
+    if (model === 'P21' || model === 'P22' || model === 'P47') extras.push({ op: 'MACHINE SUPPORT COLUMN', run: 0.25 });
+  }
 
   const platesPerHr = gskMin > 0 ? 60 / gskMin : 0;
   const platesPerHrStr = platesPerHr > 0 ? (platesPerHr % 1 === 0 ? String(platesPerHr) : platesPerHr.toFixed(1)) : '';
@@ -3254,6 +3700,16 @@ function gpheCalculateRouting(drawingNum) {
     gasketing: gskMin > 0 ? { platesPerHr: platesPerHrStr, starterPlate: m2h(Math.min(gskMin * 4, 15)) } : null,
     extras,
     ops,
+    dxf: hasBom ? {
+      used: true,
+      linerCount: bomData.linerCount,
+      boltCount: bomData.boltCount,
+      boltDetails: bomData.boltDetails,
+      hasCarryBar: bomData.hasCarryBar,
+      hasGuideBar: bomData.hasGuideBar,
+      hasSupportColumn: bomData.hasSupportColumn,
+      boltsChanged: bomData.boltCount > 0 && bomData.boltCount !== boltsFromDrawing,
+    } : { used: false },
   };
 }
 
@@ -3299,7 +3755,7 @@ function showRoutingOverlay() {
     </div>`;
   document.body.appendChild(overlay);
   overlay.querySelector('#route-close').addEventListener('click', () => overlay.remove());
-  overlay.addEventListener('mousedown', e => { if (!e.target.closest('.modal') && e.clientY >= 38) overlay.remove(); });
+  modalDismiss(overlay);
   return overlay;
 }
 
@@ -3332,11 +3788,50 @@ function rtSetStatus(overlay, msg) {
   if (el) el.textContent = msg;
 }
 
+// Shared routing display helpers (used by both U-Tube and GPHE results)
+function rtFmt(n) {
+  if (n === undefined || n === null || n === 0) return '';
+  const s = n.toFixed(2);
+  return s.startsWith('0.') ? s.slice(1) : s;
+}
+function rtFmtTotal(n) {
+  const s = n.toFixed(2);
+  return s.startsWith('0.') ? s.slice(1) : s;
+}
+function rtSentenceCase(s) { return s.charAt(0) + s.slice(1).toLowerCase(); }
+
+function askSessionLetter() {
+  return new Promise(resolve => {
+    const ov = document.createElement('div');
+    ov.className = 'modal-overlay';
+    ov.style.zIndex = '10001';
+    ov.innerHTML = `<div class="modal glass-strong" style="color:var(--text);width:300px;padding:24px;text-align:center">
+      <div style="font:700 14px/1.3 'DM Sans',sans-serif;margin-bottom:6px">Route-O-Matic</div>
+      <div style="font:400 11px/1.4 'DM Sans',sans-serif;color:var(--text2);margin-bottom:14px">You must be on SFC100-01 with the item loaded.</div>
+      <div style="font:600 9px/1 'DM Sans',sans-serif;color:var(--text3);letter-spacing:1px;margin-bottom:6px">STARTING OP #</div>
+      <input class="field-input" id="rom-start-op" value="10" style="width:70px;height:30px;font-size:13px;padding:0 8px;font-family:'IBM Plex Mono',monospace;text-align:center;margin-bottom:14px">
+      <div style="font:600 9px/1 'DM Sans',sans-serif;color:var(--text3);letter-spacing:1px;margin-bottom:6px">PCOMM SESSION</div>
+      <div style="display:flex;gap:6px;justify-content:center;margin-bottom:14px">${
+        ['A','B','C','D'].map(l => `<button class="btn-glass session-pick" data-s="${l}" style="width:36px;height:36px;font:700 14px/1 'IBM Plex Mono',monospace;border-radius:8px">${l}</button>`).join('')
+      }</div>
+      <button class="btn-glass" id="session-cancel" style="font-size:11px;height:28px;padding:0 16px">Cancel</button>
+    </div>`;
+    document.body.appendChild(ov);
+    ov.querySelector('#session-cancel').addEventListener('click', () => { ov.remove(); resolve(null); });
+    ov.querySelectorAll('.session-pick').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const startOp = parseInt(ov.querySelector('#rom-start-op').value, 10) || 10;
+        ov.remove();
+        resolve({ session: btn.dataset.s, startOp });
+      });
+    });
+  });
+}
+
 function showRoutingResults(overlay, allOps, allVars, warnings) {
   const modal = overlay.querySelector('.modal');
-  const fmt = n => (n === undefined || n === null || n === 0) ? '' : n.toFixed(2);
-  const fmtTotal = n => n.toFixed(2);
-  const typeLabel = { shell: 'SHELL', bundle: 'BUNDLE', setting: 'SETTING (FINAL)' };
+  const fmt = rtFmt, fmtTotal = rtFmtTotal;
+  const typeLabel = { shell: 'Shell', bundle: 'Bundle', setting: 'Setting (final)' };
   const typeClass = { shell: 'shell', bundle: 'bundle', setting: 'setting' };
 
   // Build inputs summary for each drawing type
@@ -3379,10 +3874,10 @@ function showRoutingResults(overlay, allOps, allVars, warnings) {
     for (const op of ops) {
       totalRun += op.run || 0;
       totalSetup += op.setup || 0;
-      rows += `<tr><td style="width:40px;color:var(--text3)">${op.wc}</td><td>${op.op}</td><td class="num">${fmt(op.run)}</td><td class="num">${fmt(op.setup)}</td></tr>`;
+      rows += `<tr><td style="width:40px;color:var(--text3)">${op.wc}</td><td>${rtSentenceCase(op.op)}</td><td class="num">${fmt(op.run)}</td><td class="num">${fmt(op.setup)}</td></tr>`;
     }
   }
-  rows += `<tr class="total-row"><td></td><td>TOTAL</td><td class="num">${fmtTotal(totalRun)}</td><td class="num">${fmtTotal(totalSetup)}</td></tr>`;
+  rows += `<tr class="total-row"><td></td><td>Total</td><td class="num">${fmtTotal(totalRun)}</td><td class="num">${fmtTotal(totalSetup)}</td></tr>`;
 
   const warnHtml = warnings.length
     ? `<div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:8px;padding:8px 12px;margin-bottom:14px;font:500 11px/1.4 'DM Sans',sans-serif;color:#fbbf24">${warnings.join('<br>')}</div>`
@@ -3404,9 +3899,10 @@ function showRoutingResults(overlay, allOps, allVars, warnings) {
       <thead><tr><th style="width:40px">WC</th><th>OPERATION</th><th class="num" style="width:60px">RUN</th><th class="num" style="width:60px">SETUP</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <div style="text-align:center;font:500 9px/1 'DM Sans',sans-serif;color:var(--text3);letter-spacing:0.5px;margin-top:8px">Router upload coming soon!</div>
     <div class="route-action-bar">
       <button class="btn-route-action no-drag" id="route-copy-excel">Copy to Excel</button>
+      <button class="btn-route-action no-drag" id="route-pcomm" style="background:var(--accent);color:#fff">Route-O-Matic</button>
+      <button class="btn-route-action no-drag" id="route-acs" style="font-size:10px" data-tip="Generate ACS macro file">ACS</button>
       <button class="btn-route-action btn-route-primary no-drag" id="route-close">Close</button>
     </div>`;
   modal.querySelector('#route-close').addEventListener('click', () => overlay.remove());
@@ -3419,39 +3915,74 @@ function showRoutingResults(overlay, allOps, allVars, warnings) {
       const info = v.nom_dia ? ' \u2014 ' + v.nom_dia + '" \u00d7 ' + v.nom_length + '"' : '';
       tsvRows.push(['', label + info, '', ''].join('\t'));
       for (const op of ops) {
-        tsvRows.push([op.wc, op.op, fmt(op.run), fmt(op.setup)].join('\t'));
+        tsvRows.push([op.wc, rtSentenceCase(op.op), fmt(op.run), fmt(op.setup)].join('\t'));
       }
     }
-    tsvRows.push(['', 'TOTAL', fmtTotal(totalRun), fmtTotal(totalSetup)].join('\t'));
+    tsvRows.push(['', 'Total', fmtTotal(totalRun), fmtTotal(totalSetup)].join('\t'));
     window.api.copyText(tsvRows.join('\n'));
     this.textContent = 'Copied!';
     setTimeout(() => { this.textContent = 'Copy to Excel'; }, 2000);
+  });
+  // Route-O-Matic — drive PCOMM to enter operations
+  modal.querySelector('#route-pcomm').addEventListener('click', async function() {
+    const session = await askSessionLetter();
+    if (!session) return;
+    // Flatten all ops with auto-numbering (10, 20, 30...)
+    const flatOps = [];
+    let opNum = 10;
+    for (const { ops } of allOps) {
+      for (const op of ops) {
+        flatOps.push({ op: opNum, wc: op.wc, desc: (op.op || '').slice(0, 30), run: op.run || 0, setup: op.setup || 0, basis: op.basis || '' });
+        opNum += 10;
+      }
+    }
+    const r = await window.api.routeOMatic(flatOps, pick.session);
+    if (r.ok) { this.textContent = 'Launched!'; } else { alert('Error: ' + r.msg); }
+  });
+  // Route-O-Matic ACS — generate .mac file
+  modal.querySelector('#route-acs').addEventListener('click', async function() {
+    const flatOps = [];
+    let opNum = 10;
+    for (const { ops } of allOps) {
+      for (const op of ops) {
+        flatOps.push({ op: opNum, wc: op.wc, desc: (op.op || '').slice(0, 30), run: op.run || 0, setup: op.setup || 0, basis: op.basis || '' });
+        opNum += 10;
+      }
+    }
+    const r = await window.api.routeOMaticAcs(flatOps);
+    if (r.ok) { this.textContent = 'Saved!'; setTimeout(() => { this.textContent = 'ACS'; }, 2000); }
+    else { alert('Error: ' + r.msg); }
   });
 }
 
 function showGpheResults(overlay, result, filename) {
   const modal = overlay.querySelector('.modal');
-  const fmt = n => (n === undefined || n === null || n === 0) ? '' : n.toFixed(2);
-  const fmtTotal = n => n.toFixed(2);
+  const fmt = rtFmt, fmtTotal = rtFmtTotal, sentenceCase = rtSentenceCase;
 
   let totalRun = 0, totalSetup = 0;
   let rows = '';
-  rows += `<tr class="group-header setting"><td colspan="4">GPHE ASSEMBLY \u2014 ${result.model}</td></tr>`;
+  rows += `<tr class="group-header setting"><td colspan="4">GPHE assembly \u2014 ${result.model}</td></tr>`;
   for (const op of result.ops) {
     totalRun += op.run || 0;
     totalSetup += op.setup || 0;
-    rows += `<tr><td style="width:40px;color:var(--text3)">${op.wc}</td><td>${op.op}</td><td class="num">${fmt(op.run)}</td><td class="num">${fmt(op.setup)}</td></tr>`;
+    const noteHtml = op.note ? `<span style="font:400 9px/1 'DM Sans',sans-serif;color:var(--text3);margin-left:6px">(${op.note})</span>` : '';
+    rows += `<tr><td style="width:40px;color:var(--text3)">${op.wc}</td><td>${sentenceCase(op.op)}${noteHtml}</td><td class="num">${fmt(op.run)}</td><td class="num">${fmt(op.setup)}</td></tr>`;
   }
-  rows += `<tr class="total-row"><td></td><td>TOTAL</td><td class="num">${fmtTotal(totalRun)}</td><td class="num">${fmtTotal(totalSetup)}</td></tr>`;
+  rows += `<tr class="total-row"><td></td><td>Total</td><td class="num">${fmtTotal(totalRun)}</td><td class="num">${fmtTotal(totalSetup)}</td></tr>`;
 
   // Extra operations section
   let extrasHtml = '';
   if (result.extras && result.extras.length) {
     extrasHtml = `<div style="margin-top:14px;padding:10px 12px;background:rgba(255,255,255,0.02);border:1px solid var(--glass-border);border-radius:10px">
       <div style="font:700 9px/1 'DM Sans',sans-serif;color:var(--text3);letter-spacing:.8px;margin-bottom:8px">EXTRA OPERATIONS (IF APPLICABLE)</div>
-      ${result.extras.map(e => `<div style="display:flex;justify-content:space-between;padding:3px 0;font:500 11px/1.4 'DM Sans',sans-serif;color:var(--text2)"><span>${e.op}</span><span style="font-family:'IBM Plex Mono',monospace;color:var(--text3)">${e.run.toFixed(2)} hrs</span></div>`).join('')}
+      ${result.extras.map(e => `<div style="display:flex;justify-content:space-between;padding:3px 0;font:500 11px/1.4 'DM Sans',sans-serif;color:var(--text2)"><span>${sentenceCase(e.op)}${e.note ? `<span style="font:400 9px/1 'DM Sans',sans-serif;color:var(--text3);margin-left:6px">(${e.note})</span>` : ''}</span><span style="font-family:'IBM Plex Mono',monospace;color:var(--text3)">${fmt(e.run)} hrs</span></div>`).join('')}
     </div>`;
   }
+
+  // DXF/EST badge
+  const dxfBadge = result.dxf && result.dxf.used
+    ? '<span style="display:inline-block;font:600 9px/1 \'DM Sans\',sans-serif;color:#34d399;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.2);border-radius:4px;padding:2px 6px;margin-left:6px;vertical-align:middle">DXF</span>'
+    : '<span style="display:inline-block;font:600 9px/1 \'DM Sans\',sans-serif;color:var(--text3);background:var(--glass);border:1px solid var(--glass-border);border-radius:4px;padding:2px 6px;margin-left:6px;vertical-align:middle">EST</span>';
 
   const pills = [
     `${result.model}`,
@@ -3472,39 +4003,70 @@ function showGpheResults(overlay, result, filename) {
   modal.style.overflowY = 'auto';
   modal.innerHTML = `
     <div style="font:700 15px/1.3 'DM Sans',sans-serif;margin-bottom:4px">GPHE \u2014 ${escHtml(result.model)}</div>
-    <div style="font:500 10px/1 'IBM Plex Mono',monospace;color:var(--text3);margin-bottom:12px">${escHtml(filename)}</div>
+    <div style="font:500 10px/1 'IBM Plex Mono',monospace;color:var(--text3);margin-bottom:12px">${escHtml(filename)}${dxfBadge}</div>
     <div style="margin-bottom:14px;padding:10px 12px;background:rgba(255,255,255,0.02);border:1px solid var(--glass-border);border-radius:10px">${inputsHtml}</div>
     <table class="route-table">
       <thead><tr><th style="width:40px">WC</th><th>OPERATION</th><th class="num" style="width:60px">RUN</th><th class="num" style="width:60px">SETUP</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     ${extrasHtml}
-    <div style="text-align:center;font:500 9px/1 'DM Sans',sans-serif;color:var(--text3);letter-spacing:0.5px;margin-top:8px">Router upload coming soon!</div>
     <div class="route-action-bar">
       <button class="btn-route-action no-drag" id="route-copy-excel">Copy to Excel</button>
+      <button class="btn-route-action no-drag" id="route-pcomm" style="background:var(--accent);color:#fff">Route-O-Matic</button>
+      <button class="btn-route-action no-drag" id="route-acs" style="font-size:10px" data-tip="Generate ACS macro file">ACS</button>
       <button class="btn-route-action btn-route-primary no-drag" id="route-close">Close</button>
     </div>`;
   modal.querySelector('#route-close').addEventListener('click', () => overlay.remove());
   // Copy to Excel — tab-separated values (include extras)
   modal.querySelector('#route-copy-excel').addEventListener('click', function() {
     const tsvRows = [['WC', 'Operation', 'Run', 'Setup'].join('\t')];
-    tsvRows.push(['', 'GPHE ASSEMBLY \u2014 ' + result.model, '', ''].join('\t'));
+    tsvRows.push(['', 'GPHE assembly \u2014 ' + result.model, '', ''].join('\t'));
     for (const op of result.ops) {
-      tsvRows.push([op.wc, op.op, fmt(op.run), fmt(op.setup)].join('\t'));
+      tsvRows.push([op.wc, sentenceCase(op.op) + (op.note ? ' (' + op.note + ')' : ''), fmt(op.run), fmt(op.setup)].join('\t'));
     }
-    tsvRows.push(['', 'TOTAL', fmtTotal(totalRun), fmtTotal(totalSetup)].join('\t'));
+    tsvRows.push(['', 'Total', fmtTotal(totalRun), fmtTotal(totalSetup)].join('\t'));
     if (result.extras && result.extras.length) {
       tsvRows.push('');
-      tsvRows.push(['', 'EXTRA OPERATIONS (IF APPLICABLE)', '', ''].join('\t'));
-      for (const e of result.extras) tsvRows.push(['', e.op, e.run.toFixed(2), ''].join('\t'));
+      tsvRows.push(['', 'Extra operations (if applicable)', '', ''].join('\t'));
+      for (const e of result.extras) tsvRows.push(['', sentenceCase(e.op) + (e.note ? ' (' + e.note + ')' : ''), fmt(e.run), ''].join('\t'));
     }
     if (result.gasketing) {
       tsvRows.push('');
       tsvRows.push(['', 'Gasketing: ' + result.gasketing.platesPerHr + ' plates/hr', '', ''].join('\t'));
     }
+    tsvRows.push('');
+    tsvRows.push(['', result.dxf && result.dxf.used ? 'Values from DXF BOM' : 'Estimated from drawing number', '', ''].join('\t'));
     window.api.copyText(tsvRows.join('\n'));
     this.textContent = 'Copied!';
     setTimeout(() => { this.textContent = 'Copy to Excel'; }, 2000);
+  });
+  // Route-O-Matic — drive PCOMM
+  const pcommBtn2 = modal.querySelector('#route-pcomm');
+  if (pcommBtn2) pcommBtn2.addEventListener('click', async function() {
+    const pick = await askSessionLetter();
+    if (!pick) return;
+    const flatOps = [];
+    let opNum = pick.startOp;
+    for (const op of result.ops) {
+      flatOps.push({ op: opNum, wc: op.wc, desc: (op.op || '').slice(0, 30), run: op.run || 0, setup: op.setup || 0, basis: '' });
+      opNum += 10;
+    }
+    this.textContent = 'Launching...';
+    const r = await window.api.routeOMatic(flatOps, pick.session);
+    if (r.ok) { this.textContent = 'Launched!'; } else { alert('Error: ' + r.msg); this.textContent = 'Route-O-Matic'; }
+  });
+  // Route-O-Matic ACS
+  const acsBtn2 = modal.querySelector('#route-acs');
+  if (acsBtn2) acsBtn2.addEventListener('click', async function() {
+    const flatOps = [];
+    let opNum = 10;
+    for (const op of result.ops) {
+      flatOps.push({ op: opNum, wc: op.wc, desc: (op.op || '').slice(0, 30), run: op.run || 0, setup: op.setup || 0, basis: '' });
+      opNum += 10;
+    }
+    const r = await window.api.routeOMaticAcs(flatOps);
+    if (r.ok) { this.textContent = 'Saved!'; setTimeout(() => { this.textContent = 'ACS'; }, 2000); }
+    else { alert('Error: ' + r.msg); }
   });
 }
 
@@ -3655,17 +4217,16 @@ function brazedCalculateRouting(data) {
 
 function showBrazedResults(overlay, result, filename) {
   const modal = overlay.querySelector('.modal');
-  const fmt = n => (n === undefined || n === null || n === 0) ? '' : n.toFixed(2);
-  const fmtTotal = n => n.toFixed(2);
+  const fmt = rtFmt, fmtTotal = rtFmtTotal;
 
   let totalRun = 0;
   let rows = '';
-  rows += `<tr class="group-header setting"><td colspan="3">BPHE ROUTING \u2014 ${escHtml(result.modTypeLabel)}</td></tr>`;
+  rows += `<tr class="group-header setting"><td colspan="3">BPHE routing \u2014 ${escHtml(result.modTypeLabel)}</td></tr>`;
   for (const op of result.ops) {
     totalRun += op.run || 0;
-    rows += `<tr><td style="width:40px;color:var(--text3)">${op.wc}</td><td>${escHtml(op.op)}</td><td class="num">${fmt(op.run)}</td></tr>`;
+    rows += `<tr><td style="width:40px;color:var(--text3)">${op.wc}</td><td>${rtSentenceCase(escHtml(op.op))}</td><td class="num">${fmt(op.run)}</td></tr>`;
   }
-  rows += `<tr class="total-row"><td></td><td>TOTAL</td><td class="num">${fmtTotal(totalRun)}</td></tr>`;
+  rows += `<tr class="total-row"><td></td><td>Total</td><td class="num">${fmtTotal(totalRun)}</td></tr>`;
 
   const pills = [
     result.modType,
@@ -3694,6 +4255,8 @@ function showBrazedResults(overlay, result, filename) {
     </table>
     <div class="route-action-bar">
       <button class="btn-route-action no-drag" id="route-copy-excel">Copy to Excel</button>
+      <button class="btn-route-action no-drag" id="route-pcomm" style="background:var(--accent);color:#fff">Route-O-Matic</button>
+      <button class="btn-route-action no-drag" id="route-acs" style="font-size:10px" data-tip="Generate ACS macro file">ACS</button>
       <button class="btn-route-action btn-route-primary no-drag" id="route-close">Close</button>
     </div>`;
   modal.querySelector('#route-close').addEventListener('click', () => overlay.remove());
@@ -3706,6 +4269,117 @@ function showBrazedResults(overlay, result, filename) {
     this.textContent = 'Copied!';
     setTimeout(() => { this.textContent = 'Copy to Excel'; }, 2000);
   });
+  // Route-O-Matic — drive PCOMM
+  modal.querySelector('#route-pcomm').addEventListener('click', async function() {
+    const pick = await askSessionLetter();
+    if (!pick) return;
+    const flatOps = [];
+    let opNum = pick.startOp;
+    for (const op of result.ops) {
+      flatOps.push({ op: opNum, wc: op.wc, desc: (op.op || '').slice(0, 30), run: op.run || 0, setup: op.setup || 0, basis: '1' });
+      opNum += 10;
+    }
+    const r = await window.api.routeOMatic(flatOps, pick.session);
+    if (r.ok) { this.textContent = 'Launched!'; } else { alert('Error: ' + r.msg); }
+  });
+  // Route-O-Matic ACS
+  modal.querySelector('#route-acs').addEventListener('click', async function() {
+    const flatOps = [];
+    let opNum = 10;
+    for (const op of result.ops) {
+      flatOps.push({ op: opNum, wc: op.wc, desc: (op.op || '').slice(0, 30), run: op.run || 0, setup: op.setup || 0, basis: '1' });
+      opNum += 10;
+    }
+    const r = await window.api.routeOMaticAcs(flatOps);
+    if (r.ok) { this.textContent = 'Saved!'; setTimeout(() => { this.textContent = 'ACS'; }, 2000); }
+    else { alert('Error: ' + r.msg); }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  BPCS Drawing History (order lookup by drawing number)
+// ═══════════════════════════════════════════════════════════════════════
+let _bpcsHistoryDwg = null;
+let _bpcsHistoryCache = {};
+
+function showBpcsHistorySection(drawingBase) {
+  const section = $('#bpcs-history-section');
+  if (!section) return;
+  if (!drawingBase) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  _bpcsHistoryDwg = drawingBase;
+
+  const toggle = $('#bpcs-history-toggle');
+  const body = $('#bpcs-history-body');
+  const status = $('#bpcs-history-status');
+  const table = $('#bpcs-history-table');
+  const rows = $('#bpcs-history-rows');
+
+  // Reset
+  body.style.display = 'none';
+  let _histCount = _bpcsHistoryCache[drawingBase]?.length || 0;
+  function updateToggle(open) {
+    const arrow = open ? '\u25B4' : '\u25BE';
+    const count = _histCount > 0 ? `  \u00b7  ${_histCount} order${_histCount !== 1 ? 's' : ''}` : '';
+    toggle.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>ORDER HISTORY ${arrow}<span style="font-weight:400;color:var(--text3);font-size:8px">${count}</span>`;
+  }
+  updateToggle(false);
+
+  // Toggle expand/collapse
+  toggle.onclick = async () => {
+    const isHidden = body.style.display === 'none';
+    body.style.display = isHidden ? '' : 'none';
+    updateToggle(isHidden);
+    if (isHidden && !_bpcsHistoryCache[drawingBase]) {
+      status.textContent = 'Querying BPCS\u2026';
+      status.style.display = '';
+      table.style.display = 'none';
+      rows.innerHTML = '';
+      try {
+        const r = await window.api.bpcsDrawingHistory(drawingBase);
+        if (!r.ok) { status.textContent = 'Error: ' + r.error; return; }
+        _bpcsHistoryCache[drawingBase] = r.rows;
+        _histCount = r.rows.length;
+        updateToggle(true);
+        renderBpcsHistory(r.rows);
+      } catch (e) { status.textContent = 'Failed: ' + e.message; }
+    } else if (isHidden && _bpcsHistoryCache[drawingBase]) {
+      renderBpcsHistory(_bpcsHistoryCache[drawingBase]);
+    }
+  };
+}
+
+function renderBpcsHistory(data) {
+  const status = $('#bpcs-history-status');
+  const table = $('#bpcs-history-table');
+  const rowsEl = $('#bpcs-history-rows');
+  if (!data.length) { status.textContent = 'No orders found for this drawing.'; status.style.display = ''; table.style.display = 'none'; return; }
+  status.style.display = 'none';
+  table.style.display = '';
+  rowsEl.innerHTML = data.map(r => `<tr style="border-bottom:1px solid var(--glass-border)">
+    <td style="padding:3px 6px;white-space:nowrap;color:var(--accent)">${escHtml(r.orderLine)}</td>
+    <td class="bpcs-item-copy" style="padding:3px 6px;white-space:nowrap;font-size:9px;color:var(--text2);cursor:pointer" data-pn="${escHtml(r.itemNumber)}" title="Click to copy">${escHtml(r.itemNumber)}</td>
+    <td style="padding:3px 4px;white-space:nowrap">${escHtml(r.schedDate)}</td>
+    <td style="padding:3px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;font-family:'DM Sans',sans-serif;font-size:10px">${escHtml(r.customer)}</td>
+    <td style="padding:3px 3px;font-size:9px;color:var(--text3)">${escHtml(r.itemClass)}</td>
+    <td style="padding:3px 6px;text-align:right">${escHtml(r.qty)}</td>
+  </tr>`).join('');
+  // Click-to-copy on item numbers
+  rowsEl.querySelectorAll('.bpcs-item-copy').forEach(td => {
+    td.addEventListener('click', () => {
+      window.api.copyText(td.dataset.pn);
+      const orig = td.textContent;
+      td.textContent = 'Copied!';
+      td.style.color = 'var(--accent)';
+      setTimeout(() => { td.textContent = orig; td.style.color = ''; }, 1200);
+    });
+  });
+}
+
+function hideBpcsHistory() {
+  const section = $('#bpcs-history-section');
+  if (section) section.style.display = 'none';
+  _bpcsHistoryDwg = null;
 }
 
 function resetRouteState() {
@@ -3818,37 +4492,63 @@ async function checkRouteability() {
 }
 
 async function runRoutingFlow() {
-  // GPHE from drawing search — instant, no loading screen needed
+  // GPHE from drawing search
   if (S.mode === 'drawings' && S.dwgResult && S.dwgResult.primary) {
     const dwgName = S.dwgResult.primary.name || '';
     if (isGpheDrawing(dwgName)) {
-      const result = gpheCalculateRouting(dwgName);
-      if (result) {
-        const overlay = document.createElement('div');
-        overlay.className = 'modal-overlay';
-        overlay.innerHTML = '<div class="modal glass-strong" style="color:var(--text);width:440px;padding:24px"></div>';
-        document.body.appendChild(overlay);
-        overlay.addEventListener('mousedown', e => { if (!e.target.closest('.modal') && e.clientY >= 38) overlay.remove(); });
-        showGpheResults(overlay, result, dwgName);
-        return;
-      }
-    }
-  }
-
-  // GPHE from order or drawing wildcard search — instant, no loading screen needed
-  if ((S.mode === 'orders' || S.mode === 'drawings') && S.routeScan && S.routeScan.gphe && S.routeScan.gpheFile) {
-    // Use DRS-extracted drawing number if available, otherwise use filename
-    const gpheDrawingNum = S.routeScan.gpheDrsDrawingNum || S.routeScan.gpheFile.name;
-    const result = gpheCalculateRouting(gpheDrawingNum);
-    if (result) {
       const overlay = document.createElement('div');
       overlay.className = 'modal-overlay';
       overlay.innerHTML = '<div class="modal glass-strong" style="color:var(--text);width:440px;padding:24px"></div>';
       document.body.appendChild(overlay);
-      overlay.addEventListener('mousedown', e => { if (!e.target.closest('.modal') && e.clientY >= 38) overlay.remove(); });
+      modalDismiss(overlay);
+
+      // Attempt DXF enhancement if ODA is available
+      const dwgPath = gpheResolveDwgPath();
+      let bomData = null;
+      if (dwgPath) {
+        const hasOda = await window.api.checkDxfConverter();
+        if (hasOda) {
+          overlay.querySelector('.modal').style.width = '260px'; overlay.querySelector('.modal').innerHTML = '<div style="text-align:center;padding:14px 0"><div class="route-spinner" style="margin:0 auto 10px"></div><div style="font:500 11px/1.4 \'DM Sans\',sans-serif;color:var(--text2)">Analyzing setting drawing\u2026</div></div>';
+          bomData = await gpheAttemptDxfEnhancement(dwgPath);
+        }
+      }
+
+      const result = gpheCalculateRouting(dwgName, bomData);
+      if (result) {
+        showGpheResults(overlay, result, dwgName);
+        return;
+      }
+      overlay.remove();
+    }
+  }
+
+  // GPHE from order or drawing wildcard search
+  if ((S.mode === 'orders' || S.mode === 'drawings') && S.routeScan && S.routeScan.gphe && S.routeScan.gpheFile) {
+    const gpheDrawingNum = S.routeScan.gpheDrsDrawingNum || S.routeScan.gpheFile.name;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = '<div class="modal glass-strong" style="color:var(--text);width:440px;padding:24px"></div>';
+    document.body.appendChild(overlay);
+    modalDismiss(overlay);
+
+    // Attempt DXF enhancement if ODA is available
+    const dwgPath = gpheResolveDwgPath();
+    let bomData = null;
+    if (dwgPath) {
+      const hasOda = await window.api.checkDxfConverter();
+      if (hasOda) {
+        overlay.querySelector('.modal').style.width = '260px'; overlay.querySelector('.modal').innerHTML = '<div style="text-align:center;padding:14px 0"><div class="route-spinner" style="margin:0 auto 10px"></div><div style="font:500 11px/1.4 \'DM Sans\',sans-serif;color:var(--text2)">Analyzing setting drawing\u2026</div></div>';
+        bomData = await gpheAttemptDxfEnhancement(dwgPath);
+      }
+    }
+
+    const result = gpheCalculateRouting(gpheDrawingNum, bomData);
+    if (result) {
       showGpheResults(overlay, result, gpheDrawingNum);
       return;
     }
+    overlay.remove();
   }
 
   // Brazed from order mode — instant, no loading screen needed
@@ -3859,7 +4559,7 @@ async function runRoutingFlow() {
       overlay.className = 'modal-overlay';
       overlay.innerHTML = '<div class="modal glass-strong" style="color:var(--text);width:440px;padding:24px"></div>';
       document.body.appendChild(overlay);
-      overlay.addEventListener('mousedown', e => { if (!e.target.closest('.modal') && e.clientY >= 38) overlay.remove(); });
+      modalDismiss(overlay);
       showBrazedResults(overlay, result, S.routeScan.brazedDrsFile);
       return;
     }
@@ -4019,8 +4719,11 @@ async function runRoutingFlow() {
 //  Init
 // ═══════════════════════════════════════════════════════════════════════
 async function init() {
+  bootLog('getConfig');
   S.config = await window.api.getConfig();
+  bootLog('getPlatform');
   S.platform = await window.api.getPlatform();
+  bootLog('config+platform done');
 
   // Mark What's New bell as seen if user already viewed the latest version
   if (S.config.seen_changelog_ver === CHANGELOG[0].ver) {
@@ -4054,36 +4757,29 @@ async function init() {
     setStatus(`Exporting as ANSI ${letter} ${orient.toLowerCase()}\u2026`);
   });
 
-  // Preload contingency database early (non-blocking) and show spinner on button during loads
-  window.api.preloadContingency().catch(() => {});
-  window.api.onContingencyLoading((loading) => {
-    const btn = $('#cnt-btn');
-    if (!btn) return;
-    if (loading) {
-      btn._origText = btn.textContent;
-      btn.innerHTML = '<span class="deep-spinner" style="width:12px;height:12px"></span>';
-    } else if (btn._origText) {
-      btn.textContent = btn._origText;
-      btn._origText = null;
-    }
-  });
+  // Contingency loading listener is registered in the splash IIFE (before preload)
 
   // Apply saved theme
+  bootLog('applyTheme');
   S.theme = S.config.theme === 'auto' ? 'dark' : (S.config.theme || 'dark');
   await applyTheme(S.theme);
+  bootLog('theme applied');
   window.api.onSystemThemeChanged(() => { if (S.theme === 'auto') applyTheme('auto'); });
+  window.api.onMaximizedChanged((maximized) => { document.body.classList.toggle('maximized', maximized); });
 
   // Theme segment
   const themeSeg = initSeg($('#theme-seg'), t => { applyTheme(t); });
   themeSeg.activate(S.theme);
 
   // Mode segment — save/restore state per mode
-  const _modeState = { orders: null, drawings: null };
+  const _modeState = { orders: null, drawings: null, marketing: null };
   function saveModeState() {
     if (S.mode === 'orders') {
       _modeState.orders = { files: S.files, cntFiles: S.cntFiles, selected: S.selected, currentFolder: S.currentFolder, currentOrder: S.currentOrder, currentLine: S.currentLine, otpDigits: [...S.otpDigits], otpComplete: S.otpComplete, revWarnings: { ...S.revWarnings }, collapsedSections: { ...S.collapsedSections }, _checklistPath: S._checklistPath, _checklistName: S._checklistName };
     } else if (S.mode === 'drawings') {
       _modeState.drawings = { files: S.files, selected: S.selected, currentFolder: S.currentFolder, dwgResult: S.dwgResult };
+    } else if (S.mode === 'marketing') {
+      _modeState.marketing = { mktDigits: [...S.mktDigits], mktComplete: S.mktComplete, mktResult: S.mktResult, mktOrder: S.mktOrder };
     }
   }
   function restoreModeState(m) {
@@ -4094,6 +4790,9 @@ async function init() {
     } else if (saved && m === 'drawings') {
       Object.assign(S, { files: saved.files, selected: saved.selected, currentFolder: saved.currentFolder, dwgResult: saved.dwgResult });
       return true;
+    } else if (saved && m === 'marketing') {
+      Object.assign(S, { mktDigits: saved.mktDigits, mktComplete: saved.mktComplete, mktResult: saved.mktResult, mktOrder: saved.mktOrder });
+      return true;
     }
     return false;
   }
@@ -4103,18 +4802,21 @@ async function init() {
     S.mode = m;
     const isChat = m === 'chat';
     const isDwg = m === 'drawings';
+    const isMkt = m === 'marketing';
     if (m !== 'orders') resetRouteState();
 
     // Show/hide layout — clear cross-mode state
-    $('#search-card-wrap').style.display = isChat ? 'none' : '';
+    $('#search-card-wrap').style.display = (isChat || isMkt) ? 'none' : '';
     hideRecentDropdown();
-    $('#status-bar').style.display = (isChat || isDwg) ? 'none' : '';
+    $('#status-bar').style.display = (isChat || isDwg || isMkt) ? 'none' : '';
     if (m !== 'orders') $('#sibling-lines').style.display = 'none';
     const cardEl = $('#file-list-card');
     if (cardEl) cardEl.classList.remove('card-glow');
-    document.querySelector('[id=section-label]').parentElement.style.display = isChat ? 'none' : '';
-    $('#main-area').style.display = isChat ? 'none' : 'flex';
+    document.querySelector('[id=section-label]').parentElement.style.display = (isChat || isMkt) ? 'none' : '';
+    $('#main-area').style.display = (isChat || isMkt) ? 'none' : 'flex';
     $('#chat-container').classList.toggle('active', isChat);
+    $('#marketing-container').classList.toggle('active', isMkt);
+    $('#marketing-container').style.display = isMkt ? 'flex' : 'none';
     if (isChat) requestAnimationFrame(() => {
       const el = $('#chat-messages'); if (el) el.scrollTop = el.scrollHeight;
       const inp = $('#chat-input'); if (inp) inp.focus();
@@ -4123,29 +4825,38 @@ async function init() {
     $('#comments-section').style.display = 'none';
     startChatPoll(isChat);
 
-    // Hide order-only buttons in drawing mode; show shared buttons in both
-    $('#cnt-btn').style.display = isDwg ? 'none' : '';
-    $('#cnt-ident').style.display = isDwg ? 'none' : '';
-    $('#sidebar-row-mf').style.display = isDwg ? 'none' : 'flex';
-    $('#sidebar-row-lr').style.display = 'flex';
-    $('#btn-resubmit').style.display = isDwg ? 'none' : '';
-    $('#btn-route').style.display = '';
-    $('#sidebar-gap1').style.display = isDwg ? 'none' : '';
+    // Hide sidebar in marketing + chat; hide order-only buttons in drawing mode
+    const sidebarHide = isChat || isMkt;
+    $('#cnt-btn').style.display = (isDwg || sidebarHide) ? 'none' : '';
+    $('#cnt-ident').style.display = (isDwg || sidebarHide) ? 'none' : '';
+    $('#sidebar-row-mf').style.display = (isDwg || sidebarHide) ? 'none' : 'flex';
+    $('#sidebar-row-lr').style.display = sidebarHide ? 'none' : 'flex';
+    $('#btn-resubmit').style.display = (isDwg || sidebarHide) ? 'none' : '';
+    $('#btn-route').style.display = sidebarHide ? 'none' : '';
+    $('#sidebar-gap1').style.display = (isDwg || sidebarHide) ? 'none' : '';
     // Move Folder button next to Link in drawing mode, back to its row in order mode
     const explorerBtn = $('#btn-explorer');
     if (isDwg) {
       $('#sidebar-row-lr').appendChild(explorerBtn);
       explorerBtn.style.display = '';
-    } else {
+    } else if (!sidebarHide) {
       $('#sidebar-row-mf').appendChild(explorerBtn);
       explorerBtn.style.display = '';
     }
-    $('#sidebar-gap2').style.display = '';
+    $('#sidebar-gap2').style.display = sidebarHide ? 'none' : '';
     // Link + export visible in both modes
-    $('#sidebar-row-export').style.display = 'flex';
-    $('#sidebar-export-label').style.display = '';
+    $('#sidebar-row-export').style.display = sidebarHide ? 'none' : 'flex';
+    $('#sidebar-export-label').style.display = sidebarHide ? 'none' : '';
 
-    if (!isChat) {
+    // Marketing mode
+    if (isMkt) {
+      if (!restoreModeState('marketing')) {
+        S.mktDigits = []; S.mktComplete = false; S.mktResult = null; S.mktOrder = null;
+      }
+      renderMarketingContainer();
+    }
+
+    if (!isChat && !isMkt) {
       const restored = restoreModeState(m);
       if (restored) {
         renderSearchCard(); updateOtpDisplay(); renderFiles(); updateCnt(); updateOpenBtn(); updateSiblingLines(); updateMarketing();
@@ -4184,6 +4895,9 @@ async function init() {
     if (wrap && !wrap.contains(e.target)) hideRecentDropdown();
   });
 
+  // Load shared nicknames for chat + contingency display names
+  try { _nicknames = await window.api.getNicknames(); } catch {}
+
   // Search card
   S.recentOrders = await window.api.getRecentOrders();
   S.recentDrawings = await window.api.getRecentDrawings();
@@ -4195,13 +4909,20 @@ async function init() {
 
   // Version in titlebar
   try {
-    const { version: ver, isDev } = await window.api.getVersion();
+    const { version: ver, isDev, isWin10 } = await window.api.getVersion();
     S.appVersion = ver;
     S._isDev = isDev;
+    S._isWin10 = isWin10;
+    if (isWin10) document.body.classList.add('win10');
     const vEl = $('#app-version');
     if (vEl && ver) {
       vEl.textContent = `v${ver} ${isDev ? 'DEV' : 'BETA'}`;
       if (isDev) vEl.classList.add('dev');
+    }
+    // Dev-only theme options
+    if (isDev) {
+      const cb = $('#btn-theme-classic'); if (cb) cb.style.display = '';
+      const mb = $('#btn-mode-marketing'); if (mb) mb.style.display = '';
     }
   } catch (e) {}
 
@@ -4213,7 +4934,7 @@ async function init() {
     if (badge && info) {
       const initials = getInitials(info.fullName || info.username);
       badge.textContent = initials;
-      badge.dataset.tip = fixName(info.fullName || info.username);
+      badge.dataset.tip = resolveName(info.username, info.fullName);
       if (info.avatarDataUrl) {
         badge.textContent = '';
         badge.style.backgroundImage = `url(${info.avatarDataUrl})`;
@@ -4234,7 +4955,16 @@ async function init() {
   // Buttons
   $('#btn-contact').addEventListener('click', async () => {
     const { version: ver } = await window.api.getVersion();
-    window.api.sendEmail('william.boissonnault@xylem.com', `Feedback: XylemView Pro v${ver}`);
+    let diag = '';
+    try { diag = await window.api.collectDiagnostics(); } catch {}
+    const subj = `Feedback: XylemView Pro v${ver}`;
+    if (diag) {
+      const escDiag = diag.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const html = `<div style="font-family:Calibri,Arial,sans-serif;font-size:11pt"><p><br></p><p style="color:#999;font-size:9pt;margin-bottom:4px">--- Diagnostics ---</p><pre style="font-family:Consolas,'Courier New',monospace;font-size:8.5pt;background:#f5f5f5;padding:12px;border-radius:4px;border:1px solid #ddd;color:#333;white-space:pre-wrap">${escDiag}</pre></div>`;
+      window.api.sendEmailHtml('william.boissonnault@xylem.com', subj, html);
+    } else {
+      window.api.sendEmailWithBody('william.boissonnault@xylem.com', subj, '');
+    }
   });
   $('#btn-explorer').addEventListener('click', () => { if (S.currentFolder) window.api.openFolder(S.currentFolder); });
   $('#btn-settings').addEventListener('click', showSettings);
@@ -4284,7 +5014,7 @@ async function init() {
     const initials = getInitials(optimisticMsg.name || optimisticMsg.user);
     const myColor = userColor(optimisticMsg.name || optimisticMsg.user);
     const bigE = isEmojiOnly(text);
-    el.innerHTML += `<div class="chat-msg mine"><div class="chat-avatar" style="background:${myColor};--user-color:${myColor}">${escHtml(initials)}</div><div class="chat-bubble"><div class="chat-name" style="color:${myColor}">${escHtml(fixName(optimisticMsg.name))}</div><div class="chat-text"${bigE ? ' style="font-size:28px;line-height:1.2"' : ''}>${escHtml(text)}</div><div class="chat-time">just now</div></div></div>`;
+    el.innerHTML += `<div class="chat-msg mine"><div class="chat-avatar" style="background:${myColor};--user-color:${myColor}">${escHtml(initials)}</div><div class="chat-bubble"><div class="chat-name" style="color:${myColor}">${escHtml(resolveName(optimisticMsg.user, optimisticMsg.name))}</div><div class="chat-text"${bigE ? ' style="font-size:28px;line-height:1.2"' : ''}>${escHtml(text)}</div><div class="chat-time">just now</div></div></div>`;
     el.scrollTop = el.scrollHeight;
     // Send in background
     window.api.chatSend(text).then(msgs => { lastChatCount = msgs.length; });
@@ -4468,7 +5198,7 @@ async function init() {
       </div>`;
     document.body.appendChild(overlay);
     overlay.querySelector('#bom-cancel').addEventListener('click', () => overlay.remove());
-    overlay.addEventListener('mousedown', e => { if (!e.target.closest('.modal') && e.clientY >= 38) overlay.remove(); });
+    modalDismiss(overlay);
 
     // Focus order field if empty
     const orderInput = overlay.querySelector('#bom-order');
@@ -4549,14 +5279,174 @@ async function init() {
     runRoutingFlow();
   });
   $('#btn-route').addEventListener('mouseenter', () => {
-    if ($('#btn-route').classList.contains('route-ready')) startRouteHum();
+    const btn = $('#btn-route');
+    if (!btn.classList.contains('route-ready')) return;
+    startRouteHum();
+    // Add the charging glow ring
+    if (!btn.querySelector('.route-charge-ring')) {
+      const ring = document.createElement('div');
+      ring.className = 'route-charge-ring';
+      btn.appendChild(ring);
+      requestAnimationFrame(() => ring.classList.add('active'));
+      // When the fill animation finishes, switch to the charged pulse
+      ring.addEventListener('animationend', () => {
+        if (ring.parentNode) ring.classList.add('charged');
+      });
+    }
   });
-  $('#btn-route').addEventListener('mouseleave', stopRouteHum);
-  $('#btn-route').addEventListener('click', stopRouteHum);
+  $('#btn-route').addEventListener('mouseleave', () => {
+    stopRouteHum();
+    const ring = $('#btn-route').querySelector('.route-charge-ring');
+    if (ring) { ring.classList.remove('active'); setTimeout(() => ring.remove(), 250); }
+  });
+  $('#btn-route').addEventListener('click', () => {
+    stopRouteHum();
+    const ring = $('#btn-route').querySelector('.route-charge-ring');
+    if (ring) ring.remove();
+  });
 
   // Auto-update check — on launch and every 30 minutes
   checkForUpdate();
   setInterval(checkForUpdate, 30 * 60 * 1000);
+
+  // Weather (non-blocking, cosmetic only)
+  const WX_ICONS = {0:'\u2600\uFE0F',1:'\uD83C\uDF24\uFE0F',2:'\u26C5',3:'\u2601\uFE0F',45:'\uD83C\uDF2B\uFE0F',48:'\uD83C\uDF2B\uFE0F',51:'\uD83C\uDF26\uFE0F',53:'\uD83C\uDF27\uFE0F',55:'\uD83C\uDF27\uFE0F',56:'\uD83C\uDF28\uFE0F',57:'\uD83C\uDF28\uFE0F',61:'\uD83C\uDF26\uFE0F',63:'\uD83C\uDF27\uFE0F',65:'\uD83C\uDF27\uFE0F',66:'\uD83C\uDF28\uFE0F',67:'\uD83C\uDF28\uFE0F',71:'\uD83C\uDF28\uFE0F',73:'\u2744\uFE0F',75:'\u2744\uFE0F',77:'\u2744\uFE0F',80:'\uD83C\uDF26\uFE0F',81:'\uD83C\uDF27\uFE0F',82:'\uD83C\uDF27\uFE0F',85:'\uD83C\uDF28\uFE0F',86:'\uD83C\uDF28\uFE0F',95:'\u26C8\uFE0F',96:'\u26C8\uFE0F',99:'\u26C8\uFE0F'};
+  const WX_NIGHT = {0:'\uD83C\uDF19',1:'\uD83C\uDF19',2:'\u2601\uFE0F'};
+  const WX_DEFAULT = { lat: 42.9225, lon: -78.7517, name: 'Cheektowaga' };
+  let _wxLoc = S.config.weather_location || WX_DEFAULT;
+
+  async function fetchWeather() {
+    try {
+      const loc = _wxLoc;
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,weather_code,is_day&hourly=precipitation_probability,weather_code&temperature_unit=fahrenheit&timezone=auto&forecast_days=1`);
+      const d = await r.json();
+      const temp = Math.round(d.current.temperature_2m);
+      const code = d.current.weather_code;
+      const isNight = !d.current.is_day;
+      const icon = (isNight && WX_NIGHT[code]) || WX_ICONS[code] || '\uD83C\uDF24\uFE0F';
+      let rainTip = '';
+      if (d.hourly && d.hourly.time) {
+        const nowH = new Date().getHours();
+        const times = d.hourly.time;
+        const probs = d.hourly.precipitation_probability;
+        const codes = d.hourly.weather_code;
+        for (let i = 0; i < times.length; i++) {
+          const hr = parseInt(times[i].split('T')[1]);
+          if (hr <= nowH) continue;
+          const isRainCode = (codes[i] >= 51 && codes[i] <= 67) || (codes[i] >= 80 && codes[i] <= 82) || (codes[i] >= 95);
+          const isSnowCode = (codes[i] >= 71 && codes[i] <= 86);
+          if (probs[i] >= 40 || isRainCode || isSnowCode) {
+            const precType = isSnowCode ? 'snow' : 'rain';
+            const suffix = hr >= 12 ? 'pm' : 'am';
+            const hr12 = hr === 0 ? 12 : hr > 12 ? hr - 12 : hr;
+            rainTip = ` \u2022 ${probs[i]}% chance of ${precType} by ${hr12}${suffix}`;
+            break;
+          }
+        }
+        if (!rainTip) rainTip = ' \u2022 No rain today';
+      }
+      const el = $('#weather');
+      if (el) {
+        $('#weather-icon').textContent = icon;
+        $('#weather-temp').textContent = temp + '\u00B0';
+        el.style.display = 'flex';
+        requestAnimationFrame(() => { el.style.opacity = '1'; });
+        el.setAttribute('data-tip', temp + '\u00B0F in ' + loc.name + rainTip);
+      }
+    } catch {}
+  }
+
+  function showWeatherModal() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `<div class="modal glass-strong" style="color:var(--text);width:300px;padding:20px"></div>`;
+    const modal = overlay.querySelector('.modal');
+    modal.innerHTML = `
+      <div style="font:700 14px/1.3 'DM Sans',sans-serif;margin-bottom:12px">Weather location</div>
+      <div style="font:500 10px/1.4 'DM Sans',sans-serif;color:var(--text3);margin-bottom:12px">Current: ${escHtml(_wxLoc.name)}</div>
+      <input id="wx-search" class="field-input no-drag" placeholder="City name..." style="width:100%;padding:8px 12px;font-size:12px;margin-bottom:8px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-family:'DM Sans',sans-serif">
+      <div id="wx-results" style="max-height:120px;overflow-y:auto;margin-bottom:10px"></div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-glass no-drag" id="wx-detect" style="flex:1;font-size:10px;padding:7px 0">Detect my location</button>
+        <button class="btn-glass no-drag" id="wx-reset" style="font-size:10px;padding:7px 10px;color:var(--text3)">Reset</button>
+      </div>
+      <div id="wx-status" style="font:500 9px/1.4 'DM Sans',sans-serif;color:var(--text3);margin-top:8px;min-height:14px;text-align:center"></div>`;
+    document.body.appendChild(overlay);
+    modalDismiss(overlay);
+
+    const inp = modal.querySelector('#wx-search');
+    const resultsEl = modal.querySelector('#wx-results');
+    const statusEl = modal.querySelector('#wx-status');
+    let searchTimer = null;
+
+    function selectLocation(lat, lon, name) {
+      _wxLoc = { lat, lon, name };
+      S.config.weather_location = _wxLoc;
+      window.api.saveConfig(S.config);
+      fetchWeather();
+      overlay.remove();
+    }
+
+    inp.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      const q = inp.value.trim();
+      if (q.length < 2) { resultsEl.innerHTML = ''; return; }
+      searchTimer = setTimeout(async () => {
+        try {
+          const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=5&language=en&format=json`);
+          const d = await r.json();
+          if (!d.results || !d.results.length) { resultsEl.innerHTML = '<div style="font:500 10px/1.4 \'DM Sans\',sans-serif;color:var(--text3);padding:4px">No results</div>'; return; }
+          resultsEl.innerHTML = d.results.map(r => {
+            const parts = [r.name];
+            if (r.admin1) parts.push(r.admin1);
+            if (r.country && r.country !== 'United States') parts.push(r.country);
+            return `<div class="wx-result no-drag" data-lat="${r.latitude}" data-lon="${r.longitude}" data-name="${escHtml(r.name)}" style="padding:6px 8px;font:500 11px/1.3 'DM Sans',sans-serif;color:var(--text);cursor:pointer;border-radius:6px;transition:background .15s;-webkit-app-region:no-drag">${escHtml(parts.join(', '))}</div>`;
+          }).join('');
+          resultsEl.querySelectorAll('.wx-result').forEach(el => {
+            el.addEventListener('mouseenter', () => { el.style.background = 'var(--row-hover)'; });
+            el.addEventListener('mouseleave', () => { el.style.background = ''; });
+            el.addEventListener('click', () => {
+              selectLocation(parseFloat(el.dataset.lat), parseFloat(el.dataset.lon), el.dataset.name);
+            });
+          });
+        } catch { resultsEl.innerHTML = '<div style="font:500 10px/1.4 \'DM Sans\',sans-serif;color:var(--text3);padding:4px">Search failed</div>'; }
+      }, 400);
+    });
+
+    modal.querySelector('#wx-detect').addEventListener('click', () => {
+      statusEl.textContent = 'Detecting...';
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          try {
+            const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=&count=1&language=en&format=json`);
+            // Reverse geocode isn't available in open-meteo, so use a nearby city search
+            // Instead, just use the coords and label them
+            const lat = pos.coords.latitude.toFixed(4);
+            const lon = pos.coords.longitude.toFixed(4);
+            // Try reverse lookup via nominatim
+            const nr = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`);
+            const nd = await nr.json();
+            const name = nd.address?.city || nd.address?.town || nd.address?.village || nd.address?.county || 'My location';
+            selectLocation(parseFloat(lat), parseFloat(lon), name);
+          } catch {
+            selectLocation(pos.coords.latitude, pos.coords.longitude, 'My location');
+          }
+        },
+        () => { statusEl.textContent = 'Location access denied'; },
+        { timeout: 10000 }
+      );
+    });
+
+    modal.querySelector('#wx-reset').addEventListener('click', () => {
+      selectLocation(WX_DEFAULT.lat, WX_DEFAULT.lon, WX_DEFAULT.name);
+    });
+
+    requestAnimationFrame(() => inp.focus());
+  }
+
+  $('#weather').addEventListener('click', showWeatherModal);
+  fetchWeather();
+  setInterval(fetchWeather, 20 * 60 * 1000);
 
   // Theme popover
   // Theme popover — click to open, auto-fade on leave
@@ -4564,11 +5454,13 @@ async function init() {
   function showThemePop() {
     clearTimeout(_themeHideTimer);
     const pop = $('#theme-popover');
-    const rect = $('#btn-theme').getBoundingClientRect();
+    const btn = $('#btn-theme');
+    const rect = btn.getBoundingClientRect();
+    btn.removeAttribute('data-tip');
     pop.style.display = 'block';
-    pop.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
-    pop.style.right = '12px';
-    pop.style.top = 'auto';
+    pop.style.top = (rect.bottom + 8) + 'px';
+    pop.style.right = (window.innerWidth - rect.right) + 'px';
+    pop.style.bottom = 'auto';
     pop.style.left = 'auto';
     requestAnimationFrame(() => { pop.classList.add('open'); themeSeg.activate(S.theme); });
   }
@@ -4577,6 +5469,7 @@ async function init() {
     _themeHideTimer = setTimeout(() => {
       const pop = $('#theme-popover');
       pop.classList.remove('open');
+      $('#btn-theme').setAttribute('data-tip', 'Theme');
       setTimeout(() => { if (!pop.classList.contains('open')) pop.style.display = 'none'; }, 200);
     }, delay || 0);
   }
@@ -4635,6 +5528,10 @@ async function init() {
   document.addEventListener('keydown', e => {
     // Block F11 fullscreen
     if (e.key === 'F11') { e.preventDefault(); return; }
+    // Dev: Ctrl+Shift+B → BPCS connection test
+    if (e.ctrlKey && e.shiftKey && e.key === 'B' && S._isDev) { e.preventDefault(); showBpcsTest(); return; }
+    // Dev: Ctrl+Shift+W → Win10 preview toggle
+    if (e.ctrlKey && e.shiftKey && e.key === 'W' && S._isDev) { e.preventDefault(); S._win10Preview = !S._win10Preview; document.body.classList.toggle('win10', S._win10Preview || S._isWin10); window.api.setGlassMode(!S._win10Preview); setStatus(S._win10Preview ? '\u{1F5A5}  Win10 preview ON' : '\u{1F5A5}  Win10 preview OFF'); return; }
     // Konami code check
     const konamiConsumed = checkKonami(e.key);
     if (e.key === 'Escape') { $('#ctx-menu').style.display = 'none'; }
@@ -4654,21 +5551,23 @@ async function init() {
       doPaste();
       return;
     }
-    // Ctrl+1/2/3 to switch modes
-    if (e.ctrlKey && !e.shiftKey && !e.altKey && ['1','2','3'].includes(e.key)) {
-      e.preventDefault();
-      const modes = ['orders','drawings','chat'];
-      const target = modes[+e.key - 1];
-      if (target && target !== S.mode) {
-        modeSeg.activate(target);
-        $('#mode-seg button[data-val="' + target + '"]').click();
+    // O/D/M/C to switch modes (when not typing in a field — except the drawing search field — and not holding Shift)
+    const _hasModal = !!$('.modal-overlay');
+    const _activeEl = document.activeElement;
+    const _onInput = (_activeEl?.tagName === 'INPUT' || _activeEl?.tagName === 'TEXTAREA') && _activeEl?.id !== 'inp-dwg';
+    if (!e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey && !_hasModal && !_onInput) {
+      const modeKey = { o: 'orders', d: 'drawings', m: 'marketing', c: 'chat' }[e.key.toLowerCase()];
+      if (modeKey && modeKey !== S.mode) {
+        e.preventDefault();
+        modeSeg.activate(modeKey);
+        $('#mode-seg button[data-val="' + modeKey + '"]').click();
+        return;
       }
-      return;
     }
     // Ctrl+Tab / Ctrl+Shift+Tab to cycle tabs
     if (e.ctrlKey && e.key === 'Tab') {
       e.preventDefault();
-      const modes = ['orders','drawings','chat'];
+      const modes = ['orders','drawings','marketing','chat'];
       const cur = modes.indexOf(S.mode);
       const next = modes[(cur + (e.shiftKey ? modes.length - 1 : 1)) % modes.length];
       modeSeg.activate(next);
@@ -4690,6 +5589,9 @@ async function init() {
       } else if (S.mode === 'drawings') {
         const inp = $('#inp-dwg');
         if (inp) { inp.value = ''; inp.dispatchEvent(new Event('input')); inp.focus(); }
+      } else if (S.mode === 'marketing') {
+        S.mktDigits = []; S.mktComplete = false; S.mktResult = null; S.mktOrder = null;
+        renderMarketingContainer();
       }
       return;
     }
@@ -4758,27 +5660,66 @@ async function init() {
             doOrderSearch();
           }
         }
+      } else if (S.mode === 'marketing') {
+        if (/^[0-9]$/.test(e.key)) {
+          e.preventDefault();
+          if (S.mktComplete || S.mktDigits.length >= 6) {
+            S.mktDigits = []; S.mktComplete = false; S.mktResult = null;
+            const area = $('#mkt-results'); if (area) area.innerHTML = '';
+          }
+          S.mktDigits.push(e.key);
+          updateMktOtpDisplay();
+          if (S.mktDigits.length === 6) setTimeout(doMarketingSearch, 50);
+        } else if (e.key === 'Backspace') {
+          e.preventDefault();
+          if (S.mktComplete) {
+            S.mktDigits = []; S.mktComplete = false; S.mktResult = null;
+            const area = $('#mkt-results'); if (area) area.innerHTML = '';
+          } else {
+            S.mktDigits.pop();
+          }
+          updateMktOtpDisplay();
+        } else if (e.key === 'Enter' && S.mktDigits.length === 6 && !S.mktComplete) {
+          doMarketingSearch();
+        }
       } else if (S.mode === 'drawings' && e.key.length === 1 && /[0-9a-zA-Z*%_]/.test(e.key) && !konamiConsumed) {
         const inp = $('#inp-dwg');
         if (inp) { inp.focus(); inp.value = ''; }
       }
     }
   });
+
+  bootLog('init complete');
+  flushBootLog();
 }
 
 // ═══════════════════════════════════════════════════════════════════════
 //  Contingency Viewer
 // ═══════════════════════════════════════════════════════════════════════
-const USERNAME_NAMES = {
-  pcastig:'Peter Castiglia', wboisso:'Will Boissonnault', tshershn:'Tatiana Shershnevskiy',
-  agrogan:'Adam Grogan', smancuso:'Steve Mancuso', jmaeder:'Jake Maeder', jdeci:'Jeff Deci',
-  spierson:'Scott Pierson', jjurynie:'Josh Juryniec', mzoyhofski:'Mark Zoyhofski',
-  dpinson:'Dave Pinson', mkielma:'Matt Kielma', pmccarne:'Peggy McCarney',
+let _cntHideBp = true; // Hide boilerplate toggle — on by default each session
+
+const CNT_BP = {
+  Construction: ['asme code (section viii, div. i)', 'construction based on standard design calculations.'],
+  Inspection: ['asme code inspection', 'a - standard procedure administered internally by qa.'],
+  Testing: ['testing per qw-01-01-36 (hydro/code) where applicable.'],
+  Cleaning: ['clean per e-06-01-001,...level a.'],
+  Painting: ['use standard painting procedure.'],
+  NamePlateNotes: ['pressures & temperatures,...per assembly drawing.', 'no ug-116 (x-ray) stamping required.'],
+  Packaging: ['see order acknowledgement (shipping) notes.'],
 };
+function cntBpMatch(htmlLine, key) {
+  const pats = CNT_BP[key];
+  if (!pats || !htmlLine) return false;
+  const t = htmlLine.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/\u2026/g, '...').replace(/\s+/g, ' ').trim().toLowerCase();
+  return pats.some(p => t === p);
+}
+
+let _nicknames = {}; // Loaded from shared nicknames.json on startup
+
 function displayName(username) {
   if (!username) return '';
   const lower = username.toLowerCase().trim();
-  return USERNAME_NAMES[lower] || username;
+  return _nicknames[lower] || username;
 }
 
 async function showContingencyViewer(orderLine) {
@@ -4791,7 +5732,7 @@ async function showContingencyViewer(orderLine) {
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `<div class="modal glass-strong cnt-viewer"></div>`;
   document.body.appendChild(overlay);
-  overlay.addEventListener('mousedown', e => { if (!e.target.closest('.modal') && e.clientY >= 38) overlay.remove(); });
+  modalDismiss(overlay);
 
   if (!r.found) {
     overlay.querySelector('.modal').innerHTML = `<div style="text-align:center;padding:32px">
@@ -4825,9 +5766,10 @@ async function showContingencyViewer(orderLine) {
   }
   function section(title, lines) {
     const body = lines.filter(Boolean);
+    if (!body.length) return '';
     return `<div class="cnt-section">
       <div class="cnt-section-title">${title}</div>
-      <div class="cnt-section-body">${body.length ? body.join('<br>') : '<span class="cnt-empty">None specified</span>'}</div>
+      <div class="cnt-section-body">${body.join('<br>')}</div>
     </div>`;
   }
 
@@ -4844,14 +5786,109 @@ async function showContingencyViewer(orderLine) {
   const sendTo = [qc.SendToLine1, qc.SendToLine2, qc.SendToLine3, qc.SendToLine4].filter(Boolean).map(s => s.trim()).filter(Boolean);
   const sendAttn = qc.SendToAttn ? qc.SendToAttn.trim() : '';
 
-  // Staleness check — warn if data is more than 30 minutes old
-  const staleMinutes = r.loadedAt ? Math.floor((Date.now() - r.loadedAt) / 60000) : -1;
-  const isStale = staleMinutes < 0 || staleMinutes > 30;
+  // Build filtered sections (shared by screen viewer and print)
+  function buildSections(hideBp, secFn, lblCls) {
+    const lbl = lblCls || 'cnt-label';
+    function bpf(list, key) { return hideBp ? list.filter(l => l && !cntBpMatch(l, key)) : list; }
+
+    const conLines = bpf([
+      con.ConstrCode ? escHtml(con.ConstrCode.trim()) : null,
+      ...notes(con, 'Note', 12),
+    ], 'Construction');
+
+    const fLevels = hideBp ? inspLevels.filter(l => !cntBpMatch(l, 'Inspection')) : inspLevels;
+    const inspLines = [
+      hideBp ? null : (con.ConstrCode && con.ConstrCode.includes('ASME') ? 'ASME Code (Section VIII, Div. I) \u2026(ref Q-01-01-11)' : null),
+      fLevels.length ? `<span class="${lbl}">Level(s):</span> ` + fLevels.join('; ') : null,
+      ...bpf(notes(insp, 'Note', 6), 'Inspection'),
+    ];
+
+    // Testing: if both fluids are Water (tap) at <500 psi with no extra notes, omit entirely
+    const ssLine = test.Fluid_SS ? `<span class="${lbl}">Shell Side Fluid:</span> ` + escHtml(test.Fluid_SS.trim()) + (test.psi_SS ? ' \u2026.. at ' + escHtml(test.psi_SS.trim()) : '') : null;
+    const tsLine = test.Fluid_TS ? `<span class="${lbl}">Tube Side Fluid:</span> ` + escHtml(test.Fluid_TS.trim()) + (test.psi_TS ? ' \u2026.. at ' + escHtml(test.psi_TS.trim()) : '') : null;
+    const testNotesF = bpf(notes(test, 'Note', 6), 'Testing');
+    let testLines;
+    if (hideBp) {
+      const ssF = (test.Fluid_SS || '').trim().toLowerCase();
+      const tsF = (test.Fluid_TS || '').trim().toLowerCase();
+      const ssPsi = parseFloat(String(test.psi_SS || '').replace(/[^\d.]/g, '')) || 0;
+      const tsPsi = parseFloat(String(test.psi_TS || '').replace(/[^\d.]/g, '')) || 0;
+      const isRoutine = ssF === 'water (tap)' && tsF === 'water (tap)' && ssPsi < 500 && tsPsi < 500 && testNotesF.length === 0;
+      testLines = isRoutine ? [] : [ssLine, tsLine, ...testNotesF];
+    } else {
+      testLines = [ssLine, tsLine, ...testNotesF];
+    }
+
+    const cleanLines = bpf(notes(clean, 'Note', 6), 'Cleaning');
+    const paintLines = bpf(notes(paint, 'Note', 6), 'Painting');
+
+    // Nameplates: Note1 is always the model name in the legacy app — skip it.
+    // Also filter known bp phrases. Only show section if non-bp notes remain.
+    let npLines;
+    const npNotesAll = notes(np, 'Note', 6);
+    if (hideBp) {
+      const modelVal = np.Note1 ? escHtml(np.Note1.trim()) : '';
+      npLines = npNotesAll.filter(n => {
+        if (cntBpMatch(n, 'NamePlateNotes')) return false;
+        if (modelVal && n === modelVal) return false;
+        return true;
+      });
+    } else {
+      npLines = [...namePlates, ...npNotesAll];
+    }
+
+    const pkgLines = bpf(notes(pkg, 'Note', 6), 'Packaging');
+    const purchLines = notes(purch, 'Note', 6);
+
+    // Required Documents: only show "Documentation required" when Y; "not required" is noise
+    const reqDocLines = [
+      qc.QCdocs === 'Y' ? `<span class="${lbl}">Documentation required</span>` : null,
+      ...qcNotes,
+      hideBp ? null : (sendTo.length ? `<span class="${lbl}">Send Docs to:</span> ` + sendTo.map(escHtml).join(', ') : null),
+      hideBp ? null : (sendAttn ? `<span class="${lbl}">Attn:</span> ` + escHtml(sendAttn) : null),
+    ];
+
+    const result = secFn('Construction', conLines)
+      + secFn('Inspection', inspLines)
+      + secFn('Testing', testLines)
+      + secFn('Cleaning', cleanLines)
+      + secFn('Painting', paintLines)
+      + secFn('Nameplates', npLines)
+      + secFn('Packaging', pkgLines)
+      + secFn('Purchased Material', purchLines)
+      + secFn('Required Documents', reqDocLines);
+
+    if (hideBp && !result.trim()) {
+      return '<div class="cnt-std-proc"><div class="cnt-std-proc-title">Standard procedures</div><div class="cnt-std-proc-sub">No contingency required</div></div>';
+    }
+    return result;
+  }
+
+  // Staleness check — warn only if DB files changed since our last load
+  const isStale = !r.loadedAt || !!r.dbChanged;
+
+  const isAsme = !!(con.ConstrCode && con.ConstrCode.toUpperCase().includes('ASME'));
+  const infoParts = [];
+  if (oi.CustomerName) infoParts.push('<b>' + escHtml(oi.CustomerName.trim()) + '</b>');
+  const itemStr = [oi.ItemDesc ? escHtml(oi.ItemDesc.trim()) : '', oi.BPCSpn ? '(' + escHtml(oi.BPCSpn.trim()) + ')' : ''].filter(Boolean).join(' ');
+  if (itemStr) infoParts.push(itemStr);
+  const infoLine = infoParts.join(' &middot; ');
 
   const html = `
     <div class="cnt-head">
-      <h2>Contingency Instructions</h2>
-      <div class="cnt-order">${order}-${line}</div>
+      <div class="cnt-head-top">
+        <h2>Contingency Instructions</h2>
+        <label class="cnt-bp-toggle">
+          <input type="checkbox" id="cnt-bp-toggle" ${_cntHideBp ? 'checked' : ''}>
+          <span class="cnt-bp-switch"></span>
+          <span>Hide boilerplate</span>
+        </label>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+        <div class="cnt-order" style="margin:0">${order}-${line}</div>
+        <span class="cnt-badge ${isAsme ? 'cnt-badge-code' : 'cnt-badge-noncode'}">${isAsme ? 'ASME Code' : 'Non-Code'}</span>
+      </div>
+      ${infoLine ? '<div class="cnt-info">' + infoLine + '</div>' : ''}
       <div class="cnt-detail">
         ${oi.DwgNo ? `<span>Dwg <b>${escHtml(oi.DwgNo)}</b></span>` : ''}
         ${oi.Qty ? `<span>Qty <b>${escHtml(String(oi.Qty))}</b></span>` : ''}
@@ -4859,50 +5896,15 @@ async function showContingencyViewer(orderLine) {
         <span>By <b>${escHtml(displayName(oi.MadeBy))}</b></span>
       </div>
       ${isStale ? `<div id="cnt-stale-banner" style="margin-top:8px;padding:5px 10px;border-radius:8px;background:rgba(255,180,0,.12);border:1px solid rgba(255,180,0,.25);font:500 10px/1.4 'DM Sans',sans-serif;color:var(--amber,#f0a030);display:flex;align-items:center;gap:8px">
-        <span>\u26A0 Data is ${staleMinutes >= 0 ? staleMinutes + ' min' : 'unknown time'} old</span>
+        <span>\u26A0 Database changed since last load</span>
         <button id="cnt-retry" class="btn-glass" style="font-size:9px;padding:2px 10px;margin-left:auto">Retry</button>
       </div>` : ''}
     </div>
 
-    <div class="cnt-scroll">
-    ${section('Construction', [
-      con.ConstrCode ? escHtml(con.ConstrCode.trim()) : null,
-      ...notes(con, 'Note', 12),
-    ])}
-
-    ${section('Inspection', [
-      con.ConstrCode && con.ConstrCode.includes('ASME') ? 'ASME Code (Section VIII, Div. I) \u2026(ref Q-01-01-11)' : null,
-      inspLevels.length ? '<span class="cnt-label">Level(s):</span> ' + inspLevels.join('; ') : null,
-      ...notes(insp, 'Note', 6),
-    ])}
-
-    ${section('Testing', [
-      test.Fluid_SS ? '<span class="cnt-label">Shell Side Fluid:</span> ' + escHtml(test.Fluid_SS.trim()) + (test.psi_SS ? ' \u2026.. at ' + escHtml(test.psi_SS.trim()) : '') : null,
-      test.Fluid_TS ? '<span class="cnt-label">Tube Side Fluid:</span> ' + escHtml(test.Fluid_TS.trim()) + (test.psi_TS ? ' \u2026.. at ' + escHtml(test.psi_TS.trim()) : '') : null,
-      ...notes(test, 'Note', 6),
-    ])}
-
-    ${section('Cleaning', notes(clean, 'Note', 6))}
-    ${section('Painting', notes(paint, 'Note', 6))}
-
-    ${section('Name Plates', [
-      ...namePlates,
-      ...notes(np, 'Note', 6),
-    ])}
-
-    ${section('Packaging', notes(pkg, 'Note', 6))}
-    ${section('Purchased Material', notes(purch, 'Note', 6))}
-
-    ${section('Required Documents', [
-      qc.QCdocs === 'Y' ? '<span class="cnt-label">Documentation required</span>' : '<span class="cnt-label">Documentation not required</span>',
-      ...qcNotes,
-      sendTo.length ? '<span class="cnt-label">Send Docs to:</span> ' + sendTo.map(escHtml).join(', ') : null,
-      sendAttn ? '<span class="cnt-label">Attn:</span> ' + escHtml(sendAttn) : null,
-    ])}
-
+    <div class="cnt-scroll" id="cnt-scroll">
+    ${buildSections(_cntHideBp, section, 'cnt-label')}
     <div class="cnt-footer">
-      ${oi.CustomerName ? escHtml(oi.CustomerName.trim()) : ''} ${oi.CustomerLoc ? '\u2014 ' + escHtml(oi.CustomerLoc.trim()) : ''}
-      <br>${oi.ItemDesc ? escHtml(oi.ItemDesc.trim()) : ''} ${oi.BPCSpn ? '(' + escHtml(oi.BPCSpn.trim()) + ')' : ''}
+      ${oi.CustomerName ? escHtml(oi.CustomerName.trim()) : ''}${oi.CustomerLoc ? ' \u2014 ' + escHtml(oi.CustomerLoc.trim()) : ''}
     </div>
     </div>
 
@@ -4919,6 +5921,13 @@ async function showContingencyViewer(orderLine) {
   modal.style.padding = '';
   modal.innerHTML = html;
   overlay.querySelector('#cnt-close').addEventListener('click', () => overlay.remove());
+  // Boilerplate toggle — re-render sections when toggled
+  overlay.querySelector('#cnt-bp-toggle').addEventListener('change', (e) => {
+    _cntHideBp = e.target.checked;
+    const scroll = overlay.querySelector('#cnt-scroll');
+    const footer = scroll.querySelector('.cnt-footer');
+    scroll.innerHTML = buildSections(_cntHideBp, section, 'cnt-label') + footer.outerHTML;
+  });
   // Retry button — force-reload contingency DB and reopen viewer
   overlay.querySelector('#cnt-retry')?.addEventListener('click', async () => {
     overlay.remove();
@@ -4926,32 +5935,28 @@ async function showContingencyViewer(orderLine) {
     await window.api.preloadContingency(true);
     showContingencyViewer(orderLine);
   });
-  // Build print-friendly HTML shared by Print and Save
+  // Build print-friendly HTML (respects boilerplate toggle at time of print)
   function pSection(title, lines) {
     const body = lines.filter(Boolean);
-    return `<div class="section"><div class="section-title">${title}</div><div class="section-body">${body.length ? body.join('<br>') : '<span class="empty">None specified</span>'}</div></div>`;
+    if (!body.length) return '';
+    return `<div class="section"><div class="section-title">${title}</div><div class="section-body">${body.join('<br>')}</div></div>`;
   }
-  const printHtml = `
+  function getPrintHtml() {
+    return `
     <h2>CONTINGENCY INSTRUCTIONS</h2>
+    <div class="cnt-print-sub">${infoLine ? '<span class="cnt-print-info">' + infoLine + '</span>' : '<span></span>'}<span class="cnt-badge ${isAsme ? 'cnt-badge-code' : 'cnt-badge-noncode'}">${isAsme ? 'ASME CODE' : 'NON-CODE'}</span></div>
     <div class="meta">ORDER: <b>${order}-${line}</b>&nbsp;&nbsp;&nbsp;${oi.DwgNo ? `Dwg: <b>${escHtml(oi.DwgNo)}</b>&nbsp;&nbsp;&nbsp;` : ''}${oi.Qty ? `Qty: <b>${escHtml(String(oi.Qty))}</b>&nbsp;&nbsp;&nbsp;` : ''}Doc Rev: <b>${escHtml(String(oi.RevNo || '0'))}</b>&nbsp;&nbsp;&nbsp;By: <b>${escHtml(displayName(oi.MadeBy))}</b></div>
-    ${pSection('Construction', [con.ConstrCode ? escHtml(con.ConstrCode.trim()) : null, ...notes(con, 'Note', 12)])}
-    ${pSection('Inspection', [con.ConstrCode && con.ConstrCode.includes('ASME') ? 'ASME Code (Section VIII, Div. I) \u2026(ref Q-01-01-11)' : null, inspLevels.length ? '<span class="label">Level(s):</span> ' + inspLevels.join('; ') : null, ...notes(insp, 'Note', 6)])}
-    ${pSection('Testing', [test.Fluid_SS ? '<span class="label">Shell Side Fluid:</span> ' + escHtml(test.Fluid_SS.trim()) + (test.psi_SS ? ' \u2026.. at ' + escHtml(test.psi_SS.trim()) : '') : null, test.Fluid_TS ? '<span class="label">Tube Side Fluid:</span> ' + escHtml(test.Fluid_TS.trim()) + (test.psi_TS ? ' \u2026.. at ' + escHtml(test.psi_TS.trim()) : '') : null, ...notes(test, 'Note', 6)])}
-    ${pSection('Cleaning', notes(clean, 'Note', 6))}
-    ${pSection('Painting', notes(paint, 'Note', 6))}
-    ${pSection('Name Plates', [...namePlates, ...notes(np, 'Note', 6)])}
-    ${pSection('Packaging', notes(pkg, 'Note', 6))}
-    ${pSection('Purchased Material', notes(purch, 'Note', 6))}
-    ${pSection('Required Documents', [qc.QCdocs === 'Y' ? '<span class="label">Documentation required</span>' : '<span class="label">Documentation not required</span>', ...qcNotes, sendTo.length ? '<span class="label">Send Docs to:</span> ' + sendTo.map(escHtml).join(', ') : null, sendAttn ? '<span class="label">Attn:</span> ' + escHtml(sendAttn) : null])}
-    <div class="footer">${oi.CustomerName ? escHtml(oi.CustomerName.trim()) : ''} ${oi.CustomerLoc ? '\u2014 ' + escHtml(oi.CustomerLoc.trim()) : ''}<br>${oi.ItemDesc ? escHtml(oi.ItemDesc.trim()) : ''} ${oi.BPCSpn ? '(' + escHtml(oi.BPCSpn.trim()) + ')' : ''}</div>
+    ${buildSections(_cntHideBp, pSection, 'label')}
+    <div class="footer">${oi.CustomerName ? escHtml(oi.CustomerName.trim()) : ''}${oi.CustomerLoc ? ' \u2014 ' + escHtml(oi.CustomerLoc.trim()) : ''}</div>
   `;
+  }
 
   // Print — sends directly to printer (OS print dialog, no Adobe)
   overlay.querySelector('#cnt-print').addEventListener('click', async () => {
     const btn = overlay.querySelector('#cnt-print');
     btn.disabled = true;
     btn.innerHTML = '<span class="deep-spinner" style="width:12px;height:12px"></span>';
-    const r = await window.api.printContingency(printHtml);
+    const r = await window.api.printContingency(getPrintHtml());
     btn.disabled = false;
     btn.textContent = 'Print';
     if (!r.ok) showToast('Print failed: ' + r.msg, 'danger');
@@ -4962,7 +5967,7 @@ async function showContingencyViewer(orderLine) {
     const btn = overlay.querySelector('#cnt-save');
     btn.disabled = true;
     btn.innerHTML = '<span class="deep-spinner" style="width:12px;height:12px"></span>';
-    const r = await window.api.saveContingencyPdf(orderLine, printHtml);
+    const r = await window.api.saveContingencyPdf(orderLine, getPrintHtml());
     btn.disabled = false;
     btn.textContent = 'Save';
     if (r.ok) showToast('Saved to Downloads', 'success');
@@ -4991,7 +5996,7 @@ function showInstallPrompt(name, desc, url, wingetId) {
     <div id="install-status" style="font:500 10px/1.4 'DM Sans',sans-serif;color:var(--text3);margin-top:12px;display:none"></div>
   </div>`;
   document.body.appendChild(overlay);
-  overlay.addEventListener('mousedown', e => { if (!e.target.closest('.modal') && e.clientY >= 38) overlay.remove(); });
+  modalDismiss(overlay);
   overlay.querySelector('#install-cancel').addEventListener('click', () => overlay.remove());
   overlay.querySelector('#install-download').addEventListener('click', async () => {
     if (wingetId) {
@@ -5022,23 +6027,390 @@ function showOdaPromo() {
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `<div class="modal glass-strong" style="color:var(--text);width:340px;padding:28px;text-align:center">
-    <div style="font:700 17px/1.3 'DM Sans',sans-serif;margin-bottom:8px">Get the expansion pack!</div>
-    <div style="font:400 11px/1.6 'DM Sans',sans-serif;color:var(--text2);margin-bottom:20px">Want to generate PDFs/DXFs and insta-route entire orders with just one click? Install this optional upgrade that integrates with this app!</div>
+    <div style="font:700 17px/1.3 'DM Sans',sans-serif;margin-bottom:8px">Wanna make XylemView Pro even more Pro?</div>
+    <div style="font:400 11px/1.6 'DM Sans',sans-serif;color:var(--text2);margin-bottom:6px">Connect the <strong style="color:var(--text)">ODA expansion pack</strong> for even more features:</div>
+    <ul style="font:400 11px/1.8 'DM Sans',sans-serif;color:var(--text2);text-align:left;margin:0 0 16px 12px;padding-left:10px">
+      <li>One-click PDF conversion</li>
+      <li>AutoCAD-free BOM upload</li>
+      <li>"Route-O-Matic"</li>
+      <li>And more!</li>
+    </ul>
     <div style="display:flex;gap:10px;justify-content:center;align-items:center">
-      <button class="btn-accent" id="oda-go" style="width:48px;height:48px;border-radius:14px;font-size:22px;display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 0 20px color-mix(in srgb,var(--accent) 30%,transparent),inset 0 1px 0 rgba(255,255,255,0.2);transition:all .3s" data-tip="Download">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-      </button>
+      <button class="btn-accent" id="oda-go" style="height:38px;padding:0 22px;font:600 13px/1 'DM Sans',sans-serif;border-radius:10px;box-shadow:0 0 20px color-mix(in srgb,var(--accent) 30%,transparent),inset 0 1px 0 rgba(255,255,255,0.2);transition:all .3s">Power up!</button>
       <button class="btn-glass" id="oda-cancel" style="height:36px;padding:0 18px;font-size:11px">Not now</button>
     </div>
-    <div style="font:400 9px/1.4 'DM Sans',sans-serif;color:var(--text3);margin-top:14px">Free download. Install once, then restart XylemView Pro.</div>
+    <div class="oda-footer" style="font:400 9px/1.4 'DM Sans',sans-serif;color:var(--text3);margin-top:14px">Free download. Install once, then restart XylemView Pro.</div>
   </div>`;
   document.body.appendChild(overlay);
-  overlay.addEventListener('mousedown', e => { if (!e.target.closest('.modal') && e.clientY >= 38) overlay.remove(); });
+  modalDismiss(overlay);
   overlay.querySelector('#oda-cancel').addEventListener('click', () => overlay.remove());
-  overlay.querySelector('#oda-go').addEventListener('click', () => {
-    showInstallPrompt('ODA File Converter', 'Free tool that powers DXF conversion and routing.', 'https://www.opendesign.com/guestfiles/oda_file_converter', 'ODA.ODAFileConverter');
-    overlay.remove();
+  overlay.querySelector('#oda-go').addEventListener('click', async () => {
+    const btn = overlay.querySelector('#oda-go');
+    btn.disabled = true;
+    btn.textContent = 'Installing\u2026';
+    const footer = overlay.querySelector('.oda-footer');
+    if (footer) footer.textContent = 'This may take a minute.';
+    const r = await window.api.wingetInstall('ODA.ODAFileConverter');
+    if (r.ok) {
+      btn.textContent = 'Restart';
+      btn.disabled = false;
+      if (footer) { footer.textContent = '\u2713 Installed successfully!'; footer.style.color = 'var(--accent)'; }
+      btn.onclick = () => window.api.restartApp();
+    } else {
+      if (footer) { footer.textContent = '\u26A0 ' + (r.msg || 'Install failed. Opening download page\u2026'); footer.style.color = 'var(--danger)'; }
+      btn.textContent = 'Download';
+      btn.disabled = false;
+      btn.onclick = () => { window.api.openExternal('https://www.opendesign.com/guestfiles/oda_file_converter'); overlay.remove(); };
+    }
   });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Marketing Mode
+// ═══════════════════════════════════════════════════════════════════════
+function renderMarketingContainer() {
+  const c = $('#marketing-container');
+  c.innerHTML = `
+    <div class="glass no-drag" style="padding:16px 22px;flex-shrink:0;margin-bottom:8px">
+      <div class="field-label">ORDER NUMBER</div>
+      <div class="otp-container no-drag" id="mkt-otp">
+        ${[0,1,2,3,4,5].map(i => `<div class="otp-box" data-idx="${i}"></div>`).join('')}
+      </div>
+    </div>
+    <div class="mkt-results" id="mkt-results"></div>
+  `;
+  updateMktOtpDisplay();
+  if (S.mktResult) renderMarketingResults();
+}
+
+function updateMktOtpDisplay() {
+  const boxes = $$('#mkt-otp .otp-box');
+  if (!boxes.length) return;
+  boxes.forEach((box, i) => {
+    const digit = S.mktDigits[i] || '';
+    const wasEmpty = !box.textContent && digit;
+    box.textContent = digit;
+    box.classList.toggle('filled', !!digit);
+    box.classList.toggle('active', S.mktComplete ? i === 0 : i === S.mktDigits.length);
+    if (wasEmpty) { box.classList.add('pop'); setTimeout(() => box.classList.remove('pop'), 100); }
+  });
+}
+
+async function doMarketingSearch() {
+  if (S.mode !== 'marketing') return;
+  const raw = S.mktDigits.join('');
+  if (raw.length < 6) return;
+  const orderPad = raw.padStart(6, '0');
+  S.mktOrder = orderPad;
+  S.mktComplete = true;
+  updateMktOtpDisplay();
+
+  const results = $('#mkt-results');
+  results.innerHTML = `<div style="text-align:center;padding:40px">
+    <div class="deep-spinner" style="width:18px;height:18px;margin:0 auto 10px"></div>
+    <div style="font:500 11px/1.4 'DM Sans',sans-serif;color:var(--text2)">Parsing checklist\u2026</div>
+  </div>`;
+
+  try {
+    const r = await window.api.scanChecklists(orderPad);
+    if (S.mode !== 'marketing') return;
+    S.mktResult = r;
+    renderMarketingResults();
+  } catch (e) {
+    S.mktResult = { found: false, error: e.message };
+    renderMarketingResults();
+  }
+}
+
+function renderMarketingResults() {
+  const area = $('#mkt-results');
+  if (!area) return;
+  const r = S.mktResult;
+  const orderPad = S.mktOrder;
+
+  if (!r || !r.found || !r.checklists || !r.checklists.length) {
+    area.innerHTML = `<div style="text-align:center;padding:40px">
+      <div style="font:600 13px/1.4 'DM Sans',sans-serif;color:var(--text3);margin-bottom:6px">No checklist found</div>
+      <div style="font:400 11px/1.3 'DM Sans',sans-serif;color:var(--text3)">${orderPad}-00</div>
+    </div>`;
+    return;
+  }
+
+  const cl = r.checklists[0];
+  if (cl.error) {
+    area.innerHTML = `<div style="text-align:center;padding:40px">
+      <div style="font:600 12px/1.4 'DM Sans',sans-serif;color:var(--danger)">Error parsing checklist</div>
+      <div style="font:400 11px/1.4 'DM Sans',sans-serif;color:var(--text3);margin-top:6px">${escHtml(cl.error)}</div>
+    </div>`;
+    return;
+  }
+
+  const hasDrawings = cl.lineItems.some(li => li.dwgNorm);
+  const repeatBadge = hasDrawings
+    ? '<span style="background:var(--success);color:#000;font:700 9px/1 \'DM Sans\',sans-serif;padding:3px 8px;border-radius:6px;letter-spacing:0.5px">REPEAT ORDER</span>'
+    : '<span style="background:var(--amber);color:#000;font:700 9px/1 \'DM Sans\',sans-serif;padding:3px 8px;border-radius:6px;letter-spacing:0.5px">NEW UNIT</span>';
+
+  // Format drawing number with hyphens if missing
+  function fmtDwg(raw) {
+    const alnum = raw.replace(/[^0-9A-Za-z]/g, '');
+    if (raw.includes('-') || alnum.length < 12 || !/^[0-5]/.test(alnum)) return raw;
+    const f = alnum[0];
+    const parts = '123'.includes(f)
+      ? [alnum.slice(0,1), alnum.slice(1,4), alnum.slice(4,5), alnum.slice(5,7), alnum.slice(7,10), alnum.slice(10,12)]
+      : [alnum.slice(0,1), alnum.slice(1,4), alnum.slice(4,6), alnum.slice(6,9), alnum.slice(9,12)];
+    return parts.filter(p => p).join('-');
+  }
+
+  // Format date as "March 7, 2026"
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  function fmtDate(s) {
+    if (!s) return '';
+    // Try MM/DD/YY
+    const slashM = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+    if (slashM) {
+      const mo = parseInt(slashM[1]) - 1, day = parseInt(slashM[2]);
+      let yr = parseInt(slashM[3]); if (yr < 100) yr += 2000;
+      return months[mo] + ' ' + day + ', ' + yr;
+    }
+    // Try ISO date
+    if (s.includes('T')) { const d = new Date(s); return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear(); }
+    // Already formatted (e.g., "March 6, 2026")
+    return s;
+  }
+
+  // Build dates list
+  const dateLines = [];
+  if (cl.date && cl.dateApproved && cl.date !== cl.dateApproved) dateLines.push('Submitted: ' + fmtDate(cl.date));
+  if (cl.dateApproved) dateLines.push('Approved: ' + fmtDate(cl.dateApproved));
+  if (r.ackDate) dateLines.push('Entered: ' + fmtDate(r.ackDate));
+  if (cl.fileDateCreated) dateLines.push('Filed: ' + fmtDate(cl.fileDateCreated));
+
+  const linkSvg = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9.5a3.5 3.5 0 005 0l2-2a3.5 3.5 0 00-5-5l-1 1"/><path d="M9.5 6.5a3.5 3.5 0 00-5 0l-2 2a3.5 3.5 0 005 5l1-1"/></svg>';
+
+  const lineItemsHtml = cl.lineItems.map(li => `
+    <div class="mkt-line-item" data-dwg="${escHtml(li.dwgNorm)}" data-line="${escHtml(li.line)}" title="Click to copy ${escHtml(li.dwgNorm)}">
+      <div style="font:700 13px/1 'IBM Plex Mono',monospace;color:var(--accent);min-width:24px">${li.line}</div>
+      <div style="flex:1">
+        <div style="font:600 12px/1.3 'IBM Plex Mono',monospace;color:var(--dwg)">${escHtml(fmtDwg(li.dwgRaw))}</div>
+        <div style="font:400 10px/1.3 'DM Sans',sans-serif;color:var(--text3);margin-top:2px">${escHtml(li.template)}${li.price ? ' \u2022 $' + escHtml(li.price) : ''}</div>
+      </div>
+      <button class="mkt-link-btn btn-glass" data-dwg="${escHtml(li.dwgNorm)}" data-line="${escHtml(li.line)}" style="font-size:10px;height:30px;padding:0 10px;flex-shrink:0;display:flex;align-items:center;gap:4px" title="Link drawing to order folder" onclick="event.stopPropagation()"><span class="deep-spinner" style="width:10px;height:10px"></span></button>
+      <div style="font:700 9px/1 'DM Sans',sans-serif;padding:3px 8px;border-radius:6px;background:${li.dwgNorm ? 'rgba(0,255,144,0.12);color:var(--success)' : 'rgba(255,152,32,0.12);color:var(--amber)'}">
+        ${li.dwgNorm ? 'REPEAT' : 'NEW'}
+      </div>
+    </div>
+  `).join('');
+
+  area.innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:14px">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <h3 style="font:700 16px/1 'DM Sans',sans-serif;margin:0">Order ${orderPad}</h3>
+          ${repeatBadge}
+        </div>
+        <div style="font:400 11px/1.5 'DM Sans',sans-serif;color:var(--text2)">
+          PO: <b>${escHtml(cl.poNumber || '?')}</b> \u2022 AE: <b>${escHtml(cl.ae || '?')}</b>
+        </div>
+      </div>
+      ${dateLines.length ? `<div style="text-align:right;font:400 10px/1.6 'DM Sans',sans-serif;color:var(--text3);flex-shrink:0">${dateLines.map(d => escHtml(d)).join('<br>')}</div>` : ''}
+    </div>
+    <div style="font:600 9px/1 'DM Sans',sans-serif;color:var(--text3);letter-spacing:1px;margin-bottom:6px">LINE ITEMS${cl.lineNumberSource === 'unknown' ? ' <span style="opacity:.6;font-weight:400">(no ack \u2014 line #s unknown)</span>' : cl.lineNumberSource === 'estimated' ? ' <span style="opacity:.6;font-weight:400">(line #s estimated)</span>' : ''}</div>
+    ${lineItemsHtml || '<div style="font:400 11px/1.4 \'DM Sans\',sans-serif;color:var(--text3);font-style:italic;padding:8px 12px">No line items found in checklist</div>'}
+    ${cl.requirements ? `<div style="display:flex;align-items:center;gap:8px;margin-top:12px;margin-bottom:4px">
+      <div style="font:600 9px/1 'DM Sans',sans-serif;color:var(--amber);letter-spacing:1px">SPECIAL REQUIREMENTS</div>
+      <button class="btn-glass mkt-copy-reqs" style="font-size:8px;height:18px;padding:0 6px;opacity:.7" title="Copy requirements" onclick="event.stopPropagation()">Copy</button>
+    </div><div style="font:400 11px/1.5 'DM Sans',sans-serif;color:var(--text);padding:8px 12px;border-radius:10px;background:var(--amber-soft);border:1px solid rgba(245,166,35,0.2);user-select:text;cursor:text">${escHtml(cl.requirements)}</div>` : ''}
+    ${cl.comments ? `<div style="display:flex;align-items:center;gap:8px;margin-top:12px;margin-bottom:4px">
+      <div style="font:600 9px/1 'DM Sans',sans-serif;color:var(--text3);letter-spacing:1px">COMMENTS</div>
+      <button class="btn-glass mkt-copy-comments" style="font-size:8px;height:18px;padding:0 6px;opacity:.7" title="Copy comments" onclick="event.stopPropagation()">Copy</button>
+    </div><div style="font:400 11px/1.5 'DM Sans',sans-serif;color:var(--text2);padding:8px 12px;border-radius:10px;background:var(--glass);border:1px solid var(--glass-border);user-select:text;cursor:text">${escHtml(cl.comments)}</div>` : ''}
+    <div style="font:600 9px/1 'DM Sans',sans-serif;color:var(--text3);letter-spacing:1px;margin-top:16px;margin-bottom:6px">CHECKLIST</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-accent" id="mkt-preview" style="font-size:11px;height:32px;padding:0 16px;display:flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="1" width="12" height="14" rx="1.5"/><line x1="5" y1="5" x2="11" y2="5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="8" y2="11"/></svg> Preview</button>
+      <button class="btn-glass" id="mkt-view-pdf" style="font-size:11px;height:32px;padding:0 16px">Open in Acrobat</button>
+      <button class="btn-glass" id="mkt-copy-file" style="font-size:11px;height:32px;padding:0 16px">Copy file</button>
+    </div>
+    ${r.ackFilepath ? `
+    <div style="font:600 9px/1 'DM Sans',sans-serif;color:var(--text3);letter-spacing:1px;margin-top:12px;margin-bottom:6px">ACKNOWLEDGMENT</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-glass" id="mkt-ack-preview" style="font-size:11px;height:32px;padding:0 16px;display:flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="1" width="12" height="14" rx="1.5"/><line x1="5" y1="5" x2="11" y2="5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="8" y2="11"/></svg> Preview</button>
+      <button class="btn-glass" id="mkt-ack-open" style="font-size:11px;height:32px;padding:0 16px">Open in Acrobat</button>
+      <button class="btn-glass" id="mkt-ack-copy" style="font-size:11px;height:32px;padding:0 16px">Copy file</button>
+    </div>` : ''}
+    <div style="margin-top:12px">
+      <button class="btn-glass" id="mkt-open-folder" style="font-size:11px;height:32px;padding:0 16px;display:flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l2-2h4l1 1h5a1 1 0 011 1v8a1 1 0 01-1 1H2a1 1 0 01-1-1V5a1 1 0 011-1z"/></svg> Open Folder</button>
+      <button class="btn-accent" id="mkt-ask-claude" style="font-size:11px;height:32px;padding:0 16px;display:flex;align-items:center;gap:6px;margin-left:auto"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="5" r="3"/><path d="M3 14c0-3 2-5 5-5s5 2 5 5"/><path d="M11 2l1.5 1.5M5 2L3.5 3.5"/></svg> Ask Claude</button>
+    </div>
+    <div id="mkt-claude-response" style="display:none;margin-top:12px">
+      <div style="font:600 9px/1 'DM Sans',sans-serif;color:var(--accent);letter-spacing:1px;margin-bottom:6px">CLAUDE\u2019S ANALYSIS</div>
+      <div id="mkt-claude-text" style="font:400 11px/1.6 'DM Sans',sans-serif;color:var(--text);padding:12px 14px;border-radius:10px;background:var(--glass);border:1px solid var(--glass-border);user-select:text;cursor:text;white-space:pre-wrap"></div>
+    </div>
+  `;
+
+  // Preview button — opens PDF in a lightweight popup window
+  area.querySelector('#mkt-preview')?.addEventListener('click', () => {
+    window.api.previewPdf(cl.filepath, `Checklist \u2014 ${orderPad}`);
+  });
+  area.querySelector('#mkt-view-pdf')?.addEventListener('click', () => {
+    window.api.openFile(cl.filepath);
+  });
+  area.querySelector('#mkt-copy-file')?.addEventListener('click', async () => {
+    const btn = area.querySelector('#mkt-copy-file');
+    const r = await window.api.copyFileToClipboard(cl.filepath);
+    if (r.ok) {
+      btn.textContent = 'Copied!'; btn.style.color = 'var(--success)';
+      setTimeout(() => { btn.textContent = 'Copy file'; btn.style.color = ''; }, 1500);
+    }
+  });
+  // Acknowledgment buttons
+  if (r.ackFilepath) {
+    area.querySelector('#mkt-ack-preview')?.addEventListener('click', () => {
+      window.api.previewPdf(r.ackFilepath, `Acknowledgment \u2014 ${orderPad}`);
+    });
+    area.querySelector('#mkt-ack-open')?.addEventListener('click', () => {
+      window.api.openFile(r.ackFilepath);
+    });
+    area.querySelector('#mkt-ack-copy')?.addEventListener('click', async () => {
+      const btn = area.querySelector('#mkt-ack-copy');
+      const res = await window.api.copyFileToClipboard(r.ackFilepath);
+      if (res.ok) {
+        btn.textContent = 'Copied!'; btn.style.color = 'var(--success)';
+        setTimeout(() => { btn.textContent = 'Copy file'; btn.style.color = ''; }, 1500);
+      }
+    });
+  }
+  // Open folder — uses open-marketing IPC which picks 00 root or Marketing subfolder
+  area.querySelector('#mkt-open-folder')?.addEventListener('click', () => {
+    window.api.openMarketing(orderPad);
+  });
+  // Ask Claude
+  area.querySelector('#mkt-ask-claude')?.addEventListener('click', async () => {
+    const btn = area.querySelector('#mkt-ask-claude');
+    const responseDiv = area.querySelector('#mkt-claude-response');
+    const textDiv = area.querySelector('#mkt-claude-text');
+    if (!S.config.claude_api_key) {
+      const ov = document.createElement('div'); ov.className = 'modal-overlay';
+      ov.innerHTML = `<div class="modal glass-strong" style="color:var(--text);width:420px;padding:24px">
+        <h3 style="font:700 16px/1.3 'DM Sans',sans-serif;margin:0 0 8px">Set up Ask Claude</h3>
+        <p style="font:400 11px/1.5 'DM Sans',sans-serif;color:var(--text2);margin:0 0 16px">To use this, you need an API key from Anthropic (takes 30 seconds):</p>
+        <ol style="font:400 11px/1.5 'DM Sans',sans-serif;color:var(--text2);margin:0 0 16px;padding-left:20px">
+          <li>Go to <b>console.anthropic.com</b> and sign up</li>
+          <li>Click <b>API Keys</b> \u2192 <b>Create Key</b></li>
+          <li>Copy the key and paste it below</li>
+        </ol>
+        <input class="field-input no-drag" id="claude-key-input" placeholder="sk-ant-..." style="width:100%;height:38px;font:400 12px/1 'IBM Plex Mono',monospace;padding:0 12px;margin-bottom:12px;box-sizing:border-box">
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn-glass" onclick="this.closest('.modal-overlay').remove()" style="height:32px;font-size:11px;padding:0 16px">Cancel</button>
+          <button class="btn-accent" id="claude-key-save" style="height:32px;font-size:11px;padding:0 16px">Save Key</button>
+        </div></div>`;
+      document.body.appendChild(ov); modalDismiss(ov);
+      ov.querySelector('#claude-key-save').addEventListener('click', async () => {
+        const key = ov.querySelector('#claude-key-input').value.trim();
+        if (!key) return;
+        await window.api.setClaudeKey(key); S.config.claude_api_key = key; ov.remove();
+        area.querySelector('#mkt-ask-claude')?.click();
+      });
+      ov.querySelector('#claude-key-input').focus();
+      return;
+    }
+    btn.disabled = true;
+    btn.innerHTML = '<span class="deep-spinner" style="width:10px;height:10px"></span> Reading docs\u2026';
+    responseDiv.style.display = ''; textDiv.textContent = ''; textDiv.style.color = '';
+    let chunks = '';
+    window.api.onClaudeChunk((text) => { chunks += text; textDiv.textContent = chunks; });
+    btn.innerHTML = '<span class="deep-spinner" style="width:10px;height:10px"></span> Analyzing\u2026';
+    const result = await window.api.askClaude(orderPad);
+    if (result.error === 'invalid_key') {
+      textDiv.textContent = 'Invalid API key. Click Ask Claude to re-enter.'; textDiv.style.color = 'var(--danger)';
+      S.config.claude_api_key = ''; btn.disabled = false; btn.innerHTML = 'Ask Claude';
+    } else if (result.error === 'no_key') {
+      responseDiv.style.display = 'none'; S.config.claude_api_key = ''; btn.disabled = false; btn.innerHTML = 'Ask Claude';
+      area.querySelector('#mkt-ask-claude')?.click();
+    } else if (result.error === 'no_docs') {
+      textDiv.textContent = 'No readable documents found in the order folder.'; btn.disabled = false; btn.innerHTML = 'Ask Claude';
+    } else if (result.error) {
+      textDiv.textContent = result.msg || result.error; textDiv.style.color = 'var(--danger)';
+      btn.disabled = false; btn.innerHTML = 'Ask Claude';
+    } else {
+      if (!chunks) textDiv.textContent = result.text || '';
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="5" r="3"/><path d="M3 14c0-3 2-5 5-5s5 2 5 5"/><path d="M11 2l1.5 1.5M5 2L3.5 3.5"/></svg> Ask Again';
+    }
+  });
+  // Copy requirements button
+  area.querySelector('.mkt-copy-reqs')?.addEventListener('click', () => {
+    navigator.clipboard.writeText(cl.requirements);
+    const btn = area.querySelector('.mkt-copy-reqs');
+    btn.textContent = 'Copied!'; btn.style.color = 'var(--success)';
+    setTimeout(() => { btn.textContent = 'Copy'; btn.style.color = ''; }, 1500);
+  });
+  // Copy comments button
+  area.querySelector('.mkt-copy-comments')?.addEventListener('click', () => {
+    navigator.clipboard.writeText(cl.comments);
+    const btn = area.querySelector('.mkt-copy-comments');
+    btn.textContent = 'Copied!'; btn.style.color = 'var(--success)';
+    setTimeout(() => { btn.textContent = 'Copy'; btn.style.color = ''; }, 1500);
+  });
+  area.querySelectorAll('.mkt-line-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const dwg = el.dataset.dwg;
+      if (dwg) {
+        navigator.clipboard.writeText(dwg);
+        const badge = el.querySelector('div:last-child');
+        const orig = badge.textContent;
+        badge.textContent = 'COPIED';
+        setTimeout(() => { badge.textContent = orig; }, 1200);
+      }
+    });
+  });
+  // Async link checking — runs after render, updates link buttons
+  const linkItems = cl.lineItems.filter(li => li.dwgNorm && li.line !== '??').map(li => ({ line: li.line, dwgNorm: li.dwgNorm }));
+  if (linkItems.length) {
+    window.api.checkLinksExist(orderPad, linkItems).then(linked => {
+      if (S.mode !== 'marketing') return;
+      area.querySelectorAll('.mkt-link-btn').forEach(btn => {
+        const line = btn.dataset.line;
+        const dwg = btn.dataset.dwg;
+        if (!dwg) { btn.innerHTML = ''; btn.disabled = true; btn.style.opacity = '.3'; return; }
+        if (linked[line]) {
+          // Already linked — show arrow to jump to that order line
+          btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="var(--success)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12L12 5M12 5H6M12 5v6"/></svg>';
+          btn.title = 'Already linked \u2014 click to view';
+          btn.style.color = 'var(--success)';
+          btn.style.borderColor = 'var(--success)';
+          btn.onclick = (e) => {
+            e.stopPropagation();
+            // Switch to Orders mode and search for this order-line
+            S.otpDigits = [...orderPad.split(''), ...line.split('')];
+            S.otpComplete = false;
+            const modeBtn = document.querySelector('#mode-seg button[data-val="orders"]');
+            if (modeBtn) modeBtn.click();
+            setTimeout(() => { doOrderSearch(); }, 100);
+          };
+        } else {
+          // Not linked — show link icon, bind create-link handler
+          btn.innerHTML = linkSvg;
+          btn.addEventListener('click', async () => {
+            if (!dwg || !orderPad) return;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="deep-spinner" style="width:10px;height:10px"></span>';
+            const sr = await window.api.searchDrawing(dwg);
+            if (!sr.found || !sr.primary) {
+              btn.innerHTML = '\u2717'; btn.title = 'Drawing not found';
+              setTimeout(() => { btn.innerHTML = linkSvg; btn.disabled = false; }, 2000);
+              return;
+            }
+            const orderFolder = S.config.order_path + (S.platform === 'win32' ? '\\' : '/') + orderPad + line;
+            const lr = await window.api.createLink(sr.primary.filepath, orderFolder, true);
+            if (lr.ok) { btn.innerHTML = '\u2713'; btn.style.color = 'var(--success)'; btn.title = 'Linked!'; playChime(); }
+            else { btn.innerHTML = '\u26A0'; btn.title = lr.msg || 'Link failed'; setTimeout(() => { btn.innerHTML = linkSvg; btn.disabled = false; btn.style.color = ''; }, 2000); }
+          });
+        }
+      });
+    });
+  } else {
+    area.querySelectorAll('.mkt-link-btn').forEach(btn => { btn.innerHTML = linkSvg; });
+  }
 }
 
 async function showChecklistReview(orderPad) {
@@ -5049,7 +6421,7 @@ async function showChecklistReview(orderPad) {
     <div style="font:500 11px/1.4 'DM Sans',sans-serif;color:var(--text2)">Parsing checklist\u2026</div></div>
   </div>`;
   document.body.appendChild(overlay);
-  overlay.addEventListener('mousedown', e => { if (!e.target.closest('.modal') && e.clientY >= 38) overlay.remove(); });
+  modalDismiss(overlay);
 
   const r = await window.api.scanChecklists(orderPad);
   const modal = overlay.querySelector('.modal');
@@ -5176,7 +6548,7 @@ function showLinkDialog() {
       <div id="link-status" style="font:500 11px/1.4 'DM Sans',sans-serif;color:var(--text3);margin-top:10px;min-height:16px">Type order number, Enter to link</div>
     </div>`;
   document.body.appendChild(overlay);
-  overlay.addEventListener('mousedown', e => { if (!e.target.closest('.modal') && e.clientY >= 38) overlay.remove(); });
+  modalDismiss(overlay);
   // Focus the modal so it captures keyboard events
   const modalDiv = overlay.querySelector('.modal');
   modalDiv.setAttribute('tabindex', '-1');
@@ -5240,6 +6612,20 @@ function showLinkDialog() {
 //  What's New
 // ═══════════════════════════════════════════════════════════════════════
 const CHANGELOG = [
+  { ver: '1.1.0', date: 'Apr 7, 2026', items: [
+    { type: 'feat', text: 'Marketing Mode \u2014 new tab for reviewing order checklists, with parsed line items, repeat/new detection, drawing linking, and PDF preview (dev only for now)' },
+    { type: 'feat', text: 'Checklist line numbers now cross-referenced with the order acknowledgment for accuracy' },
+    { type: 'feat', text: 'PDF Preview \u2014 lightweight pop-up viewer for checklists and acknowledgments, no Acrobat needed' },
+    { type: 'feat', text: 'Special requirements detection \u2014 non-standard paint, oil tests, customer specs automatically surfaced from checklists' },
+    { type: 'feat', text: 'Drawing link status \u2014 Marketing mode auto-checks if drawings are already linked, with one-click jump to the order line' },
+    { type: 'feat', text: 'Open Folder button in Marketing mode \u2014 opens the -00 or Marketing subfolder intelligently' },
+    { type: 'ui',   text: 'Mode shortcuts \u2014 press O, D, M, or C to switch tabs instantly' },
+    { type: 'ui',   text: 'Classic theme (dev only) \u2014 XylemView nostalgia mode with Windows gray, 3D borders, and radio buttons' },
+    { type: 'ui',   text: 'Click anywhere outside a modal to close it, including the title bar \u2014 drag the logo area to move the window while a modal is open' },
+    { type: 'fix',  text: 'Checklist parser now handles Ref PN separators, spaced-out prices, and multi-line annotations' },
+    { type: 'fix',  text: 'Acknowledgment file picker no longer grabs EMAIL AUDIT PDFs instead of the real ack' },
+    { type: 'fix',  text: 'Modal scrollbars work again' },
+  ]},
   { ver: '1.0.10', date: 'Apr 1, 2026', items: [
     { type: 'feat', text: 'DXF conversions are now orders of magnitude faster \u2014 U-Tube orders can now be routed in less than two seconds!!' },
     { type: 'feat', text: 'PDF export!!' },
@@ -5299,13 +6685,158 @@ function showWhatsNew() {
   </div>`;
 
   document.body.appendChild(overlay);
-  overlay.addEventListener('mousedown', e => { if (!e.target.closest('.modal') && e.clientY >= 38) overlay.remove(); });
+  modalDismiss(overlay);
   overlay.querySelector('#wn-close').addEventListener('click', () => overlay.remove());
 
   // Stop ringing and dismiss dot, persist across restarts
   const bellBtn = $('#btn-whats-new');
   if (bellBtn) bellBtn.classList.add('seen');
   window.api.saveConfig({ seen_changelog_ver: CHANGELOG[0].ver });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  BPCS Connection Test (dev only) — Ctrl+Shift+B
+// ═══════════════════════════════════════════════════════════════════════
+async function showBpcsTest() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+
+  // Pre-fill with current order if loaded
+  const curOrder = S.orderResult?.order || '';
+  const curLine = S.orderResult?.line || '';
+
+  overlay.innerHTML = `<div class="modal glass-strong" style="color:var(--text);width:460px;max-height:90vh;overflow-y:auto;scrollbar-gutter:stable;padding:24px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <div style="font:700 16px/1.3 'DM Sans',sans-serif">BPCS Connection Test</div>
+      <span style="font:700 9px/1 'DM Sans',sans-serif;background:var(--danger);color:#fff;padding:3px 6px;border-radius:4px">DEV ONLY</span>
+    </div>
+    <p style="font:400 11px/1.5 'DM Sans',sans-serif;color:var(--text3);margin-bottom:16px">Read-only queries against the BPCS web service. Nothing is written or modified.</p>
+
+    <div style="font:600 10px/1 'DM Sans',sans-serif;color:var(--text2);letter-spacing:1px;margin-bottom:8px">CONNECTION TYPE</div>
+    <div style="font:700 11px/1 'IBM Plex Mono',monospace;color:var(--success);margin-bottom:16px">SANDBOX (D-box)</div>
+
+    <div style="font:600 10px/1 'DM Sans',sans-serif;color:var(--text2);letter-spacing:1px;margin-bottom:8px">1. GET ITEM NUMBER</div>
+    <div style="display:flex;gap:6px;margin-bottom:4px">
+      <input class="field-input" id="bpcs-order" placeholder="Order" value="${escHtml(curOrder)}" style="width:100px;height:30px;font-size:12px;padding:0 8px;font-family:'IBM Plex Mono',monospace">
+      <input class="field-input" id="bpcs-line" placeholder="Line" value="${escHtml(curLine)}" style="width:60px;height:30px;font-size:12px;padding:0 8px;font-family:'IBM Plex Mono',monospace">
+      <button class="btn-accent" id="bpcs-get-item" style="height:30px;font-size:11px;padding:0 14px;white-space:nowrap">Get Item #</button>
+    </div>
+    <pre id="bpcs-item-result" style="font:400 10px/1.4 'IBM Plex Mono',monospace;color:var(--text2);background:var(--input-bg);border-radius:8px;padding:8px 10px;margin:4px 0 16px;white-space:pre-wrap;word-break:break-all;max-height:120px;overflow-y:auto;display:none;user-select:text"></pre>
+
+    <div style="font:600 10px/1 'DM Sans',sans-serif;color:var(--text2);letter-spacing:1px;margin-bottom:8px">2. CHECK / GET ROUTERS</div>
+    <div style="display:flex;gap:6px;margin-bottom:4px">
+      <input class="field-input" id="bpcs-pn" placeholder="Part number (from step 1)" style="flex:1;height:30px;font-size:12px;padding:0 8px;font-family:'IBM Plex Mono',monospace">
+      <button class="btn-accent" id="bpcs-check-routers" style="height:30px;font-size:11px;padding:0 14px;white-space:nowrap">Check</button>
+      <button class="btn-glass" id="bpcs-get-routers" style="height:30px;font-size:11px;padding:0 14px;white-space:nowrap">Get All</button>
+    </div>
+    <pre id="bpcs-router-result" style="font:400 10px/1.4 'IBM Plex Mono',monospace;color:var(--text2);background:var(--input-bg);border-radius:8px;padding:8px 10px;margin:4px 0 16px;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto;display:none;user-select:text"></pre>
+
+    <div style="font:600 10px/1 'DM Sans',sans-serif;color:var(--danger);letter-spacing:1px;margin-bottom:8px">3. TEST INSERT (SANDBOX ONLY)</div>
+    <p style="font:400 10px/1.4 'DM Sans',sans-serif;color:var(--text3);margin:0 0 8px">Inserts ONE routing operation to the part number above. Sandbox only. 0.01 run hrs.</p>
+    <div style="display:flex;gap:6px;margin-bottom:4px;flex-wrap:wrap">
+      <input class="field-input" id="bpcs-op" placeholder="Op#" value="990" style="width:55px;height:30px;font-size:12px;padding:0 8px;font-family:'IBM Plex Mono',monospace">
+      <input class="field-input" id="bpcs-wc" placeholder="WC" value="999" style="width:55px;height:30px;font-size:12px;padding:0 8px;font-family:'IBM Plex Mono',monospace">
+      <input class="field-input" id="bpcs-desc" placeholder="Description (max 30)" value="DELETE THIS OPERATION" maxlength="30" style="flex:1;min-width:140px;height:30px;font-size:12px;padding:0 8px;font-family:'IBM Plex Mono',monospace">
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:4px;margin-top:6px">
+      <button class="btn-glass" id="bpcs-insert-test" style="height:30px;font-size:11px;padding:0 14px;white-space:nowrap;border-color:var(--danger);color:var(--danger)">Insert Test Route</button>
+    </div>
+    <pre id="bpcs-insert-result" style="font:400 10px/1.4 'IBM Plex Mono',monospace;color:var(--text2);background:var(--input-bg);border-radius:8px;padding:8px 10px;margin:4px 0 16px;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto;display:none;user-select:text"></pre>
+
+    <div style="display:flex;justify-content:flex-end;margin-top:8px">
+      <button class="btn-glass" id="bpcs-close" style="height:32px;padding:0 20px;font-size:12px">Close</button>
+    </div>
+  </div>`;
+
+  document.body.appendChild(overlay);
+  modalDismiss(overlay);
+  overlay.querySelector('#bpcs-close').addEventListener('click', () => overlay.remove());
+
+  function getConnType() { return 'SANDBOX'; }
+
+  // Get Item Number
+  overlay.querySelector('#bpcs-get-item').addEventListener('click', async () => {
+    const order = overlay.querySelector('#bpcs-order').value.trim();
+    const line = overlay.querySelector('#bpcs-line').value.trim();
+    const out = overlay.querySelector('#bpcs-item-result');
+    if (!order) { out.style.display = 'block'; out.textContent = 'Enter an order number.'; return; }
+    out.style.display = 'block';
+    out.textContent = 'Calling GetItemNumber...';
+    const r = await window.api.bpcsGetItemNumber(getConnType(), order, line || '00');
+    if (r.ok) {
+      out.textContent = `Part Number: ${r.result || '(empty)'}\n\nRaw XML:\n${formatXml(r.raw)}`;
+      // Auto-fill part number field
+      if (r.result) overlay.querySelector('#bpcs-pn').value = r.result.trim();
+    } else {
+      out.textContent = `ERROR: ${r.error}`;
+      out.style.color = 'var(--danger)';
+    }
+  });
+
+  // Check Existing Routers
+  overlay.querySelector('#bpcs-check-routers').addEventListener('click', async () => {
+    const pn = overlay.querySelector('#bpcs-pn').value.trim();
+    const out = overlay.querySelector('#bpcs-router-result');
+    if (!pn) { out.style.display = 'block'; out.textContent = 'Enter a part number.'; return; }
+    out.style.display = 'block';
+    out.textContent = 'Calling CheckForExistingRouters...';
+    const r = await window.api.bpcsCheckExistingRouters(getConnType(), pn);
+    if (r.ok) {
+      out.textContent = `Existing routers: ${r.result}\n\nRaw XML:\n${formatXml(r.raw)}`;
+    } else {
+      out.textContent = `ERROR: ${r.error}`;
+      out.style.color = 'var(--danger)';
+    }
+  });
+
+  // Get Routers
+  overlay.querySelector('#bpcs-get-routers').addEventListener('click', async () => {
+    const pn = overlay.querySelector('#bpcs-pn').value.trim();
+    const out = overlay.querySelector('#bpcs-router-result');
+    if (!pn) { out.style.display = 'block'; out.textContent = 'Enter a part number.'; return; }
+    out.style.display = 'block';
+    out.textContent = 'Calling GetRouters...';
+    const r = await window.api.bpcsGetRouters(pn);
+    if (r.ok) {
+      out.textContent = `Raw XML:\n${formatXml(r.raw)}`;
+    } else {
+      out.textContent = `ERROR: ${r.error}`;
+      out.style.color = 'var(--danger)';
+    }
+  });
+
+  // Insert test route
+  overlay.querySelector('#bpcs-insert-test').addEventListener('click', async () => {
+    const pn = overlay.querySelector('#bpcs-pn').value.trim();
+    const op = overlay.querySelector('#bpcs-op').value.trim();
+    const wc = overlay.querySelector('#bpcs-wc').value.trim();
+    const desc = overlay.querySelector('#bpcs-desc').value.trim();
+    const out = overlay.querySelector('#bpcs-insert-result');
+    if (!pn) { out.style.display = 'block'; out.textContent = 'Enter a part number first (step 1).'; return; }
+    if (!confirm(`Insert routing to SANDBOX?\n\nPart: ${pn}\nOp: ${op || '990'}, WC: ${wc || '999'}\nDesc: "${desc || 'DELETE THIS OPERATION'}"\nRun: 0.01 hrs\n\nThis writes to D-box (sandbox) only.`)) return;
+    out.style.display = 'block';
+    out.textContent = 'Calling InsertFRTlineByParams (SANDBOX)...';
+    const r = await window.api.bpcsInsertFrtTest(pn, op, wc, desc);
+    if (r.ok) {
+      out.textContent = `Result: ${r.result || '(empty — may indicate success)'}\n\nSent params:\n${JSON.stringify(r.sent, null, 2)}\n\nRaw XML:\n${formatXml(r.raw)}`;
+    } else {
+      out.textContent = `ERROR: ${r.error}`;
+      out.style.color = 'var(--danger)';
+    }
+  });
+}
+
+function formatXml(xml) {
+  // Basic XML prettifier for display
+  let indent = 0;
+  return xml.replace(/>\s*</g, '>\n<').split('\n').map(line => {
+    line = line.trim();
+    if (!line) return '';
+    if (line.startsWith('</')) indent = Math.max(0, indent - 1);
+    const out = '  '.repeat(indent) + line;
+    if (line.startsWith('<') && !line.startsWith('</') && !line.startsWith('<?') && !line.endsWith('/>') && !/<\/[^>]+>$/.test(line)) indent++;
+    return out;
+  }).join('\n');
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -5318,7 +6849,6 @@ async function showSettings() {
 
   const programFields = [
     { key: 'dwg_viewer', label: 'DWG viewer program' },
-    { key: 'autocad_exe', label: 'AutoCAD program' },
     { key: 'contingency_exe', label: 'Contingency program' },
   ];
   const dbFields = [
@@ -5387,6 +6917,15 @@ async function showSettings() {
       <button class="btn-glass" id="set-db-reset" style="margin-top:4px;font-size:10px;height:26px;padding:0 12px">Restore defaults</button>
       </div>
 
+      <div class="field-label" style="margin:8px 0 4px;cursor:pointer" id="set-diag-toggle">DIAGNOSTICS ▾</div>
+      <div id="set-diag-section" style="display:none">
+        <p style="font-size:10px;color:var(--text3);margin:0 0 6px">Copy a diagnostics report to your clipboard. Includes system info, path status, and recent activity log. Useful for troubleshooting.</p>
+        <button class="btn-glass" id="set-diag-copy" style="font-size:10px;height:26px;padding:0 12px;display:flex;align-items:center;gap:4px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Copy diagnostics to clipboard
+        </button>
+      </div>
+
       <div style="display:flex;align-items:center;margin-top:12px">
         <a href="#" id="tip-jar" style="font-size:11px;color:var(--accent);text-decoration:none;opacity:0.6"><span class="tip-jar-icon">☕</span> Tip Jar</a>
         <div style="flex:1"></div>
@@ -5396,7 +6935,7 @@ async function showSettings() {
     </div>`;
 
   document.body.appendChild(overlay);
-  overlay.addEventListener('mousedown', e => { if (!e.target.closest('.modal') && e.clientY >= 38) overlay.remove(); });
+  modalDismiss(overlay);
   $('#set-cancel').addEventListener('click', () => overlay.remove());
 
   // Init inline radio buttons
@@ -5415,6 +6954,29 @@ async function showSettings() {
     const isHidden = el.style.display === 'none';
     el.style.display = isHidden ? '' : 'none';
     $('#set-db-toggle').textContent = isHidden ? 'DATABASE PATHS ▴' : 'DATABASE PATHS ▾';
+  });
+
+  // Diagnostics toggle + copy
+  $('#set-diag-toggle').addEventListener('click', () => {
+    const el = $('#set-diag-section');
+    const isHidden = el.style.display === 'none';
+    el.style.display = isHidden ? '' : 'none';
+    $('#set-diag-toggle').textContent = isHidden ? 'DIAGNOSTICS ▴' : 'DIAGNOSTICS ▾';
+  });
+  $('#set-diag-copy').addEventListener('click', async () => {
+    const btn = $('#set-diag-copy');
+    const origText = btn.innerHTML;
+    btn.textContent = 'Collecting...';
+    btn.disabled = true;
+    try {
+      const report = await window.api.collectDiagnostics();
+      await window.api.copyText(report);
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.innerHTML = origText; btn.disabled = false; }, 2000);
+    } catch (e) {
+      btn.textContent = 'Failed';
+      setTimeout(() => { btn.innerHTML = origText; btn.disabled = false; }, 2000);
+    }
   });
 
   // Restore default database paths
@@ -5448,6 +7010,22 @@ async function showSettings() {
   });
 }
 
+// ── Verbose startup diagnostics ──────────────────────────────────────────
+// Buffers timestamped boot events; flushes to logDiag once IPC is ready.
+const _bootLog = [];
+const _bootT0 = performance.now();
+function bootLog(msg) {
+  const dt = (performance.now() - _bootT0).toFixed(0);
+  const entry = `+${dt}ms ${msg}`;
+  _bootLog.push(entry);
+  console.log(`[BOOT] ${entry}`);
+}
+function flushBootLog() {
+  if (!window.api?.logDiag) return;
+  try { window.api.logDiag('BOOT', _bootLog.join(' → ')); } catch {}
+}
+bootLog('script parsed');
+
 // Splash: solid bg → logo fades+zooms in with chime → hold → fade out into app
 // Chime plays FIRST, then init() starts — so IPC calls can't block the audio
 (function() {
@@ -5458,26 +7036,67 @@ async function showSettings() {
   // Pre-warm the AudioContext immediately (before any async work)
   try { getSfxCtx(); } catch(e) {}
 
-  function startSplash() {
-    // 0.3s solid bg, then logo fades+zooms in and chime plays
-    setTimeout(() => {
-      if (content) content.classList.add('show');
-      try { playStartupChime(); S._hasPlayed = true; } catch (e) {}
-      // Boot the app AFTER the chime has started playing
-      setTimeout(() => init().catch(console.error), 10);
-    }, 300);
-    // After zoom-in completes (0.3s delay + 0.8s transition), lock the transform
-    setTimeout(() => {
-      if (content) content.style.transition = 'opacity 0.8s ease';
-    }, 1200);
-    // Hold, then fade out — last ~1s of chord tail plays over the fade
-    setTimeout(() => {
-      splash.classList.add('fading');
-      setTimeout(() => { if (splash.parentNode) splash.remove(); }, 1000);
-    }, 4800);
+  function dismissSplash() {
+    if (splash._dismissed) return;
+    splash._dismissed = true;
+    bootLog('splash dismiss');
+    try { window.api.setGlassMode(true); } catch(e) {}
+    splash.classList.add('fading');
+    setTimeout(() => { if (splash.parentNode) splash.remove(); }, 1000);
   }
-  if (document.readyState === 'complete') requestAnimationFrame(startSplash);
-  else window.addEventListener('load', () => requestAnimationFrame(startSplash));
+
+  function startSplash() {
+    bootLog('startSplash');
+    // 1.6s solid bg, then logo fades+zooms in and chime plays
+    setTimeout(() => {
+      bootLog('show content');
+      // Register contingency loading listener BEFORE preload so the spinner shows immediately
+      try {
+        window.api.onContingencyLoading((loading) => {
+          const btn = document.querySelector('#cnt-btn');
+          if (!btn) return;
+          btn._cntLoading = loading;
+          if (loading) {
+            btn._origText = btn._origText || btn.textContent;
+            btn.innerHTML = '<span class="deep-spinner" style="width:12px;height:12px"></span>';
+          } else if (btn._origText) {
+            btn.textContent = btn._origText;
+            btn._origText = null;
+          }
+        });
+        window.api.preloadContingency().catch(() => {}); bootLog('cnt preload');
+      } catch(e) {}
+      if (content) {
+        content.classList.add('show');
+        // When the zoom transition finishes naturally, lock transform so text renders crisp
+        content.addEventListener('transitionend', function handler(e) {
+          if (e.propertyName === 'transform') {
+            content.removeEventListener('transitionend', handler);
+            content.style.transition = 'none';
+            content.style.transform = 'none';
+            bootLog('zoom complete');
+          }
+        });
+      }
+      try { playStartupChime(); S._hasPlayed = true; bootLog('chime'); } catch (e) { bootLog('chime failed: ' + e.message); }
+      // Boot the app AFTER the chime has started playing
+      setTimeout(() => { bootLog('init start'); init().then(() => bootLog('init done')).catch(e => bootLog('init error: ' + e.message)); }, 10);
+    }, 1600);
+    // Hold, then fade out — last shimmer notes play over the crossfade into the app
+    setTimeout(dismissSplash, 5200);
+  }
+
+  // Failsafe: force-dismiss splash after 12.5s no matter what
+  setTimeout(() => { if (!splash._dismissed) bootLog('failsafe triggered'); dismissSplash(); }, 12500);
+
+  // Use setTimeout instead of requestAnimationFrame — rAF may not fire while window is hidden
+  if (document.readyState === 'loading') {
+    bootLog('waiting for DOMContentLoaded');
+    document.addEventListener('DOMContentLoaded', () => { bootLog('DOMContentLoaded'); setTimeout(startSplash, 0); });
+  } else {
+    bootLog('DOM already ready');
+    setTimeout(startSplash, 0);
+  }
 })();
 </script>
 </body>

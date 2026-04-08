@@ -31,6 +31,9 @@ contextBridge.exposeInMainWorld('api', {
   readLink:        (fp)         => ipcRenderer.invoke('read-link', fp),
   openFolder:      (fp)         => ipcRenderer.invoke('open-folder', fp),
 
+  // Nicknames (shared username → display name map)
+  getNicknames:       ()         => ipcRenderer.invoke('get-nicknames'),
+
   // Contingency
   preloadContingency: (force)    => ipcRenderer.invoke('preload-contingency', force),
   getContingency:    (ol)       => ipcRenderer.invoke('get-contingency', ol),
@@ -53,12 +56,23 @@ contextBridge.exposeInMainWorld('api', {
 
   // Misc
   sendEmail:      (addr, subj)  => ipcRenderer.invoke('send-email', addr, subj),
+  sendEmailWithBody: (addr, subj, body) => ipcRenderer.invoke('send-email-with-body', addr, subj, body),
+  sendEmailHtml: (addr, subj, html) => ipcRenderer.invoke('send-email-html', addr, subj, html),
   openExternal:   (url)         => ipcRenderer.invoke('open-external', url),
   wingetInstall:  (id)          => ipcRenderer.invoke('winget-install', id),
   restartApp:     ()            => ipcRenderer.invoke('restart-app'),
   openMarketing:  (o)           => ipcRenderer.invoke('open-marketing', o),
   findChecklist:  (o)           => ipcRenderer.invoke('find-checklist', o),
   getSiblingLines:(o)           => ipcRenderer.invoke('get-sibling-lines', o),
+
+  // PDF preview
+  previewPdf:      (fp, title)   => ipcRenderer.invoke('preview-pdf', fp, title),
+  checkLinksExist: (order, items) => ipcRenderer.invoke('check-links-exist', order, items),
+
+  // Ask Claude
+  askClaude:       (order)       => ipcRenderer.invoke('ask-claude', order),
+  setClaudeKey:    (key)         => ipcRenderer.invoke('set-claude-key', key),
+  onClaudeChunk:   (cb)          => ipcRenderer.on('claude-chunk', (_, text) => cb(text)),
 
   // Recent orders
   getRecentOrders: ()           => ipcRenderer.invoke('get-recent-orders'),
@@ -121,6 +135,22 @@ contextBridge.exposeInMainWorld('api', {
   commentsRead:   (ol)          => ipcRenderer.invoke('comments-read', ol),
   commentsSend:   (ol, text)    => ipcRenderer.invoke('comments-send', ol, text),
 
+  // Route-O-Matic (PCOMM)
+  routeOMatic:    (ops, session)  => ipcRenderer.invoke('route-o-matic', ops, session),
+  routeOMaticAcs: (ops)           => ipcRenderer.invoke('route-o-matic-acs', ops),
+
+  // Diagnostics
+  collectDiagnostics: ()        => ipcRenderer.invoke('collect-diagnostics'),
+  logDiag:       (cat, msg)     => ipcRenderer.invoke('log-diag', cat, msg),
+
+  // BPCS web service (read-only test methods)
+  bpcsGetItemNumber:      (ct, order, line) => ipcRenderer.invoke('bpcs-get-item-number', ct, order, line),
+  bpcsCheckExistingRouters: (ct, pn)        => ipcRenderer.invoke('bpcs-check-existing-routers', ct, pn),
+  bpcsGetRouters:         (pn)              => ipcRenderer.invoke('bpcs-get-routers', pn),
+  bpcsDrawingHistory:     (dwg)           => ipcRenderer.invoke('bpcs-drawing-history', dwg),
+  bpcsCheckExistingFrtLine: (ct, pn, op) => ipcRenderer.invoke('bpcs-check-existing-frt-line', ct, pn, op),
+  bpcsInsertFrtTest:      (pn, op, wc, desc) => ipcRenderer.invoke('bpcs-insert-frt-test', pn, op, wc, desc),
+
   // Window controls
   winMinimize:    ()            => ipcRenderer.invoke('win-minimize'),
   winMaximize:    ()            => ipcRenderer.invoke('win-maximize'),
@@ -128,4 +158,5 @@ contextBridge.exposeInMainWorld('api', {
   winIsMaximized: ()            => ipcRenderer.invoke('win-is-maximized'),
   setGlassMode:  (on)           => ipcRenderer.invoke('set-glass-mode', on),
   onSystemThemeChanged: (cb)    => ipcRenderer.on('system-theme-changed', cb),
+  onMaximizedChanged:   (cb)    => ipcRenderer.on('maximized-changed', (_, maximized) => cb(maximized)),
 });

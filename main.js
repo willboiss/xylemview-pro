@@ -18,10 +18,14 @@ const { execSync, exec, spawn } = require('child_process');
 const { promisify } = require('util');
 const execAsync = promisify(exec);
 const os = require('os');
+const { Worker } = require('worker_threads');
 
 // ─── Config defaults ────────────────────────────────────────────────────
 const IS_MAC = process.platform === 'darwin';
 const IS_WIN = process.platform === 'win32';
+const IS_DEV = !app.isPackaged;
+const WIN_BUILD = IS_WIN ? parseInt(os.release().split('.')[2], 10) || 0 : 0;
+const IS_WIN11 = IS_WIN && WIN_BUILD >= 22000;
 
 if (IS_WIN) app.setAppUserModelId('com.xylem.xylemview-pro');
 
@@ -31,7 +35,7 @@ const DEFAULTS = {
   drawing_path:    IS_WIN ? 'L:\\Drawings\\ACADDWGS' : path.join(os.homedir(), 'XylemTest/ACADDWGS'),
   ds_path:         IS_WIN ? 'L:\\drawings\\DSGNSTDS\\DS' : path.join(os.homedir(), 'XylemTest/DSGNSTDS'),
   dwg_viewer:      IS_WIN ? 'E:\\ITTVIEW\\DWGSee\\DWGSee.exe' : '',
-  autocad_exe:     '',  // Auto-detected on first use
+  autocad_exe:     '',  // Legacy — no longer used (Open in AutoCAD uses shell/DWG Launcher)
   contingency_exe: IS_WIN ? 'E:\\Contingency\\Contingency.exe' : '',
   theme: 'auto',
   minimize_to_tray: true,
@@ -120,12 +124,40 @@ const CFG_VERSION = 1;
 
 // Resolved shared data directory — set after loadConfig determines drive mappings
 let SHARED_DATA_DIR = IS_WIN ? 'E:\\XylemView\\XylemView Pro' : path.join(os.homedir(), 'XylemTest');
+
+// Nicknames — loaded from shared nicknames.json, maps usernames to display names
+let _nicknames = {};
+function loadNicknames() {
+  const paths = [
+    path.join(SHARED_DATA_DIR, 'nicknames.json'),
+    path.join(IS_DEV ? __dirname : process.resourcesPath, 'nicknames.json'),
+  ];
+  for (const p of paths) {
+    try {
+      const data = JSON.parse(fs.readFileSync(p, 'utf8'));
+      if (data && typeof data === 'object') {
+        _nicknames = {};
+        for (const [k, v] of Object.entries(data)) {
+          if (k.startsWith('_')) continue; // skip comment keys
+          _nicknames[k.toLowerCase().trim()] = String(v).trim();
+        }
+        return;
+      }
+    } catch {}
+  }
+}
 function resolveSharedDataDir() {
   if (!IS_WIN) return;
   const eDrive = 'E:\\XylemView\\XylemView Pro';
-  if (fs.existsSync(eDrive)) { SHARED_DATA_DIR = eDrive; return; }
+  const tokE = perfStart('existsSync(E: drive) — SYNC NETWORK');
+  const eOk = fs.existsSync(eDrive);
+  perfEnd(tokE);
+  if (eOk) { SHARED_DATA_DIR = eDrive; return; }
   const unc = '\\\\01ckfp02-1\\Apps\\XylemView\\XylemView Pro';
-  if (fs.existsSync(unc)) { SHARED_DATA_DIR = unc; return; }
+  const tokUnc = perfStart('existsSync(UNC \\\\01ckfp02-1) — SYNC NETWORK');
+  const uncOk = fs.existsSync(unc);
+  perfEnd(tokUnc);
+  if (uncOk) { SHARED_DATA_DIR = unc; return; }
   SHARED_DATA_DIR = eDrive; // fallback to E: even if missing
 }
 
@@ -159,8 +191,11 @@ function checkDriveMapping(letter, expectedUnc) {
   return false;
 }
 
+let _isFirstInstall = false;
+
 function loadConfig() {
   const isFirstRun = !fs.existsSync(configPath());
+  _isFirstInstall = isFirstRun;
   try {
     if (!isFirstRun) {
       const d = JSON.parse(fs.readFileSync(configPath(), 'utf-8'));
@@ -192,6 +227,7 @@ function saveConfig() {
   try {
     fs.mkdirSync(configDir(), { recursive: true });
     fs.writeFileSync(configPath(), JSON.stringify({ _v: CFG_VERSION, ...config }, null, 2));
+    logDiag('CONFIG', 'Saved');
   } catch (e) { console.error('Config save error:', e); }
 }
 
@@ -443,8 +479,8 @@ async function searchDrawings(baseNum, wildcard, wcPattern) {
   // Parse rev from each result for grouping
   allResults.forEach(r => {
     const m = DWG_RE.exec(r.name) || TL_RE.exec(r.name);
-    r._rev = m ? m[2] : '';
-    r._revSort = m ? m[2].padStart(6, '0') : '';
+    r._rev = m ? m[2].toUpperCase() : '';
+    r._revSort = m ? m[2].toUpperCase().padStart(6, '0') : '';
     r._baseNum = m ? m[1].toUpperCase() : r.name.toUpperCase();
     r._ext = r.ext.toUpperCase().replace(']', '');
     r.owner = '';  // Owner loaded lazily on demand
@@ -511,7 +547,7 @@ function checkBirthdays() {
   const candidates = [
     path.join(SHARED_DATA_DIR, 'birthdays.csv'),
     path.join(path.dirname(process.execPath), 'birthdays.csv'),
-    path.join(app.isPackaged ? process.resourcesPath : __dirname, 'birthdays.csv'),
+    path.join(IS_DEV ? __dirname : process.resourcesPath, 'birthdays.csv'),
     path.join(process.cwd(), 'birthdays.csv'),
     path.join(configDir(), 'birthdays.csv'),
   ];
@@ -586,12 +622,13 @@ function detectSystemDark() {
 
 // ─── Login item (launch on startup) ─────────────────────────────────────
 function applyLoginItemSettings() {
-  if (!app.isPackaged) return; // skip in dev
+  if (IS_DEV) return; // skip in dev
   app.setLoginItemSettings({ openAtLogin: config.launch_on_startup !== false });
 }
 
 // ─── Main window ────────────────────────────────────────────────────────
 let mainWindow = null;
+let quickSearchWindow = null;
 let tray = null;
 let isQuitting = false;
 
@@ -599,8 +636,8 @@ function createWindow() {
   const winOpts = {
     width: 490, height: 600, minWidth: 360, minHeight: 440,
     frame: false,
-    maximizable: false,
-    fullscreenable: false,
+    maximizable: IS_DEV,
+    fullscreenable: IS_DEV,
     titleBarStyle: 'hidden',
     titleBarOverlay: false,
     webPreferences: {
@@ -612,10 +649,11 @@ function createWindow() {
     show: false,
   };
 
-  // Windows 11: Acrylic backdrop
+  // Acrylic backdrop — material must be set at creation for DWM composition.
+  // Win11 only; Win10 ignores backgroundMaterial, so CSS fallbacks handle the look.
   if (IS_WIN) {
-    winOpts.backgroundColor = '#00000000';
-    winOpts.backgroundMaterial = 'acrylic';
+    winOpts.backgroundColor = '#101014';
+    if (IS_WIN11) winOpts.backgroundMaterial = 'acrylic';
   } else {
     winOpts.vibrancy = 'under-window';
     winOpts.visualEffectState = 'active';
@@ -623,6 +661,11 @@ function createWindow() {
   }
 
   mainWindow = new BrowserWindow(winOpts);
+
+  // Allow geolocation for weather location detection
+  mainWindow.webContents.session.setPermissionRequestHandler((wc, permission, callback) => {
+    callback(permission === 'geolocation');
+  });
 
   mainWindow.loadFile('index.html');
 
@@ -633,6 +676,12 @@ function createWindow() {
   // Track when the window last had focus — used by tray click to decide show vs hide
   mainWindow.on('focus', () => { _lastFocusedAt = Date.now(); });
   mainWindow.on('blur',  () => { _lastFocusedAt = Date.now(); });
+
+  // Re-apply acrylic after maximize/unmaximize (Windows kills it on state change)
+  // Also tell the renderer so it can toggle rounded corners
+  // Notify renderer of maximize state (for future corner/layout adjustments)
+  mainWindow.on('maximize', () => mainWindow.webContents.send('maximized-changed', true));
+  mainWindow.on('unmaximize', () => mainWindow.webContents.send('maximized-changed', false));
 
   mainWindow.on('close', (e) => {
     if (!isQuitting && config.minimize_to_tray) {
@@ -651,6 +700,52 @@ function _trayShow() {
   setTimeout(() => mainWindow.setOpacity(1), 60);
 }
 
+// ─── Quick Search (Spotlight-style drawing search) ─────────────────────
+function createQuickSearch() {
+  if (quickSearchWindow && !quickSearchWindow.isDestroyed()) {
+    quickSearchWindow.show();
+    quickSearchWindow.focus();
+    return;
+  }
+
+  const { screen } = require('electron');
+  const cursor = screen.getCursorScreenPoint();
+  const display = screen.getDisplayNearestPoint(cursor);
+  const { x, y, width } = display.workArea;
+  const winW = 520;
+  const winX = Math.round(x + (width - winW) / 2);
+  const winY = Math.round(y + display.workArea.height * 0.22);
+
+  quickSearchWindow = new BrowserWindow({
+    width: winW, height: 60,
+    x: winX, y: winY,
+    frame: false, transparent: true, resizable: false,
+    maximizable: false, minimizable: false, fullscreenable: false,
+    skipTaskbar: true, alwaysOnTop: true,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload-quick.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  quickSearchWindow.loadFile('quick-search.html');
+  quickSearchWindow.once('ready-to-show', () => {
+    quickSearchWindow.show();
+    quickSearchWindow.focus();
+  });
+  quickSearchWindow.on('closed', () => { quickSearchWindow = null; });
+}
+
+function toggleQuickSearch() {
+  if (quickSearchWindow && !quickSearchWindow.isDestroyed() && quickSearchWindow.isVisible()) {
+    quickSearchWindow.hide();
+  } else {
+    createQuickSearch();
+  }
+}
+
 function createTray() {
   if (tray) return;
   let trayIcon;
@@ -665,10 +760,15 @@ function createTray() {
   }
   tray = new Tray(trayIcon);
   tray.setToolTip('XylemView Pro');
-  tray.setContextMenu(Menu.buildFromTemplate([
+  const trayMenu = [
     { label: 'Show XylemView Pro', click: () => _trayShow() },
-    { label: 'Quit', click: () => { isQuitting = true; app.quit(); } },
-  ]));
+  ];
+  if (IS_DEV) {
+    trayMenu.push({ label: 'Quick Drawing Search', accelerator: 'CommandOrControl+Shift+D', click: () => toggleQuickSearch() });
+  }
+  trayMenu.push({ type: 'separator' });
+  trayMenu.push({ label: 'Quit', click: () => { isQuitting = true; app.quit(); } });
+  tray.setContextMenu(Menu.buildFromTemplate(trayMenu));
   // Single click: if hidden → show; if was just focused (user clicked tray from app) → hide; else → focus
   tray.on('click', () => {
     if (!mainWindow.isVisible()) {
@@ -701,11 +801,8 @@ app.whenReady().then(() => {
   if (!gotSingleLock) return;
   loadConfig();
   resolveSharedDataDir();
-  // Auto-detect latest AutoCAD if not configured
-  if (!config.autocad_exe) {
-    const detected = detectAutoCAD();
-    if (detected) { config.autocad_exe = detected; saveConfig(); }
-  }
+  loadNicknames();
+  // (autocad_exe auto-detection removed — Open in AutoCAD now uses shell/DWG Launcher)
   applyLoginItemSettings();
   // Log version + user + ODA status to shared network file (fire-and-forget)
   try {
@@ -714,14 +811,25 @@ app.whenReady().then(() => {
     const ts = new Date().toISOString();
     const hasOda = !!findOdaConverter();
     const hasAcad = !!findPdfAccore();
-    const line = `${ts},${username},${CURRENT_VERSION},${app.isPackaged ? 'installed' : 'dev'},oda=${hasOda},acad=${hasAcad}\n`;
+    const line = `${ts},${username},${CURRENT_VERSION},${IS_DEV ? 'dev' : 'installed'},oda=${hasOda},acad=${hasAcad}\n`;
     fs.appendFile(logPath, line, () => {});
   } catch (e) {}
+  logDiag('APP', `Started v${CURRENT_VERSION} (${IS_DEV ? 'dev' : 'installed'}) — Electron ${process.versions.electron}, ${os.platform()} ${os.release()}`);
+  // Post "joined the chat" on first install (not updates)
+  if (_isFirstInstall) {
+    (async () => {
+      try {
+        const info = await getUserInfoCached();
+        await appendJsonMsg(getChatFile(), { user: info.username, name: info.fullName, text: 'has joined the chat.', ts: Date.now(), system: true });
+        logDiag('CHAT', `Posted join message for ${info.fullName}`);
+      } catch {}
+    })();
+  }
   createWindow();
   nativeTheme.on('updated', () => { if (win) win.webContents.send('system-theme-changed'); });
   createTray();  // Always show tray icon
 
-  // Global shortcut for quick search (Ctrl+Shift+X)
+  // Global shortcut to show main window (Ctrl+Shift+X)
   globalShortcut.register('CommandOrControl+Shift+X', () => {
     if (mainWindow) {
       if (mainWindow.isVisible()) {
@@ -732,9 +840,29 @@ app.whenReady().then(() => {
       }
     }
   });
+
+  // Global shortcut for Quick Drawing Search (Ctrl+Shift+D) — dev only for now
+  if (IS_DEV) {
+    globalShortcut.register('CommandOrControl+Shift+D', () => {
+      toggleQuickSearch();
+    });
+  }
 });
 
-app.on('before-quit', () => { isQuitting = true; });
+// ─── Quick Search IPC ──────────────────────────────────────────────────
+ipcMain.handle('close-quick-search', () => {
+  if (quickSearchWindow && !quickSearchWindow.isDestroyed()) quickSearchWindow.hide();
+});
+ipcMain.handle('resize-quick-search', (_, height) => {
+  if (quickSearchWindow && !quickSearchWindow.isDestroyed()) {
+    const [w] = quickSearchWindow.getSize();
+    // Clamp height: min 60 (search bar only), max 500
+    const h = Math.max(60, Math.min(500, Math.ceil(height) + 2));
+    quickSearchWindow.setSize(w, h);
+  }
+});
+
+app.on('before-quit', () => { isQuitting = true; logDiag('APP', 'Quit'); });
 ipcMain.handle('quit-app', () => { isQuitting = true; app.quit(); });
 app.on('window-all-closed', () => { if (!IS_MAC) app.quit(); });
 app.on('activate', () => { if (!mainWindow) createWindow(); else mainWindow.show(); });
@@ -749,12 +877,140 @@ function logError(source, error) {
     const line = `${ts},${username},${CURRENT_VERSION},${source},"${msg.replace(/"/g, '""')}"\n`;
     fs.appendFile(logPath, line, () => {});
   } catch (e) {}
+  logDiag('ERROR', `[${source}] ${String(error && error.stack || error || '').replace(/[\r\n]+/g, ' ').slice(0, 300)}`);
 }
 
 process.on('uncaughtException', (e) => { logError('main-uncaught', e); });
 process.on('unhandledRejection', (e) => { logError('main-rejection', e); });
 
 ipcMain.handle('log-renderer-error', (_, msg) => { logError('renderer', msg); });
+
+// ─── Local diagnostics logging ──────────────────────────────────────────
+const DIAG_MAX_BYTES = 1024 * 1024; // 1 MB cap
+function diagLogPath() { return path.join(configDir(), 'diagnostics.log'); }
+
+// Dev-mode performance logging — timestamps to console for diagnosing UI freezes
+const _perfEnabled = IS_DEV;
+function perfLog(label) {
+  if (!_perfEnabled) return;
+  console.log(`[PERF ${(performance.now()).toFixed(1)}ms] ${label}`);
+}
+function perfStart(label) {
+  if (!_perfEnabled) return null;
+  const t = performance.now();
+  console.log(`[PERF] >>> ${label}`);
+  return { label, t };
+}
+function perfEnd(tok) {
+  if (!tok) return;
+  const elapsed = performance.now() - tok.t;
+  const warn = elapsed > 100 ? ' ⚠️ SLOW' : '';
+  console.log(`[PERF] <<< ${tok.label} — ${elapsed.toFixed(1)}ms${warn}`);
+}
+
+let _logDiagWarnCount = 0;
+function logDiag(category, message) {
+  try {
+    const t0 = _perfEnabled ? performance.now() : 0;
+    const fp = diagLogPath();
+    const ts = new Date().toISOString();
+    const entry = `[${ts}] [${category}] ${message}\n`;
+    // Rotate if over 1MB
+    try {
+      const stat = fs.statSync(fp);
+      if (stat.size > DIAG_MAX_BYTES) {
+        const oldPath = path.join(configDir(), 'diagnostics.old.log');
+        try { fs.unlinkSync(oldPath); } catch {}
+        fs.renameSync(fp, oldPath);
+      }
+    } catch {}
+    fs.mkdirSync(configDir(), { recursive: true });
+    fs.appendFileSync(fp, entry);
+    if (_perfEnabled) {
+      const elapsed = performance.now() - t0;
+      if (elapsed > 50 && _logDiagWarnCount < 10) {
+        _logDiagWarnCount++;
+        console.log(`[PERF] logDiag(${category}) took ${elapsed.toFixed(1)}ms — SYNC BLOCKING`);
+      }
+    }
+  } catch {}
+}
+
+ipcMain.handle('collect-diagnostics', async () => {
+  const username = os.userInfo().username;
+  const lines = [];
+  lines.push('═══════════════════════════════════════════════════════');
+  lines.push('  XylemView Pro — Diagnostics Report');
+  lines.push('═══════════════════════════════════════════════════════');
+  lines.push('');
+  lines.push('SYSTEM');
+  lines.push(`  Version:    ${CURRENT_VERSION} (${IS_DEV ? 'dev' : 'installed'})`);
+  lines.push(`  Electron:   ${process.versions.electron}`);
+  lines.push(`  Chrome:     ${process.versions.chrome}`);
+  lines.push(`  Node:       ${process.versions.node}`);
+  lines.push(`  OS:         ${os.platform()} ${os.release()} (${os.arch()})`);
+  lines.push(`  Host:       ${os.hostname()}`);
+  lines.push(`  User:       ${username}`);
+  lines.push(`  Uptime:     ${Math.round(process.uptime())}s`);
+  lines.push(`  Memory:     ${Math.round(os.freemem() / 1024 / 1024)} MB free / ${Math.round(os.totalmem() / 1024 / 1024)} MB total`);
+  lines.push('');
+
+  // Path accessibility
+  lines.push('PATHS');
+  const pathChecks = {
+    'Order folder':     config.order_path,
+    'Archive':          config.archive_path,
+    'Drawings':         config.drawing_path,
+    'Design standards': config.ds_path,
+    'Shared data':      SHARED_DATA_DIR,
+    'DWG viewer':       config.dwg_viewer,
+    'AutoCAD':          config.autocad_exe,
+    'Contingency':      config.contingency_exe,
+  };
+  for (const [label, p] of Object.entries(pathChecks)) {
+    let status = 'NOT SET';
+    if (p) {
+      try { await fsp.access(p); status = 'OK'; } catch { status = 'UNREACHABLE'; }
+    }
+    lines.push(`  ${label.padEnd(18)} ${status.padEnd(14)} ${p || '(none)'}`);
+  }
+  lines.push('');
+
+  // Capabilities
+  lines.push('CAPABILITIES');
+  lines.push(`  ODA converter:  ${findOdaConverter() ? 'YES' : 'NO'}`);
+  lines.push(`  AutoCAD accore: ${findPdfAccore() ? 'YES' : 'NO'}`);
+  const netOk = await networkReachable();
+  lines.push(`  Network:        ${netOk ? 'ONLINE' : 'OFFLINE'}`);
+  lines.push('');
+
+  // Recent log
+  lines.push('RECENT LOG');
+  try {
+    const fp = diagLogPath();
+    const stat = fs.statSync(fp);
+    const readSize = Math.min(stat.size, 30 * 1024);
+    const buf = Buffer.alloc(readSize);
+    const fd = fs.openSync(fp, 'r');
+    fs.readSync(fd, buf, 0, readSize, Math.max(0, stat.size - readSize));
+    fs.closeSync(fd);
+    let logText = buf.toString('utf-8');
+    // Trim to complete first line if we're reading from the middle
+    if (stat.size > readSize) {
+      const nl = logText.indexOf('\n');
+      if (nl > 0) logText = logText.slice(nl + 1);
+    }
+    lines.push(logText.trimEnd());
+  } catch {
+    lines.push('  (no log file)');
+  }
+  lines.push('');
+  lines.push('═══════════════════════════════════════════════════════');
+
+  return lines.join('\n');
+});
+
+ipcMain.handle('log-diag', (_, category, message) => { logDiag(category, message); });
 
 // ─── IPC Handlers ───────────────────────────────────────────────────────
 ipcMain.handle('notify-chat', (_, title, body) => {
@@ -764,6 +1020,7 @@ ipcMain.handle('notify-chat', (_, title, body) => {
 ipcMain.handle('is-window-focused', () => mainWindow ? mainWindow.isFocused() : false);
 
 ipcMain.handle('get-config', () => ({ ...config }));
+ipcMain.handle('get-nicknames', () => _nicknames);
 ipcMain.handle('get-downloads-path', () => app.getPath('downloads'));
 
 ipcMain.handle('save-config', (_, newCfg) => {
@@ -785,7 +1042,11 @@ ipcMain.handle('get-birthdays', () => checkBirthdays());
 ipcMain.handle('get-platform', () => process.platform);
 
 ipcMain.handle('search-order', async (_, order, line) => {
+  const tokSearch = perfStart(`search-order ${order}-${line}`);
+  logDiag('SEARCH', `Order ${order}-${line}`);
+  const tokResolve = perfStart('resolveOrderFolder');
   const result = await resolveOrderFolder(order, line);
+  perfEnd(tokResolve);
   if (!result) {
     const expected = path.join(config.order_path, order.padStart(6, '0') + line.padStart(2, '0'));
     const offline = !(await networkReachable());
@@ -817,7 +1078,9 @@ ipcMain.handle('search-order', async (_, order, line) => {
   const files = [];
   const cntFiles = [];
   try {
+    const tokReaddir = perfStart(`readdirSafe + stat ${result.path}`);
     const entries = await readdirSafe(result.path);
+    perfLog(`readdir returned ${entries.length} entries`);
     for (const name of entries) {
       const fp = path.join(result.path, name);
       if (name === '$' || name.startsWith('~$')) continue;  // Skip lock files
@@ -829,10 +1092,20 @@ ipcMain.handle('search-order', async (_, order, line) => {
         if (fi.isCnt) cntFiles.push(fi);
       }
     }
+    perfEnd(tokReaddir);
   } catch (e) {}
 
   // Sort contingency by priority
   cntFiles.sort((a, b) => a.cntPriority - b.cntPriority);
+
+  // Hide BAK files when a DWG with the same base name exists
+  const dwgBases = new Set(files.filter(f => f.ext.replace(']', '').toUpperCase() === 'DWG').map(f => f.name.replace(/\.\w+\]?$/, '').toUpperCase()));
+  for (let i = files.length - 1; i >= 0; i--) {
+    const f = files[i];
+    if (f.ext.replace(']', '').toUpperCase() === 'BAK' && dwgBases.has(f.name.replace(/\.\w+\]?$/, '').toUpperCase())) {
+      files.splice(i, 1);
+    }
+  }
 
   // Mark order-line matching DWG/PDF files as order drawings (bold + colored, sorted to top)
   const orderLine = order.padStart(6, '0') + line.padStart(2, '0');
@@ -914,6 +1187,8 @@ ipcMain.handle('search-order', async (_, order, line) => {
     });
   }
 
+  perfEnd(tokSearch);
+  perfLog(`search-order: ${sortedFiles.length} files, ${cntFiles.length} cnt, ${subfolders.length} subfolders`);
   return {
     found: true, path: result.path, src: result.src,
     files: sortedFiles,
@@ -931,6 +1206,7 @@ ipcMain.handle('deep-search-order', async (_, order, line) => {
 });
 
 ipcMain.handle('search-drawing', async (_, rawInput) => {
+  logDiag('SEARCH', `Drawing "${rawInput}"`);
   const wildcard = /[*%_]/.test(rawInput);
   const cleaned = rawInput.replace(/[*%_]/g, '');
   const base = parseDrawingInput(cleaned);
@@ -1038,17 +1314,24 @@ ipcMain.handle('restart-app', () => {
 
 // ─── Marketing folder ───────────────────────────────────────────────────
 ipcMain.handle('open-marketing', async (_, order) => {
-  const marketingFolder = path.join(config.order_path, order.padStart(6, '0') + '00');
-  if (!(await dirExists(marketingFolder))) return { found: false };
+  const order6 = order.padStart(6, '0');
+  const baseFolder = path.join(config.order_path, order6 + '00');
+  if (!(await dirExists(baseFolder))) return { found: false };
   try {
-    const entries = await readdirSafe(marketingFolder);
-    let hasFiles = false;
-    for (const e of entries) { if (await isFile(path.join(marketingFolder, e))) { hasFiles = true; break; } }
-    if (hasFiles) { shell.openPath(marketingFolder); return { found: true, path: marketingFolder }; }
-    const mktSub = path.join(marketingFolder, 'Marketing');
-    if (await dirExists(mktSub)) { shell.openPath(mktSub); return { found: true, path: mktSub }; }
-    shell.openPath(marketingFolder);
-    return { found: true, path: marketingFolder };
+    const entries = await readdirSafe(baseFolder);
+    // Check if root has any "real" content beyond auto-created subfolders
+    const autoFolders = new Set(['acknowledgments', 'cust requested docs', 'marketing']);
+    let hasRealContent = false;
+    for (const e of entries) {
+      const fp = path.join(baseFolder, e);
+      if (await isFile(fp)) { hasRealContent = true; break; }
+      const name = e.toLowerCase();
+      if (!autoFolders.has(name) && !/^\d{6}\d{2}$/.test(e)) { hasRealContent = true; break; }
+    }
+    const target = hasRealContent ? baseFolder : path.join(baseFolder, 'Marketing');
+    if (await dirExists(target)) { shell.openPath(target); return { found: true, path: target }; }
+    shell.openPath(baseFolder);
+    return { found: true, path: baseFolder };
   } catch (e) { return { found: false }; }
 });
 
@@ -1116,43 +1399,89 @@ ipcMain.handle('get-sibling-lines', async (_, order) => {
   return [...lineSet].sort();
 });
 
+// Find Autodesk's AcLauncher.exe (the DWG Launcher — always opens in AutoCAD, never DWGSee)
+function findAcLauncher() {
+  const candidate = 'C:\\Program Files\\Common Files\\Autodesk Shared\\AcShellEx\\AcLauncher.exe';
+  if (fs.existsSync(candidate)) return candidate;
+  return null;
+}
+
+// Open a DWG in AutoCAD — try COM to reuse running instance as a tab, else AcLauncher
+function openInAutoCAD(target) {
+  const escaped = target.replace(/\\/g, '\\\\').replace(/'/g, "''");
+  // Try attaching to a running AutoCAD (full) instance via COM — opens as new tab
+  try {
+    execSync(`powershell -NoProfile -Command "[System.Runtime.InteropServices.Marshal]::GetActiveObject('AutoCAD.Application').Documents.Open('${escaped}')"`, { timeout: 8000, windowsHide: true });
+    return true;
+  } catch {}
+  // Try AutoCAD LT
+  try {
+    execSync(`powershell -NoProfile -Command "[System.Runtime.InteropServices.Marshal]::GetActiveObject('AutoCADLT.Application').Documents.Open('${escaped}')"`, { timeout: 8000, windowsHide: true });
+    return true;
+  } catch {}
+  // Fall back to AcLauncher (handles version routing + tab reuse, always AutoCAD)
+  const launcher = findAcLauncher();
+  if (launcher) {
+    spawn(launcher, ['/O', target], { detached: true, stdio: 'ignore' }).unref();
+    return true;
+  }
+  return false;
+}
+
 ipcMain.handle('open-file', async (_, filepath) => {
+  const tokOpen = perfStart(`open-file ${path.basename(filepath)}`);
+  logDiag('FILE', `Open ${path.basename(filepath)}`);
   const ext = getExt(path.basename(filepath)).replace(']', '');
   if (['DWG','DXF','PLT','BAK','MVW'].includes(ext)) {
-    const exe = config.default_dwg_action === 'autocad' ? config.autocad_exe : config.dwg_viewer;
-    if (exe && await isFile(exe)) {
-      spawn(exe, [filepath], { detached: true, stdio: 'ignore' }).unref();
-      return { ok: true };
+    if (config.default_dwg_action === 'autocad') {
+      if (openInAutoCAD(filepath)) { perfEnd(tokOpen); return { ok: true }; }
+    } else {
+      const exe = config.dwg_viewer;
+      const tokExe = perfStart('isFile(dwg_viewer)');
+      const exeOk = exe && await isFile(exe);
+      perfEnd(tokExe);
+      if (exeOk) {
+        spawn(exe, [filepath], { detached: true, stdio: 'ignore' }).unref();
+        perfEnd(tokOpen);
+        return { ok: true };
+      }
     }
   }
+  const tokShell = perfStart(`shell.openPath ${path.basename(filepath)}`);
   shell.openPath(filepath);
+  perfEnd(tokShell);
+  perfEnd(tokOpen);
   return { ok: true };
 });
 
-ipcMain.handle('open-in-viewer', (_, filepath) => {
+ipcMain.handle('open-in-viewer', async (_, filepath) => {
+  // Resolve link files to their source drawing
+  let target = filepath;
+  if (path.basename(filepath).startsWith('[') && path.basename(filepath).endsWith(']')) {
+    const resolved = await readLinkTarget(filepath);
+    if (resolved && await isFile(resolved)) target = resolved;
+    else if (resolved) return { ok: false, msg: `Target not found:\n${resolved}` };
+    else return { ok: false, msg: 'No target in link file' };
+  }
   if (config.dwg_viewer && fs.existsSync(config.dwg_viewer)) {
-    spawn(config.dwg_viewer, [filepath], { detached: true, stdio: 'ignore' }).unref();
+    spawn(config.dwg_viewer, [target], { detached: true, stdio: 'ignore' }).unref();
     return { ok: true };
   }
-  shell.openPath(filepath);
+  shell.openPath(target);
   return { ok: true };
 });
 
-ipcMain.handle('open-in-autocad', (_, filepath) => {
-  // Try configured path first
-  if (config.autocad_exe && fs.existsSync(config.autocad_exe)) {
-    spawn(config.autocad_exe, [filepath], { detached: true, stdio: 'ignore' }).unref();
-    return { ok: true };
+ipcMain.handle('open-in-autocad', async (_, filepath) => {
+  // Resolve link files to their source drawing
+  let target = filepath;
+  if (path.basename(filepath).startsWith('[') && path.basename(filepath).endsWith(']')) {
+    const resolved = await readLinkTarget(filepath);
+    if (resolved && await isFile(resolved)) target = resolved;
+    else if (resolved) return { ok: false, msg: `Target not found:\n${resolved}` };
+    else return { ok: false, msg: 'No target in link file' };
   }
-  // Try auto-detection
-  const detected = detectAutoCAD();
-  if (detected) {
-    config.autocad_exe = detected;
-    saveConfig();
-    spawn(detected, [filepath], { detached: true, stdio: 'ignore' }).unref();
-    return { ok: true, autoDetected: detected };
-  }
-  return { ok: false, msg: 'AutoCAD not found. Set the path in Settings.' };
+  if (openInAutoCAD(target)) return { ok: true };
+  return { ok: false, msg: 'AutoCAD not found.' };
 });
 
 ipcMain.handle('detect-autocad', () => {
@@ -1189,6 +1518,7 @@ function detectAutoCAD() {
 }
 
 ipcMain.handle('open-link', async (_, filepath) => {
+  const tokLink = perfStart(`open-link ${path.basename(filepath)}`);
   const ext = getExt(path.basename(filepath));
   if (ext === 'CNT]') {
     // Open contingency
@@ -1197,23 +1527,40 @@ ipcMain.handle('open-link', async (_, filepath) => {
     if (ident.startsWith('[')) ident = ident.slice(1);
     const dot = ident.toLowerCase().lastIndexOf('.cnt]');
     if (dot !== -1) ident = ident.slice(0, dot);
-    if (config.contingency_exe && fs.existsSync(config.contingency_exe)) {
+    const tokCntExe = perfStart('existsSync(contingency_exe) — SYNC NETWORK');
+    const cntExists = config.contingency_exe && fs.existsSync(config.contingency_exe);
+    perfEnd(tokCntExe);
+    if (cntExists) {
       spawn(config.contingency_exe, [ident], { detached: true, stdio: 'ignore' }).unref();
+      perfEnd(tokLink);
       return { ok: true };
     }
+    perfEnd(tokLink);
     return { ok: false, msg: 'Contingency program not found' };
   }
 
+  const tokTarget = perfStart('readLinkTarget');
   const target = await readLinkTarget(filepath);
-  if (!target) return { ok: false, msg: 'No target in link file' };
-  if (!(await isFile(target))) return { ok: false, msg: `Target not found:\n${target}` };
+  perfEnd(tokTarget);
+  if (!target) { perfEnd(tokLink); return { ok: false, msg: 'No target in link file' }; }
+  const tokIsFile = perfStart(`isFile(target) ${path.basename(target)}`);
+  const targetOk = await isFile(target);
+  perfEnd(tokIsFile);
+  if (!targetOk) { perfEnd(tokLink); return { ok: false, msg: `Target not found:\n${target}` }; }
 
   const targetExt = getExt(path.basename(target));
   if (['DWG','DXF','PLT','BAK','MVW'].includes(targetExt)) {
-    const exe = config.default_dwg_action === 'autocad' ? config.autocad_exe : config.dwg_viewer;
-    if (exe && fs.existsSync(exe)) {
-      spawn(exe, [target], { detached: true, stdio: 'ignore' }).unref();
-      return { ok: true };
+    if (config.default_dwg_action === 'autocad') {
+      if (openInAutoCADTab(target, config.autocad_exe)) { perfEnd(tokLink); return { ok: true }; }
+    } else {
+      const exe = config.dwg_viewer;
+      const tokViewerCheck = perfStart('existsSync(dwg_viewer) — SYNC');
+      const viewerOk = exe && fs.existsSync(exe);
+      perfEnd(tokViewerCheck);
+      if (viewerOk) {
+        spawn(exe, [target], { detached: true, stdio: 'ignore' }).unref();
+        return { ok: true };
+      }
     }
   }
   shell.openPath(target);
@@ -1267,38 +1614,33 @@ function setupContinWatchers() {
 
 async function loadContingencyDBs() {
   if (_continCache) return _continCache;
-  const MDBReader = (await import('mdb-reader')).default;
-  const tables = ['OrderInfo', 'ConstructionData', 'InspectionData', 'TestingData',
-    'CleaningData', 'PaintingData', 'NamePlateData', 'PackagingData', 'PurchasingData', 'QCdata', 'RevNotes', 'Attachments'];
-  const orderMap = new Map();
-  for (const dbPath of CONTIN_DB_PATHS) {
-    try {
-      const buf = await fsp.readFile(dbPath);
-      const db = new MDBReader(Buffer.from(buf));
-      for (const tn of tables) {
-        try {
-          const rows = db.getTable(tn).getData();
-          for (const row of rows) {
-            const ol = row.OrderLine;
-            if (!ol) continue;
-            if (!orderMap.has(ol)) orderMap.set(ol, {});
-            const entry = orderMap.get(ol);
-            if (tn === 'RevNotes') {
-              if (!entry.RevNotes) entry.RevNotes = [];
-              entry.RevNotes.push(row);
-            } else {
-              entry[tn] = row;
-            }
-          }
-        } catch {}
+  const tokAll = perfStart('loadContingencyDBs TOTAL (worker thread)');
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(path.join(__dirname, 'contingency-worker.js'));
+    worker.on('message', (msg) => {
+      worker.terminate();
+      perfEnd(tokAll);
+      if (msg.error) {
+        reject(new Error(msg.error));
+        return;
       }
-    } catch (e) { console.error('Contingency DB load error:', dbPath, e.message); }
-  }
-  // If load produced no data (likely network issue), throw so callers can fall back to previous cache
-  if (orderMap.size === 0) throw new Error('Contingency DB load returned no data — network may be unavailable');
-  _continCache = { orderMap, loadedAt: Date.now() };
-  setupContinWatchers();  // Start watching for changes
-  return _continCache;
+      const orderMap = new Map(msg.entries);
+      perfLog(`Contingency: ${orderMap.size} order-lines loaded via worker`);
+      if (orderMap.size === 0) {
+        reject(new Error('Contingency DB load returned no data — network may be unavailable'));
+        return;
+      }
+      _continCache = { orderMap, loadedAt: Date.now() };
+      setupContinWatchers();
+      resolve(_continCache);
+    });
+    worker.on('error', (err) => {
+      worker.terminate();
+      perfEnd(tokAll);
+      reject(err);
+    });
+    worker.postMessage({ dbPaths: CONTIN_DB_PATHS });
+  });
 }
 
 ipcMain.handle('preload-contingency', async (_, force) => {
@@ -1320,8 +1662,13 @@ ipcMain.handle('get-contingency', async (_, orderLine) => {
     const cache = await loadContingencyDBs();
     const ol = parseInt(orderLine, 10);
     const entry = cache.orderMap.get(ol);
-    if (!entry || !entry.OrderInfo) return { found: false, loadedAt: cache.loadedAt };
-    return { found: true, data: entry, loadedAt: cache.loadedAt };
+    // Check if DB files were modified after our last load (watcher may not have caught up yet)
+    let dbChanged = false;
+    for (const dbPath of CONTIN_DB_PATHS) {
+      try { if (fs.statSync(dbPath).mtimeMs > cache.loadedAt) { dbChanged = true; break; } } catch {}
+    }
+    if (!entry || !entry.OrderInfo) return { found: false, loadedAt: cache.loadedAt, dbChanged };
+    return { found: true, data: entry, loadedAt: cache.loadedAt, dbChanged };
   } catch (e) {
     return { found: false, error: e.message, loadedAt: 0 };
   }
@@ -1338,7 +1685,16 @@ const CNT_PAGE_CSS = `
   .section-body { padding-left:14px; font:11px/1.6 'Segoe UI',sans-serif; }
   .label { font-weight:700; font-size:9px; text-transform:uppercase; letter-spacing:0.4px; }
   .empty { color:#888; font-style:italic; }
-  .footer { margin-top:14px; padding-top:8px; border-top:1px solid #888; font:9px/1.5 'Segoe UI',sans-serif; color:#444; text-align:center; }`;
+  .footer { margin-top:14px; padding-top:8px; border-top:1px solid #888; font:9px/1.5 'Segoe UI',sans-serif; color:#444; text-align:center; }
+  .cnt-badge { display:inline-block; padding:2px 8px; border-radius:3px; font:700 8px/1.2 'Segoe UI',sans-serif; letter-spacing:1px; text-transform:uppercase; }
+  .cnt-badge-code { background:#ffebee; color:#c00; border:1px solid #c00; }
+  .cnt-badge-noncode { background:#f0f0f0; color:#666; border:1px solid #999; }
+  .cnt-print-sub { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .cnt-print-info { font:500 10px/1.3 'Segoe UI',sans-serif; color:#333; }
+  .cnt-print-info b { font-weight:700; color:#000; }
+  .cnt-std-proc { text-align:center; padding:32px 0; }
+  .cnt-std-proc-title { font:600 16px/1.2 'Segoe UI',sans-serif; color:#000; }
+  .cnt-std-proc-sub { font:400 11px/1.4 'Segoe UI',sans-serif; color:#666; margin-top:6px; }`;
 
 function buildCntPage(html) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${CNT_PAGE_CSS}</style></head><body>${html}</body></html>`;
@@ -1403,50 +1759,68 @@ async function parseChecklistPdf(filepath) {
   const text = d.text;
   const stat = await fsp.stat(filepath);
   const fileDate = stat.mtime.toISOString();
-  const result = { filepath, lineItems: [], poNumber: '', ae: '', date: '', fileDate, comments: '' };
+  const fileDateCreated = stat.birthtime.toISOString();
+  const result = { filepath, lineItems: [], poNumber: '', ae: '', date: '', dateApproved: '', fileDate, fileDateCreated, comments: '' };
 
-  // Extract PO number
-  const poMatch = text.match(/PO Number\s+(\S+)/i);
+  // Extract PO number (some PDFs have no whitespace after "PO Number")
+  const poMatch = text.match(/PO Number\s*(\d[\d\-]+)/i);
   if (poMatch) result.poNumber = poMatch[1];
 
-  // Extract AE name
+  // Extract AE name (auto-capitalize)
   const aeMatch = text.match(/AE\n(\w+)/i);
-  if (aeMatch) result.ae = aeMatch[1];
+  if (aeMatch) result.ae = aeMatch[1].charAt(0).toUpperCase() + aeMatch[1].slice(1).toLowerCase();
 
-  // Extract date
+  // Extract dates
   const dateMatch = text.match(/Date Submitted:\s*\n(.+)/i);
   if (dateMatch) result.date = dateMatch[1].trim();
+  const approvedMatch = text.match(/Date Approved:\s*\n(.+)/i);
+  if (approvedMatch) result.dateApproved = approvedMatch[1].trim();
 
   // Extract line items from the section between "Line item" and "U1FORM"/"Standard Paint"/"PO approved"
   const sectionMatch = text.match(/Line item[\s\S]*?(?=U1FORM|Standard Paint|PO approved)/i);
   if (sectionMatch) {
     const section = sectionMatch[0];
-    // Find all template/drawing entries — handles multiple separator styles:
-    //   %BY5362 / 5360-04F-12-003$1,183.22112 weeks    (price=$1,183.22, qty=1, lead=12 weeks)
-    //   %BY5362 / 5360-06F-12-003$1,484.961ship         (price=$1,484.96, qty=1)
-    //   %BY5362 / ...$1,484.96  each212 weeks            (price=$1,484.96, qty=2)
-    //   %SN5142 PN 5-142-03-024-064$2,415.0017 wk       (price=$2,415.00, qty=1)
-    //   %BYRDBU ref 4-244-04-036-037$3,516.60 Net14 std (price=$3,516.60, qty=1)
-    // Price ends at .XX, then optional whitespace/text, then qty is always a single digit.
-    const itemRe = /(%\w+)\s*(?:\/|PN|ref)\s*([\d][\d\-A-Za-z]+)\$([\d,]+\.\d{2})\s*(?:Net|each)*\s*(\d)/g;
-    let m, lineNum = 1;
-    while ((m = itemRe.exec(section)) !== null) {
-      const template = m[1];
-      const dwgRaw = m[2].trim();
-      const dwgNorm = dwgRaw.replace(/-/g, '');
-      const price = m[3];
-      const qty = parseInt(m[4]) || 1;
-      result.lineItems.push({ line: String(lineNum).padStart(2, '0'), template, dwgRaw, dwgNorm, price, qty, isRepeat: true });
-      lineNum++;
+    // Two-pass extraction: first find template+drawing, then price from each chunk.
+    // Pass 1: template (%XX...) + separator (/, PN, ref, Ref, Ref PN) + drawing number
+    const templateRe = /(%[A-Z]{2}\w+)\s+(?:Ref\s+PN|Ref|PN|ref|\/)\s+([\d][\d\-A-Za-z]+)/g;
+    const hits = [];
+    let m;
+    while ((m = templateRe.exec(section)) !== null) {
+      hits.push({ template: m[1], dwgRaw: m[2].trim(), end: m.index + m[0].length });
+    }
+    // Pass 2: extract price from the text chunk between each hit and the next
+    // Comma-aware grouping (\d{1,3}(,\d{3})*) prevents grabbing leadtime digits
+    const priceRe = /\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/;
+    for (let i = 0; i < hits.length; i++) {
+      const chunk = section.substring(hits[i].end, i + 1 < hits.length ? section.indexOf(hits[i + 1].template, hits[i].end) : section.length);
+      const pm = chunk.match(priceRe);
+      const dwgNorm = hits[i].dwgRaw.replace(/-/g, '');
+      result.lineItems.push({ line: String(i + 1).padStart(2, '0'), template: hits[i].template, dwgRaw: hits[i].dwgRaw, dwgNorm, price: pm ? pm[1] : '', qty: 1, isRepeat: true });
     }
   }
 
   // Line numbers will be resolved by cross-referencing the acknowledgment (see scan-checklists handler)
 
-  // Extract comments
-  const commentsMatch = text.match(/Comments and Additional Requirements:\s*\n([\s\S]*?)(?:Checklist for|Page \d|$)/i);
+  // Extract special requirements — all text below line items, minus boilerplate
+  // This catches non-standard paint, oil/immunol tests, API-614, customer specs, etc.
+  const reqSection = text.match(/(?:U1FORM|Standard Paint)([\s\S]*?)(?:Comments and Additional Requirements|Order Review Checklist|Page \d)/i);
+  if (reqSection) {
+    const boilerplateReq = /^[:\s]*(standard paint|paint color|standard hydrostatic|oil test|immunol test|pneumatic test|oil flush|PO approved|approved by|date approved|customer spec|list any additional|list requirements|total\$|yes|no|n|n\/a|hot\/shell\s*side|cold\/tube\s*side|API-614No|API-614|EA|xylem|\d+_\w|page \d|U1FORM|if special|\(.*if special.*\))/i;
+    const reqLines = reqSection[1].split('\n')
+      .map(l => l.trim().replace(/^[:\s]+/, ''))
+      .filter(l => l && !boilerplateReq.test(l))
+      .filter(l => !/^[A-Z][a-z]+ [A-Z][a-z]+$/.test(l))
+      .filter(l => !/^(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d/i.test(l));
+    if (reqLines.length) result.requirements = reqLines.join('\n');
+  }
+
+  // Extract comments — text after "Comments and Additional Requirements:"
+  const commentsMatch = text.match(/Comments and Additional Requirements:\s*\n([\s\S]*?)(?:Order Review Checklist|Checklist for|Page \d|$)/i);
   if (commentsMatch) {
-    result.comments = commentsMatch[1].trim().replace(/\n{2,}/g, '\n');
+    const raw = commentsMatch[1].trim().replace(/\n{2,}/g, '\n');
+    const boilerplate = /^(yes|no|n\/a|n|xylem|\d+_\w|hot\/shell|cold\/tube|standard paint|standard hydrostatic|oil test|immunol|pneumatic|oil flush|is quotation|indicate location|list requirements|is the order electronic|PO approved|approved by|date approved|customer spec|list any additional)/i;
+    const filtered = raw.split('\n').filter(l => l.trim() && !boilerplate.test(l.trim())).join('\n');
+    result.comments = filtered;
   }
 
   return result;
@@ -1475,21 +1849,37 @@ async function getAckLineMapping(orderPad) {
   const pdfParse = require('pdf-parse');
   const ackDir = path.join(config.order_path, orderPad + '00', 'Acknowledgments');
   if (!(await dirExists(ackDir))) return null;
+  const order6 = orderPad.substring(0, 6);
   const files = (await readdirSafe(ackDir))
-    .filter(f => f.toLowerCase().endsWith('.pdf'))
+    .filter(f => f.toLowerCase().endsWith('.pdf') && f.startsWith(order6))
     .sort().reverse();  // Latest first
   if (!files.length) return null;
+  const ackFilepath = path.join(ackDir, files[0]);
   try {
-    const buf = await fsp.readFile(path.join(ackDir, files[0]));
+    const buf = await fsp.readFile(ackFilepath);
     const d = await pdfParse(buf);
+    // Extract order entry date from ack header: "ORDERDATE\n49798103/10/26"
+    let ackDate = '';
+    const dateM = d.text.match(/ORDERDATE\n\d{6}(\d{2}\/\d{2}\/\d{2})/);
+    if (dateM) ackDate = dateM[1];
     const mapping = [];
-    // Parse SHIPPING LINE -> FPC ITEM (drawing number) pairs
-    const tagRe = /SHIPPING\s+LINE\s+(\d+)[\s\S]*?FPC ITEM #\s+([\dA-Za-z]+)/g;
+    // Primary: parse percent part number lines — "1%SY506000256800  C200 exchanger..."
+    // Template = first 7 chars of the 15-char percent part number (e.g., %SY5060)
+    const partRe = /^(\d+)(%[A-Z]{2}\w{12})/gm;
     let m;
+    while ((m = partRe.exec(d.text)) !== null) {
+      const line = String(parseInt(m[1])).padStart(2, '0');
+      const partNumber = m[2];
+      const template = partNumber.substring(0, 7);
+      mapping.push({ line, template, partNumber });
+    }
+    if (mapping.length) return { mapping, ackFilepath, ackDate };
+    // Fallback: old SHIPPING LINE / FPC ITEM format
+    const tagRe = /SHIPPING\s+LINE\s+(\d+)[\s\S]*?FPC ITEM #\s+([\dA-Za-z]+)/g;
     while ((m = tagRe.exec(d.text)) !== null) {
       mapping.push({ line: String(parseInt(m[1])).padStart(2, '0'), dwg: m[2] });
     }
-    return mapping.length ? mapping : null;
+    return mapping.length ? { mapping, ackFilepath, ackDate } : null;
   } catch { return null; }
 }
 
@@ -1507,45 +1897,165 @@ ipcMain.handle('scan-checklists', async (_, orderPad) => {
       }
     }
     // Cross-reference with acknowledgment to get correct line numbers
-    const ackMap = await getAckLineMapping(orderPad);
+    const ackResult = await getAckLineMapping(orderPad);
+    const ackMap = ackResult ? ackResult.mapping : null;
+    const ackFilepath = ackResult ? ackResult.ackFilepath : null;
+    const ackDate = ackResult ? ackResult.ackDate : null;
     for (const cl of results) {
       if (!cl.lineItems || !cl.lineItems.length) continue;
-      if (ackMap && ackMap.length) {
-        // Match checklist drawings to ack drawings by order of appearance
-        // Both lists should be in the same sequence
-        if (cl.lineItems.length === ackMap.length) {
-          for (let i = 0; i < cl.lineItems.length; i++) {
-            cl.lineItems[i].line = ackMap[i].line;
+      if (ackMap && ackMap.length && ackMap[0].template) {
+        // Template-based matching: match checklist template to ack percent part number prefix
+        const used = new Set();
+        for (const li of cl.lineItems) {
+          const match = ackMap.find(a => a.template === li.template && !used.has(a.line));
+          if (match) {
+            li.line = match.line;
+            li.ackMatch = true;
+            used.add(match.line);
+          } else {
+            li.ackMatch = false;
           }
-        } else {
-          // Different counts — match by drawing number where possible
-          for (const li of cl.lineItems) {
-            const match = ackMap.find(a => a.dwg === li.dwgNorm);
-            if (match) li.line = match.line;
-          }
-          // For unmatched items, assign from remaining ack lines in order
-          const usedLines = new Set(cl.lineItems.filter(li => li.line !== '00').map(li => li.line));
-          const unusedAck = ackMap.filter(a => !usedLines.has(a.line));
-          let ui = 0;
-          for (const li of cl.lineItems) {
-            if (li.line === String(cl.lineItems.indexOf(li) + 1).padStart(2, '0') && ui < unusedAck.length) {
-              li.line = unusedAck[ui++].line;
-            }
+        }
+        // Items with no template match get a sequential number that doesn't collide
+        let nextEstimate = 1;
+        for (const li of cl.lineItems) {
+          if (!li.ackMatch) {
+            while (used.has(String(nextEstimate).padStart(2, '0'))) nextEstimate++;
+            li.line = String(nextEstimate).padStart(2, '0');
+            nextEstimate++;
           }
         }
         cl.lineNumberSource = 'acknowledgment';
-      } else {
-        // No acknowledgment — use sequential odd numbering as best guess
-        for (let i = 0; i < cl.lineItems.length; i++) {
-          cl.lineItems[i].line = String(1 + i * 2).padStart(2, '0');
+      } else if (ackMap && ackMap.length && ackMap[0].dwg) {
+        // Legacy fallback: match by drawing number
+        const used = new Set();
+        for (const li of cl.lineItems) {
+          const match = ackMap.find(a => a.dwg === li.dwgNorm && !used.has(a.line));
+          if (match) { li.line = match.line; li.ackMatch = true; used.add(match.line); }
         }
-        cl.lineNumberSource = 'estimated';
+        cl.lineNumberSource = 'acknowledgment';
+      } else {
+        // No acknowledgment — can't verify line numbers
+        for (let i = 0; i < cl.lineItems.length; i++) {
+          cl.lineItems[i].line = '??';
+        }
+        cl.lineNumberSource = 'unknown';
       }
     }
-    return { found: true, checklists: results };
+    return { found: true, checklists: results, ackFilepath, ackDate };
   } catch (e) {
     return { found: false, error: e.message };
   }
+});
+
+// Check if drawings are already linked in order-line folders
+ipcMain.handle('check-links-exist', async (_, orderPad, items) => {
+  // items = [{ line: '01', dwgNorm: '506008078022' }, ...]
+  const results = {};
+  for (const { line, dwgNorm } of items) {
+    if (!dwgNorm || line === '??') { results[line] = false; continue; }
+    const folder = path.join(config.order_path, orderPad + line);
+    try {
+      const entries = await readdirSafe(folder);
+      results[line] = entries.some(f => f.startsWith('[') && f.toLowerCase().includes(dwgNorm.toLowerCase().substring(0, 6)));
+    } catch { results[line] = false; }
+  }
+  return results;
+});
+
+// ═══ Ask Claude — AI analysis of order documents ═══
+ipcMain.handle('ask-claude', async (_, orderPad) => {
+  if (!config.claude_api_key) return { error: 'no_key' };
+  try {
+    const Anthropic = require('@anthropic-ai/sdk');
+    const pdfParse = require('pdf-parse');
+    const base = path.join(config.order_path, orderPad + '00');
+    const mkt = path.join(base, 'Marketing');
+
+    // Collect files from 00 and 00/Marketing, deduplicate
+    const allFiles = [];
+    for (const dir of [base, mkt]) {
+      for (const name of await readdirSafe(dir)) {
+        const fp = path.join(dir, name);
+        try {
+          const st = await fsp.stat(fp);
+          if (st.isFile()) allFiles.push({ name, path: fp, size: st.size, mtime: st.mtime.getTime(), birthtime: st.birthtime.getTime() });
+        } catch {}
+      }
+    }
+    const seen = new Set();
+    const unique = allFiles.filter(f => {
+      const key = `${f.name}|${f.size}|${f.mtime}|${f.birthtime}`;
+      if (seen.has(key)) return false;
+      seen.add(key); return true;
+    });
+
+    // Extract text from supported file types
+    const docs = [];
+    for (const f of unique) {
+      const ext = path.extname(f.name).toLowerCase();
+      try {
+        if (ext === '.pdf') {
+          const buf = await fsp.readFile(f.path);
+          const d = await pdfParse(buf);
+          if (d.text.trim()) docs.push({ name: f.name, text: d.text.substring(0, 15000) });
+        } else if (ext === '.msg') {
+          const MsgReader = require('msgreader');
+          const buf = await fsp.readFile(f.path);
+          const msg = new MsgReader(buf);
+          const info = msg.getFileData();
+          let text = `From: ${info.senderName || ''}\nTo: ${info.recipients?.map(r => r.name).join(', ') || ''}\nSubject: ${info.subject || ''}\nDate: ${info.messageDeliveryTime || ''}\n\n${info.body || ''}`;
+          if (info.attachments?.length) text += '\n\nAttachments: ' + info.attachments.map(a => a.fileName).join(', ');
+          docs.push({ name: f.name, text: text.substring(0, 8000) });
+        } else if (['.txt', '.csv', '.log'].includes(ext)) {
+          const text = await fsp.readFile(f.path, 'utf-8');
+          if (text.trim()) docs.push({ name: f.name, text: text.substring(0, 5000) });
+        }
+      } catch {}
+    }
+    if (!docs.length) return { error: 'no_docs' };
+
+    const docTexts = docs.map(d => `\u2500\u2500\u2500 ${d.name} \u2500\u2500\u2500\n${d.text}`).join('\n\n');
+
+    const client = new Anthropic({ apiKey: config.claude_api_key });
+    const stream = client.messages.stream({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2048,
+      system: `You are reviewing order documents for Xylem / Standard Xchange, a heat exchanger manufacturer. An engineer is checking this order into Engineering. The app already shows line items, drawing numbers, repeat/new status, PO number, and AE name — do NOT repeat that basic info.
+
+Focus on what the engineer needs to know:
+- Special requirements, non-standard options, customer-specific notes
+- Shipping instructions, tag numbers, special packaging
+- "Similar to but with changes" situations (not a simple repeat)
+- Anything in emails or PO terms that could affect engineering
+- Potential issues or red flags
+- Anything unusual compared to a standard order
+
+Be concise. Use bullet points. If everything looks standard with nothing notable, just say so in one sentence.`,
+      messages: [{ role: 'user', content: `Documents for order ${orderPad}:\n\n${docTexts}` }],
+    });
+
+    // Stream chunks back to renderer
+    let fullText = '';
+    stream.on('text', (text) => {
+      fullText += text;
+      if (mainWindow) mainWindow.webContents.send('claude-chunk', text);
+    });
+
+    await stream.finalMessage();
+    return { ok: true, text: fullText };
+  } catch (e) {
+    const msg = e.message || String(e);
+    if (msg.includes('401') || msg.includes('authentication')) return { error: 'invalid_key' };
+    if (msg.includes('429')) return { error: 'rate_limit' };
+    return { error: 'api_error', msg };
+  }
+});
+
+ipcMain.handle('set-claude-key', async (_, key) => {
+  config.claude_api_key = key;
+  await saveConfig({ claude_api_key: key });
+  return { ok: true };
 });
 
 // Scan for new orders (orders with 00 folder + checklist but no line item folders yet)
@@ -1608,6 +2118,28 @@ ipcMain.handle('copy-file-to-clipboard', async (_, filepath) => {
   return { ok: true, msg: 'Path copied (file copy not supported on macOS)' };
 });
 
+let _pdfPreviewWin = null;
+ipcMain.handle('preview-pdf', (_, filepath, title) => {
+  const fileUrl = 'file:///' + filepath.replace(/\\/g, '/') + '#view=FitH&toolbar=0';
+  if (_pdfPreviewWin && !_pdfPreviewWin.isDestroyed()) {
+    _pdfPreviewWin.loadURL(fileUrl);
+    _pdfPreviewWin.setTitle(title || 'PDF Preview');
+    _pdfPreviewWin.focus();
+    return;
+  }
+  const mainBounds = mainWindow ? mainWindow.getBounds() : { x: 100, y: 100 };
+  _pdfPreviewWin = new BrowserWindow({
+    width: 660, height: 880,
+    x: mainBounds.x + mainBounds.width + 8,
+    y: mainBounds.y,
+    title: title || 'PDF Preview',
+    autoHideMenuBar: true,
+    icon: path.join(__dirname, 'icons', 'icon.png'),
+  });
+  _pdfPreviewWin.loadURL(fileUrl);
+  _pdfPreviewWin.on('closed', () => { _pdfPreviewWin = null; });
+});
+
 ipcMain.handle('paste-files', async (_, targetFolder) => {
   if (!IS_WIN) return { ok: false, msg: 'File paste only supported on Windows' };
   if (!(await dirExists(targetFolder))) return { ok: false, msg: 'Target folder not found' };
@@ -1647,7 +2179,55 @@ ipcMain.handle('send-email', (_, email, subject) => {
   shell.openExternal(`mailto:${email}${params}`);
 });
 
-ipcMain.handle('get-version', () => ({ version: CURRENT_VERSION, isDev: !app.isPackaged }));
+ipcMain.handle('send-email-with-body', (_, email, subject, body) => {
+  const params = `?subject=${encodeURIComponent(subject || '')}&body=${encodeURIComponent(body || '')}`;
+  shell.openExternal(`mailto:${email}${params}`);
+});
+
+ipcMain.handle('send-email-html', async (_, email, subject, htmlBody) => {
+  if (!IS_WIN) {
+    // Fallback: plain text mailto on non-Windows
+    const plain = htmlBody.replace(/<[^>]+>/g, '');
+    shell.openExternal(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plain)}`);
+    return;
+  }
+  // Write HTML body to temp file, then launch VBScript that opens Outlook with it
+  const tmpDir = path.join(app.getPath('temp'), 'xylemview-pro');
+  fs.mkdirSync(tmpDir, { recursive: true });
+  const htmlPath = path.join(tmpDir, 'email-body.html');
+  const vbsPath = path.join(tmpDir, 'send-email.vbs');
+  fs.writeFileSync(htmlPath, htmlBody, 'utf-8');
+  const vbs = [
+    'Dim stream, html',
+    'Set stream = CreateObject("ADODB.Stream")',
+    'stream.Charset = "UTF-8"',
+    'stream.Open',
+    `stream.LoadFromFile "${htmlPath.replace(/\\/g, '\\\\')}"`,
+    'html = stream.ReadText',
+    'stream.Close',
+    'Set stream = Nothing',
+    'Dim ol, mail',
+    'Set ol = CreateObject("Outlook.Application")',
+    'Set mail = ol.CreateItem(0)',
+    `mail.To = "${email}"`,
+    `mail.Subject = "${subject.replace(/"/g, '""')}"`,
+    'mail.HTMLBody = html',
+    'mail.Display',
+    'Set mail = Nothing',
+    'Set ol = Nothing',
+  ].join('\r\n');
+  fs.writeFileSync(vbsPath, vbs, 'utf-8');
+  try {
+    await execAsync(`cscript //nologo "${vbsPath}"`);
+  } catch (e) {
+    // Outlook COM failed — fall back to mailto
+    logDiag('EMAIL', 'Outlook COM failed, falling back to mailto: ' + e.message);
+    const plain = htmlBody.replace(/<[^>]+>/g, '');
+    shell.openExternal(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plain)}`);
+  }
+});
+
+ipcMain.handle('get-version', () => ({ version: CURRENT_VERSION, isDev: IS_DEV, isWin10: IS_WIN && !IS_WIN11 }));
 
 // Window controls (frameless window)
 ipcMain.handle('win-minimize', () => mainWindow?.minimize());
@@ -1661,7 +2241,12 @@ ipcMain.handle('win-is-maximized', () => mainWindow?.isMaximized() || false);
 ipcMain.handle('set-glass-mode', (_, enabled) => {
   if (!mainWindow) return;
   if (IS_WIN) {
-    mainWindow.setBackgroundMaterial(enabled ? 'acrylic' : 'none');
+    if (IS_WIN11) {
+      mainWindow.setBackgroundColor(enabled ? '#00000000' : '#101014');
+    } else {
+      // Win10: no acrylic support — always opaque, CSS handles the look
+      mainWindow.setBackgroundColor('#101014');
+    }
   }
 });
 
@@ -2319,6 +2904,7 @@ ipcMain.handle('parse-drs-brazed', async (_, filepath) => {
 
 // ─── DWG → DXF Conversion ──────────────────────────────────────────────
 ipcMain.handle('convert-dwg-dxf', async (_, dwgPath, outDir) => {
+  logDiag('CONVERT', `DWG→DXF ${path.basename(dwgPath)}`);
   // ODA only — faster and free, no accoreconsole fallback for DXF
   const result = await odaConvertDwgToDxf(dwgPath, outDir || path.dirname(dwgPath));
   if (result.ok) return result;
@@ -2397,17 +2983,26 @@ ipcMain.handle('scan-folder-utube', async (_, folderPath) => {
 let _routeProc = null;
 
 ipcMain.handle('convert-dwg-dxf-text', async (_, dwgPath) => {
+  // Resolve bracket link files to their real DWG target
+  let realPath = dwgPath;
+  const bn = path.basename(dwgPath);
+  if (bn.startsWith('[') && bn.endsWith(']')) {
+    const target = await readLinkTarget(dwgPath);
+    if (target && await isFile(target)) realPath = target;
+    else return { ok: false, msg: 'Link file target not found' };
+  }
+
   // Try ODA first (much faster for routing)
   const tmpDir = path.join(os.tmpdir(), 'xv_route_' + Date.now());
   const oda = findOdaConverter();
   if (oda) {
     try {
       fs.mkdirSync(tmpDir, { recursive: true });
-      const odaResult = await odaConvertDwgToDxf(dwgPath, tmpDir);
+      const odaResult = await odaConvertDwgToDxf(realPath, tmpDir);
       if (odaResult.ok) {
         const text = await fsp.readFile(odaResult.dxfPath, 'utf-8');
         try { fs.unlinkSync(odaResult.dxfPath); fs.rmdirSync(tmpDir); } catch {}
-        return { ok: true, text, name: path.basename(dwgPath) };
+        return { ok: true, text, name: path.basename(realPath) };
       }
     } catch {}
     try { fs.rmdirSync(tmpDir, { recursive: true }); } catch {}
@@ -2419,6 +3014,622 @@ ipcMain.handle('convert-dwg-dxf-text', async (_, dwgPath) => {
 
 ipcMain.handle('cancel-convert', () => {
   if (_routeProc) { try { _routeProc.kill(); } catch {} _routeProc = null; }
+});
+
+// ─── Route-O-Matic (PCOMM VBScript driver) ──────────────────────────────
+
+ipcMain.handle('route-o-matic', async (_, ops, sessionLetter) => {
+  // ops = [{ op: 10, wc: 116, desc: 'BURN PIPE & HOLES', run: 0.45, setup: 0.16, basis: '' }, ...]
+  // sessionLetter = 'A', 'B', etc.
+  if (!ops || !ops.length) return { ok: false, msg: 'No operations to enter.' };
+  if (!sessionLetter) return { ok: false, msg: 'No PCOMM session specified.' };
+
+  // Welding work centers for WPS detection
+  const WELD_WCS = [600,601,605,610,611,612,613,100,101,104,112,117,205,206,207,208,209,709,813];
+  const SKIP_WPS_DESC = ['GRIND','CHIP WELD','SHEAR','BURN BEVEL'];
+
+  // Build operation array for VBScript
+  const opsVbs = ops.map(o => {
+    const desc = String(o.desc || '').replace(/"/g, '""').slice(0, 30);
+    const run = Math.round((parseFloat(o.run) || 0) * 100) / 100;
+    const setup = Math.round((parseFloat(o.setup) || 0) * 100) / 100;
+    const basis = String(o.basis || '').slice(0, 1);
+    return `Array(${o.op}, ${o.wc}, "${desc}", ${run}, ${setup}, "${basis}")`;
+  }).join(', _\n    ');
+
+  const vbs = `' Route-O-Matic — Generated by XylemView Pro
+' Drives PCOMM session ${sessionLetter} to enter routing operations via SFC100.
+' User MUST be on SFC100-01 with the correct item loaded before running.
+OPTION EXPLICIT
+On Error Resume Next
+
+Dim autECLSession
+Set autECLSession = CreateObject("PCOMM.autECLSession")
+If Err.Number <> 0 Then
+  MsgBox "Failed to create PCOMM session object: " & Err.Description, 16, "Route-O-Matic"
+  WScript.Quit
+End If
+On Error GoTo 0
+
+autECLSession.SetConnectionByName "${sessionLetter}"
+
+' Verify we're on the right screen — if on SFC100-03, PF12 back to SFC100-01
+If autECLSession.autECLPS.SearchText("SFC100-03") Then
+  autECLSession.autECLPS.SendKeys "[pf12]"
+  autECLSession.autECLOIA.WaitForInputReady
+End If
+If Not autECLSession.autECLPS.WaitForString("SFC100-01", , , 3000) Then
+  MsgBox "Not on SFC100-01 for session ${sessionLetter}! Navigate to the routing screen first.", 16, "Route-O-Matic"
+  WScript.Quit
+End If
+
+MsgBox "Route-O-Matic ready! Will enter " & ${ops.length} & " operations on session ${sessionLetter}." & vbCrLf & vbCrLf & "Press OK to begin.", 64, "Route-O-Matic"
+
+' Operations: Array(opNo, wc, desc, runHrs, setupHrs, basisCode)
+Dim ops
+ops = Array( _
+    ${opsVbs} _
+)
+
+' Navigate to operation list
+autECLSession.autECLPS.SendKeys "[tab]"
+autECLSession.autECLPS.SendKeys "[pf9]"
+autECLSession.autECLOIA.WaitForInputReady
+autECLSession.autECLPS.SendKeys "[fldext]", 7, 35
+autECLSession.autECLPS.SendKeys "[enter]"
+autECLSession.autECLOIA.WaitForInputReady
+
+Dim i, o, curOp, skipped
+skipped = 0
+curOp = ops(0)(0) ' Starting op from first entry
+For i = 0 To UBound(ops)
+  o = ops(i)
+  If Not autECLSession.autECLPS.WaitForString("SFC100-03", , , 2000) Then Exit For
+
+  ' Enter op number — if deleted, just type next number (+1) directly
+  autECLSession.autECLPS.SendKeys CStr(curOp)
+  autECLSession.autECLPS.SendKeys "[fldext]"
+  autECLSession.autECLPS.SendKeys "[enter]"
+  autECLSession.autECLOIA.WaitForInputReady
+
+  ' If op was previously deleted, bump by 1 and retry (no reset needed)
+  Do While autECLSession.autECLPS.SearchText("previously deleted") Or autECLSession.autECLPS.SearchText("must reactivate")
+    curOp = curOp + 1
+    skipped = skipped + 1
+    If skipped > 50 Then
+      MsgBox "Too many deleted operations! Aborting.", 16, "Route-O-Matic"
+      WScript.Quit
+    End If
+    autECLSession.autECLPS.SendKeys CStr(curOp)
+    autECLSession.autECLPS.SendKeys "[fldext]"
+    autECLSession.autECLPS.SendKeys "[enter]"
+    autECLSession.autECLOIA.WaitForInputReady
+  Loop
+
+  ' Should now be on SFC100-02
+  If Not autECLSession.autECLPS.WaitForString("SFC100-02", , , 2000) Then
+    MsgBox "Expected SFC100-02 but didn't find it. Stopping at operation " & i & ".", 16, "Route-O-Matic"
+    WScript.Quit
+  End If
+
+  ' Fill in operation details
+  autECLSession.autECLPS.SetText CStr(o(2)), 6, 25  ' Description
+  autECLSession.autECLPS.SetText CStr(o(1)), 8, 25  ' Work center
+  autECLSession.autECLPS.SetText o(5), 9, 25        ' Basis code
+  autECLSession.autECLPS.SendKeys CStr(o(3)), 10, 25 ' Run hours
+  autECLSession.autECLPS.SendKeys CStr(o(4)), 11, 25 ' Setup hours
+  autECLSession.autECLPS.SendKeys "[fldext]"
+  autECLSession.autECLPS.SendKeys "[enter]"
+  autECLSession.autECLOIA.WaitForInputReady
+  autECLSession.autECLPS.SendKeys "[enter]"
+  autECLSession.autECLOIA.WaitForInputReady
+
+  curOp = curOp + 10
+Next
+
+Dim msg
+msg = "Route-O-Matic complete! " & (UBound(ops) + 1) & " operations entered."
+If skipped > 0 Then msg = msg & vbCrLf & skipped & " deleted op number(s) skipped."
+MsgBox msg, 64, "Route-O-Matic"
+`;
+
+  // Write to temp file
+  const vbsPath = path.join(app.getPath('temp'), 'RouteOMatic.vbs');
+  try {
+    await fsp.writeFile(vbsPath, vbs, 'utf-8');
+    logDiag('ROUTE', `Generated Route-O-Matic VBS: ${ops.length} ops, session ${sessionLetter}`);
+    logDiag('ROUTE', `VBS path: ${vbsPath}`);
+    // Launch via 32-bit wscript (PCOMM COM objects are 32-bit)
+    const child = spawn('C:\\Windows\\SysWOW64\\wscript.exe', [vbsPath], { detached: true, stdio: 'ignore' });
+    child.unref();
+    return { ok: true, msg: `Route-O-Matic launched (${ops.length} operations, session ${sessionLetter})` };
+  } catch (e) {
+    logDiag('ROUTE', `Route-O-Matic FAILED: ${e.message}`);
+    return { ok: false, msg: e.message };
+  }
+});
+
+// ─── Route-O-Matic ACS (HAScript .mac generator) ────────────────────────
+
+ipcMain.handle('route-o-matic-acs', async (_, ops) => {
+  if (!ops || !ops.length) return { ok: false, msg: 'No operations to enter.' };
+  logDiag('ROUTE', `Generating ACS macro: ${ops.length} ops`);
+
+  // Build one screen per operation: SFC100-03 (enter op#) → SFC100-02 (fill details) → confirm
+  let screens = '';
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/'/g, '&apos;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  // Screen 0: If on SFC100-03, PF12 back to SFC100-01
+  screens += `
+    <screen name="BackToSFC01" entryscreen="true" exitscreen="false" transient="false">
+        <description>
+            <string value="&apos;SFC100-03&apos;" row="1" col="2" erow="1" ecol="10" casesense="true" wrap="false" optional="false" invertmatch="false" />
+            <oia status="NOTINHIBITED" optional="false" invertmatch="false" />
+        </description>
+        <actions>
+            <input value="&apos;[pf12]&apos;" row="0" col="0" movecursor="true" xlatehostkeys="true" encrypted="false" />
+        </actions>
+        <nextscreens timeout="0"><nextscreen name="VerifySFC01" /></nextscreens>
+    </screen>
+`;
+
+  // Screen 1: Verify on SFC100-01 and navigate to op list
+  screens += `
+    <screen name="VerifySFC01" entryscreen="true" exitscreen="false" transient="false">
+        <description>
+            <string value="&apos;SFC100-01&apos;" row="1" col="2" erow="1" ecol="10" casesense="true" wrap="false" optional="false" invertmatch="false" />
+            <oia status="NOTINHIBITED" optional="false" invertmatch="false" />
+        </description>
+        <actions>
+            <input value="&apos;[tab][pf9]&apos;" row="0" col="0" movecursor="true" xlatehostkeys="true" encrypted="false" />
+        </actions>
+        <nextscreens timeout="0"><nextscreen name="NavToOpList" /></nextscreens>
+    </screen>
+`;
+
+  // Screen 2: Clear field and enter to get to SFC100-03
+  screens += `
+    <screen name="NavToOpList" entryscreen="false" exitscreen="false" transient="false">
+        <description>
+            <oia status="NOTINHIBITED" optional="false" invertmatch="false" />
+        </description>
+        <actions>
+            <input value="&apos;[field+]&apos;" row="7" col="35" movecursor="true" xlatehostkeys="true" encrypted="false" />
+            <input value="&apos;[enter]&apos;" row="0" col="0" movecursor="true" xlatehostkeys="true" encrypted="false" />
+        </actions>
+        <nextscreens timeout="0"><nextscreen name="Op0_EnterNum" /></nextscreens>
+    </screen>
+`;
+
+  for (let i = 0; i < ops.length; i++) {
+    const o = ops[i];
+    const desc = esc(String(o.desc || '').slice(0, 30));
+    const wc = String(o.wc);
+    const run = String(Math.round((parseFloat(o.run) || 0) * 100) / 100);
+    const setup = String(Math.round((parseFloat(o.setup) || 0) * 100) / 100);
+    const basis = esc(String(o.basis || '').slice(0, 1));
+    const nextEnter = i < ops.length - 1 ? `Op${i + 1}_EnterNum` : 'Done';
+
+    // Enter op number on SFC100-03
+    screens += `
+    <screen name="Op${i}_EnterNum" entryscreen="false" exitscreen="false" transient="false">
+        <description>
+            <string value="&apos;SFC100-03&apos;" row="1" col="2" erow="1" ecol="10" casesense="true" wrap="false" optional="false" invertmatch="false" />
+            <oia status="NOTINHIBITED" optional="false" invertmatch="false" />
+        </description>
+        <actions>
+            <input value="&apos;${o.op}[field+][enter]&apos;" row="0" col="0" movecursor="true" xlatehostkeys="true" encrypted="false" />
+        </actions>
+        <nextscreens timeout="0"><nextscreen name="Op${i}_Fill" /></nextscreens>
+    </screen>
+`;
+
+    // Fill in details on SFC100-02
+    screens += `
+    <screen name="Op${i}_Fill" entryscreen="false" exitscreen="false" transient="false">
+        <description>
+            <string value="&apos;SFC100-02&apos;" row="1" col="2" erow="1" ecol="10" casesense="true" wrap="false" optional="false" invertmatch="false" />
+            <oia status="NOTINHIBITED" optional="false" invertmatch="false" />
+        </description>
+        <actions>
+            <input value="&apos;${desc}&apos;" row="6" col="25" movecursor="true" xlatehostkeys="true" encrypted="false" />
+            <input value="&apos;${wc}&apos;" row="8" col="25" movecursor="true" xlatehostkeys="true" encrypted="false" />
+            <input value="&apos;${basis}&apos;" row="9" col="25" movecursor="true" xlatehostkeys="true" encrypted="false" />
+            <input value="&apos;${run}&apos;" row="10" col="25" movecursor="true" xlatehostkeys="true" encrypted="false" />
+            <input value="&apos;${setup}&apos;" row="11" col="25" movecursor="true" xlatehostkeys="true" encrypted="false" />
+            <input value="&apos;[field+][enter]&apos;" row="0" col="0" movecursor="true" xlatehostkeys="true" encrypted="false" />
+        </actions>
+        <nextscreens timeout="0"><nextscreen name="Op${i}_Confirm" /></nextscreens>
+    </screen>
+`;
+
+    // Confirm screen — enter again to save
+    screens += `
+    <screen name="Op${i}_Confirm" entryscreen="false" exitscreen="false" transient="false">
+        <description>
+            <oia status="NOTINHIBITED" optional="false" invertmatch="false" />
+        </description>
+        <actions>
+            <input value="&apos;[enter]&apos;" row="0" col="0" movecursor="true" xlatehostkeys="true" encrypted="false" />
+        </actions>
+        <nextscreens timeout="0"><nextscreen name="${nextEnter}" /></nextscreens>
+    </screen>
+`;
+  }
+
+  // Final done screen
+  screens += `
+    <screen name="Done" entryscreen="false" exitscreen="true" transient="false">
+        <description>
+            <oia status="NOTINHIBITED" optional="false" invertmatch="false" />
+        </description>
+        <actions>
+        </actions>
+        <nextscreens timeout="0"></nextscreens>
+    </screen>
+`;
+
+  const mac = `<HAScript name="RouteOMatic" description="Generated by XylemView Pro — ${ops.length} routing operations" timeout="120000" pausetime="300" promptall="true" blockinput="true" author="XylemView" creationdate="${new Date().toLocaleString()}" supressclearevents="false" usevars="false" ignorepauseforenhancedtn="true" delayifnotenhancedtn="0" ignorepausetimeforenhancedtn="true" continueontimeout="false">
+${screens}
+</HAScript>`;
+
+  // Save to user's macros folder
+  const macDir = path.join(os.homedir(), 'OneDrive - Xylem Inc', 'BPCS macros');
+  const macPath = path.join(macDir, 'RouteOMatic.mac');
+  try {
+    await fsp.mkdir(macDir, { recursive: true });
+    await fsp.writeFile(macPath, mac, 'utf-8');
+    logDiag('ROUTE', `Generated ACS macro: ${macPath}`);
+    return { ok: true, macPath, msg: `Macro saved to ${macPath}` };
+  } catch (e) {
+    // Fallback to temp
+    const tmpPath = path.join(app.getPath('temp'), 'RouteOMatic.mac');
+    try {
+      await fsp.writeFile(tmpPath, mac, 'utf-8');
+      logDiag('ROUTE', `Generated ACS macro (temp): ${tmpPath}`);
+      return { ok: true, macPath: tmpPath, msg: `Macro saved to ${tmpPath}` };
+    } catch (e2) {
+      logDiag('ROUTE', `ACS macro FAILED: ${e2.message}`);
+      return { ok: false, msg: e2.message };
+    }
+  }
+});
+
+// ─── BPCS SOAP Web Service Client ───────────────────────────────────────
+const http = require('http');
+
+const BPCS_WS_SANDBOX = 'http://01ckas02-2/BPCSqueryWStest/BpcsFunctions.asmx';
+const BPCS_WS_LIVE    = 'http://01ckas02-2/BPCSQueryWS/BpcsFunctions.asmx';
+const BPCS_SOAP_NS    = 'http://tempuri.org/';
+
+/**
+ * Call a BPCS SOAP web service method.
+ * @param {string} endpoint - Full URL of the .asmx endpoint
+ * @param {string} method - SOAP method name (e.g. 'GetItemNumber')
+ * @param {Object} params - Key-value pairs for the method parameters
+ * @returns {Promise<string>} - Raw XML response body
+ */
+function bpcsSoapCall(endpoint, method, params = {}) {
+  return new Promise((resolve, reject) => {
+    const paramXml = Object.entries(params)
+      .map(([k, v]) => {
+        const sv = String(v ?? '');
+        return sv ? `      <${k}>${escXml(sv)}</${k}>` : `      <${k} />`;
+      })
+      .join('\n');
+    logDiag('SOAP', `${method} params: ${JSON.stringify(params)}`);
+
+    const soapBody = `<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <soap:Body>
+    <${method} xmlns="${BPCS_SOAP_NS}">
+${paramXml}
+    </${method}>
+  </soap:Body>
+</soap:Envelope>`;
+
+    logDiag('SOAP', `Sending:\n${soapBody.slice(0, 500)}`);
+
+    const url = new URL(endpoint);
+    const options = {
+      hostname: url.hostname,
+      port: url.port || 80,
+      path: url.pathname,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/xml; charset=utf-8',
+        'SOAPAction': `${BPCS_SOAP_NS}${method}`,
+        'Content-Length': Buffer.byteLength(soapBody),
+      },
+      timeout: 15000,
+    };
+
+    const req = http.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve(data);
+        } else {
+          reject(new Error(`SOAP ${method}: HTTP ${res.statusCode}\n${data.slice(0, 500)}`));
+        }
+      });
+    });
+
+    req.on('error', (e) => reject(new Error(`SOAP ${method}: ${e.message}`)));
+    req.on('timeout', () => { req.destroy(); reject(new Error(`SOAP ${method}: timeout`)); });
+    req.write(soapBody);
+    req.end();
+  });
+}
+
+function escXml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/** Extract text content of a single XML tag from raw XML */
+function soapExtractTag(xml, tag) {
+  const re = new RegExp(`<${tag}[^>]*>([^<]*)</${tag}>`, 'i');
+  const m = re.exec(xml);
+  return m ? m[1] : null;
+}
+
+/** Extract all text between a result tag (for dataset responses) */
+function soapExtractBlock(xml, tag) {
+  const re = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'i');
+  const m = re.exec(xml);
+  return m ? m[1] : null;
+}
+
+// ─── BPCS Read-Only Test Handlers (dev only) ────────────────────────────
+
+ipcMain.handle('bpcs-get-item-number', async (_, connectionType, orderNumber, lineNumber) => {
+  logDiag('BPCS', `GetItemNumber(${connectionType}, ${orderNumber}, ${lineNumber})`);
+  try {
+    const xml = await bpcsSoapCall(BPCS_WS_SANDBOX, 'GetItemNumber', {
+      ConnectionType: connectionType,
+      OrderNumber: orderNumber,
+      LineNumber: lineNumber,
+    });
+    const result = soapExtractTag(xml, 'GetItemNumberResult');
+    logDiag('BPCS', `GetItemNumber → "${result}"`);
+    return { ok: true, result, raw: xml };
+  } catch (e) {
+    logDiag('BPCS', `GetItemNumber FAILED: ${e.message}`);
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('bpcs-check-existing-routers', async (_, connectionType, partNumber) => {
+  logDiag('BPCS', `CheckForExistingRouters(${connectionType}, ${partNumber})`);
+  try {
+    const xml = await bpcsSoapCall(BPCS_WS_SANDBOX, 'CheckForExistingRouters', {
+      ConnectionType: connectionType,
+      PartNumber: partNumber,
+    });
+    const result = soapExtractTag(xml, 'CheckForExistingRoutersResult');
+    logDiag('BPCS', `CheckForExistingRouters → ${result}`);
+    return { ok: true, result: parseInt(result, 10), raw: xml };
+  } catch (e) {
+    logDiag('BPCS', `CheckForExistingRouters FAILED: ${e.message}`);
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('bpcs-get-routers', async (_, partNumber) => {
+  logDiag('BPCS', `GetRouters(${partNumber})`);
+  try {
+    const xml = await bpcsSoapCall(BPCS_WS_SANDBOX, 'GetRouters', {
+      PartNumber: partNumber,
+    });
+    logDiag('BPCS', `GetRouters → ${xml.length} bytes`);
+    return { ok: true, raw: xml };
+  } catch (e) {
+    logDiag('BPCS', `GetRouters FAILED: ${e.message}`);
+    return { ok: false, error: e.message };
+  }
+});
+
+// Check if a specific FRT line exists (read-only)
+async function checkExistingFRTline(connectionType, partNumber, opNumber) {
+  try {
+    const xml = await bpcsSoapCall(BPCS_WS_SANDBOX, 'CheckForExistingFRTline', {
+      ConnectionType: connectionType,
+      PartNumber: partNumber,
+      OperationNumber: String(opNumber),
+    });
+    const result = soapExtractTag(xml, 'CheckForExistingFRTlineResult');
+    return parseInt(result, 10) || 0;
+  } catch { return -1; }
+}
+
+ipcMain.handle('bpcs-drawing-history', async (_, drawingNumber) => {
+  // Query BPCS for all orders associated with a drawing number
+  const dwg = String(drawingNumber).replace(/[^0-9A-Za-z]/g, '');
+  if (!dwg || dwg.length < 6) return { ok: false, error: 'Invalid drawing number' };
+  logDiag('BPCS', `DrawingHistory("${dwg}")`);
+  const sql = `SELECT BPCSP25F.ECHL02.HORD, BPCSP25F.ECLL12.LLINE, rtrim(BPCSP25F.IIML01.IPROD) AS IPROD, BPCSP25F.ECLL12.LRDTE, BPCSP25F.ECLL12.LODTE, BPCSP25F.RCML02.CNME, rtrim(BPCSP25F.CICL01.ICCLAS) AS ICCLAS, BPCSP25F.ECLL12.LQORD FROM BPCSP25F.IIML01 LEFT OUTER JOIN BPCSP25F.CICL01 ON (BPCSP25F.IIML01.IPROD=BPCSP25F.CICL01.ICPROD) LEFT OUTER JOIN BPCSP25F.ECLL12 ON (BPCSP25F.CICL01.ICPROD=BPCSP25F.ECLL12.LPROD AND BPCSP25F.CICL01.ICFAC=BPCSP25F.ECLL12.LICFAC) INNER JOIN BPCSP25F.ECHL02 ON (BPCSP25F.ECLL12.LORD=BPCSP25F.ECHL02.HORD) RIGHT OUTER JOIN BPCSP25F.RCML02 ON (BPCSP25F.ECHL02.HCUST=BPCSP25F.RCML02.CCUST) WHERE BPCSP25F.IIML01.IDRAW = '${escXml(dwg)}' AND BPCSP25F.ECHL02.HORD NOT BETWEEN 800000 AND 899999 ORDER BY BPCSP25F.ECLL12.LODTE DESC`;
+  try {
+    const xml = await bpcsSoapCall(BPCS_WS_LIVE, 'SelectQuery', {
+      ConnectionType: 'LIVE',
+      SelectText: sql,
+    });
+    // Parse dataset XML — extract rows from diffgram
+    const rows = [];
+    const rowRe = /<_x0030_[^>]*>([\s\S]*?)<\/_x0030_>/g;
+    let m;
+    while ((m = rowRe.exec(xml)) !== null) {
+      const extract = (tag) => { const r = new RegExp(`<${tag}>([^<]*)</${tag}>`); const mm = r.exec(m[1]); return mm ? mm[1].trim() : ''; };
+      const lrdte = parseInt(extract('LRDTE'), 10) || 0;
+      // Convert BPCS date (YYMMDD - 28yr offset) to display
+      let dateStr = '';
+      if (lrdte > 0) {
+        const yy = Math.floor(lrdte / 10000);
+        const mm = Math.floor((lrdte % 10000) / 100);
+        const dd = lrdte % 100;
+        const realYear = yy + 28 > 100 ? (yy + 28 - 100) + 2000 : (yy + 28) + 1900;
+        dateStr = `${String(mm).padStart(2,'0')}/${String(dd).padStart(2,'0')}/${String(realYear).slice(-2)}`;
+      }
+      const hord = extract('HORD');
+      const lline = extract('LLINE');
+      const orderLine = hord ? `${String(hord).padStart(6,'0')}-${String(lline).padStart(lline.length > 2 ? 3 : 2, '0')}` : '';
+      // Title case customer name
+      const rawCust = extract('CNME');
+      const titleCase = rawCust.toLowerCase().replace(/(?:^|\s|[-/])\S/g, c => c.toUpperCase());
+      // Format quantity — whole numbers drop decimals
+      const rawQty = parseFloat(extract('LQORD')) || 0;
+      const qtyStr = rawQty === Math.floor(rawQty) ? String(Math.floor(rawQty)) : rawQty.toFixed(2);
+      rows.push({
+        orderLine,
+        order: hord,
+        line: lline,
+        itemNumber: extract('IPROD'),
+        schedDate: dateStr,
+        customer: titleCase,
+        itemClass: extract('ICCLAS'),
+        qty: qtyStr,
+      });
+    }
+    logDiag('BPCS', `DrawingHistory → ${rows.length} rows`);
+    return { ok: true, rows };
+  } catch (e) {
+    logDiag('BPCS', `DrawingHistory FAILED: ${e.message}`);
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('bpcs-check-existing-frt-line', async (_, connectionType, partNumber, opNumber) => {
+  logDiag('BPCS', `CheckForExistingFRTline(${connectionType}, ${partNumber}, ${opNumber})`);
+  const count = await checkExistingFRTline(connectionType, partNumber, opNumber);
+  logDiag('BPCS', `CheckForExistingFRTline → ${count}`);
+  return { ok: count >= 0, result: count };
+});
+
+ipcMain.handle('bpcs-insert-frt-test', async (_, partNumber, opNo, wc, desc) => {
+  // SANDBOX ONLY — inserts using InsertFRTline with typed FRT object
+  // Uses exact XML format from server docs at ?op=InsertFRTline
+  const safeDesc = (desc || 'DELETE THIS OPERATION').slice(0, 30);
+  const op = parseInt(opNo, 10) || 990;
+
+  // Pre-check: refuse to insert if this operation already exists
+  const existing = await checkExistingFRTline('SANDBOX', partNumber, op);
+  if (existing > 0) {
+    logDiag('BPCS', `InsertFRTline BLOCKED: op ${op} already exists on ${partNumber} (${existing} found)`);
+    return { ok: false, error: `Operation ${op} already exists on this part number (${existing} found). Delete it in BPCS first, or use a different op number.` };
+  }
+  if (existing < 0) {
+    return { ok: false, error: 'Could not verify operation number — CheckForExistingFRTline failed.' };
+  }
+  const wcInt = parseInt(wc, 10) || 999;
+  // BPCS Y2K date format: YYMMDD with 28-year offset (stored = real - 28)
+  const now = new Date();
+  const storedYear = ((now.getFullYear() - 28) % 100 + 100) % 100; // handles negative mod
+  const todayBPCS = storedYear * 10000
+    + (now.getMonth() + 1) * 100
+    + now.getDate();
+  const frt = {
+    RID: 'RT',             // RT=active routing, RZ=deleted
+    RPROD: partNumber,
+    ROPNO: op,             // int
+    RSTAT: '1',            // 1=Active
+    RWRKC: wcInt,          // int
+    ROPDS: safeDesc,       // max 30 chars
+    RBAS: '',              // blank = default
+    RLAB: 0.01,            // double
+    RSET: 0,               // double
+    RMAC: 0,               // double
+    ROPER: 1,              // int
+    RTOOL: '',
+    RMOVE: 0,              // double
+    RQUE: 0,               // double
+    RSTYD: 0,              // double
+    REFDT: todayBPCS,      // int — YYMMDD with 28yr offset (e.g. 980405 = Apr 5 2026)
+    RDDDT: 999999,         // int — no end date (99/99/99)
+    RCEFD: todayBPCS,      // int — collection effective
+    RCDSD: 999999,         // int — collection discontinue
+    RTWHS: 'HT',           // facility
+    RSUOP: 0,              // int
+    RTOPGP: 0,             // int
+    RTSTOP: '',
+    RTRTEM: '',
+  };
+
+  // Build typed FRT XML matching the server's documented format
+  const frtXml = `        <RID>${escXml(frt.RID)}</RID>
+        <RPROD>${escXml(frt.RPROD)}</RPROD>
+        <ROPNO>${frt.ROPNO}</ROPNO>
+        <RSTAT>${escXml(frt.RSTAT)}</RSTAT>
+        <RWRKC>${frt.RWRKC}</RWRKC>
+        <ROPDS>${escXml(frt.ROPDS)}</ROPDS>
+        <RBAS>${escXml(frt.RBAS)}</RBAS>
+        <RLAB>${frt.RLAB}</RLAB>
+        <RSET>${frt.RSET}</RSET>
+        <RMAC>${frt.RMAC}</RMAC>
+        <ROPER>${frt.ROPER}</ROPER>
+        <RTOOL>${escXml(frt.RTOOL)}</RTOOL>
+        <RMOVE>${frt.RMOVE}</RMOVE>
+        <RQUE>${frt.RQUE}</RQUE>
+        <RSTYD>${frt.RSTYD}</RSTYD>
+        <REFDT>${frt.REFDT}</REFDT>
+        <RDDDT>${frt.RDDDT}</RDDDT>
+        <RCEFD>${frt.RCEFD}</RCEFD>
+        <RCDSD>${frt.RCDSD}</RCDSD>
+        <RTWHS>${escXml(frt.RTWHS)}</RTWHS>
+        <RSUOP>${frt.RSUOP}</RSUOP>
+        <RTOPGP>${frt.RTOPGP}</RTOPGP>
+        <RTSTOP>${escXml(frt.RTSTOP)}</RTSTOP>
+        <RTRTEM>${escXml(frt.RTRTEM)}</RTRTEM>`;
+
+  const soapBody = `<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <InsertFRTline xmlns="http://tempuri.org/">
+      <ConnectionType>SANDBOX</ConnectionType>
+      <FRT>
+${frtXml}
+      </FRT>
+    </InsertFRTline>
+  </soap:Body>
+</soap:Envelope>`;
+
+  logDiag('BPCS', `InsertFRTline(SANDBOX, pn=${partNumber}, op=${op}, wc=${wcInt}, "${safeDesc}")`);
+  logDiag('BPCS', `FRT: ${JSON.stringify(frt)}`);
+
+  try {
+    const url = new URL(BPCS_WS_SANDBOX);
+    const xml = await new Promise((resolve, reject) => {
+      const req = http.request({
+        hostname: url.hostname, port: url.port || 80, path: url.pathname,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/xml; charset=utf-8',
+          'SOAPAction': 'http://tempuri.org/InsertFRTline',
+          'Content-Length': Buffer.byteLength(soapBody),
+        },
+        timeout: 15000,
+      }, (res) => {
+        let data = '';
+        res.on('data', chunk => { data += chunk; });
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) resolve(data);
+          else reject(new Error(`HTTP ${res.statusCode}\n${data.slice(0, 500)}`));
+        });
+      });
+      req.on('error', (e) => reject(new Error(e.message)));
+      req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+      req.write(soapBody);
+      req.end();
+    });
+
+    const result = soapExtractTag(xml, 'InsertFRTlineResult');
+    logDiag('BPCS', `InsertFRTline → "${result}"`);
+    return { ok: true, result, raw: xml, sent: frt };
+  } catch (e) {
+    logDiag('BPCS', `InsertFRTline FAILED: ${e.message}`);
+    return { ok: false, error: e.message };
+  }
 });
 
 // ─── Chat Room ──────────────────────────────────────────────────────────
@@ -2549,7 +3760,22 @@ async function detectAnsiFromDxf(dwgPath) {
 
     const lines = dxf.split('\n');
 
-    // Find AcDbPlotSettings with non-zero paper dimensions (skip empty/unused layouts)
+    // Priority 1: xSIZE block names (ASIZE, BSIZE, CSIZE_BG, etc.)
+    // These directly encode the intended paper size and can't go stale like plot settings.
+    for (let i = 0; i < lines.length; i++) {
+      const lt = lines[i].trim();
+      if (lt !== 'AcDbBlockBegin' && lt !== 'AcDbBlockTableRecord') continue;
+      for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
+        if (lines[j].trim() === '2') {
+          const name = (lines[j + 1] || '').trim().toUpperCase();
+          const m = name.match(/^([ABCDE])SIZE/);
+          if (m) { console.log(`PDF DXF: block ${name} → ANSI ${m[1]}`); return { letter: m[1], orient: null }; }
+          break;
+        }
+      }
+    }
+
+    // Priority 2: AcDbPlotSettings with non-zero paper dimensions (skip empty/unused layouts)
     for (let i = 0; i < lines.length; i++) {
       if (lines[i].trim() !== 'AcDbPlotSettings') continue;
       let paperW = 0, paperH = 0, rot = 0;
@@ -2582,20 +3808,6 @@ async function detectAnsiFromDxf(dwgPath) {
       return { letter: match.letter, orient };
     }
 
-    // Fallback: look for xSIZE block names (ASIZE, BSIZE, etc.)
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].trim() === 'AcDbBlockBegin') {
-        for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
-          if (lines[j].trim() === '2') {
-            const name = (lines[j + 1] || '').trim().toUpperCase();
-            const m = name.match(/^([ABCDE])SIZE/);
-            if (m) { console.log(`PDF DXF: block ${name} → ANSI ${m[1]}`); return { letter: m[1], orient: null }; }
-            break;
-          }
-        }
-      }
-    }
-
     console.log('PDF DXF: no paper size found');
     return null;
   } catch (e) {
@@ -2614,7 +3826,7 @@ function pickAnsiFromLimmax(limW, limH, dimScale) {
   const candidates = [];
   for (const [letter, p] of Object.entries(ANSI_PAPERS)) {
     const sL = dLong / p.long, sS = dShort / p.short;
-    if (sL > 0.5 && Math.abs(sL - sS) / sL < 0.02) {
+    if (sL > 0.5 && Math.abs(sL - sS) / sL < 0.07) {
       candidates.push({ letter, scale: (sL + sS) / 2 });
     }
   }
@@ -2679,11 +3891,16 @@ app.on('will-quit', () => {
 });
 
 ipcMain.handle('convert-dwg-pdf', async (_, dwgPath, outDir) => {
+  logDiag('CONVERT', `DWG→PDF ${path.basename(dwgPath)}`);
   const accore = findPdfAccore();
   if (!accore) return { ok: false, msg: 'PDF conversion requires AutoCAD.' };
   if (!fs.existsSync(dwgPath)) return { ok: false, msg: `Drawing not found: ${path.basename(dwgPath)}` };
 
-  const baseName = path.basename(dwgPath).replace(/\.dwg$/i, '.pdf');
+  let baseName = path.basename(dwgPath).replace(/\.dwg$/i, '.pdf');
+  // Uppercase drawing number portion (not rev level) for recognized drawing numbers
+  const dnMatch = baseName.match(/^(\d{6}[A-Za-z\d]\d{5})(r.+\.pdf)$/i)
+               || baseName.match(/^(TL[A-Za-z0-9]+)(r.+\.pdf)$/i);
+  if (dnMatch) baseName = dnMatch[1].toUpperCase() + dnMatch[2];
   const baseDir = outDir || path.dirname(dwgPath);
   // Never overwrite — use numbered suffix if file exists (avoids locked-file issues)
   let pdfPath = path.join(baseDir, baseName);
@@ -2750,7 +3967,7 @@ ipcMain.handle('convert-dwg-pdf', async (_, dwgPath, outDir) => {
   // Notify renderer of detected size (for toast)
   if (mainWindow) mainWindow.webContents.send('pdf-paper-detected', detectedLetter, orient);
 
-  // Step 2: Plot to PDF
+  // Step 2: Plot to PDF (native lineweights — preserves drawing's visual hierarchy)
   const plotLines = [
     '_ZOOM _E',
     '-PLOT',
@@ -2768,7 +3985,7 @@ ipcMain.handle('convert-dwg-pdf', async (_, dwgPath, outDir) => {
     'Center',                               // Centered on page
     'Y',                                    // Plot with styles
     'monochrome.ctb',                       // Style table
-    'Y',                                    // Lineweights
+    'Y',                                    // Lineweights (native — thicker than DWGSee but no anti-aliasing)
     'A',                                    // Shade plot (As displayed)
     pdfScr,                                 // Output filename
     'N',                                    // Save changes to page setup
@@ -2790,7 +4007,7 @@ ipcMain.handle('convert-dwg-pdf', async (_, dwgPath, outDir) => {
 });
 
 // ─── Auto-update check ─────────────────────────────────────────────────
-const CURRENT_VERSION = '1.0.11';
+const CURRENT_VERSION = '1.1.0';
 
 async function findInstallerExe() {
   if (!IS_WIN) return null;

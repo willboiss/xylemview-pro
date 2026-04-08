@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Quick Search</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,500;9..40,700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { background:transparent; overflow:hidden; font-family:'DM Sans',system-ui,sans-serif; user-select:none; }
+body { -webkit-app-region:drag; }
+
+:root {
+  --bg: rgba(18,18,26,0.82); --border: rgba(255,255,255,0.12);
+  --text: #e8e8f4; --text2: #8888a4; --text3: #5c5c78;
+  --accent: #0a84ff; --dwg: #00b4d8; --pdf: #e06080;
+  --input-bg: rgba(0,0,0,0.35); --input-border: rgba(255,255,255,0.06);
+  --hover: rgba(255,255,255,0.05); --selected: rgba(10,132,255,0.15);
+  --selected-border: rgba(10,132,255,0.6);
+}
+[data-theme="light"] {
+  --bg: rgba(240,240,246,0.88); --border: rgba(0,0,0,0.10);
+  --text: #0f0f1a; --text2: #5c5c72; --text3: #9898a8;
+  --accent: #007aff; --dwg: #006070; --pdf: #991830;
+  --input-bg: rgba(255,255,255,0.65); --input-border: rgba(0,0,0,0.08);
+  --hover: rgba(0,0,0,0.04); --selected: rgba(0,122,255,0.12);
+  --selected-border: rgba(0,122,255,0.5);
+}
+
+.container {
+  background: var(--bg);
+  backdrop-filter: blur(40px) saturate(1.8);
+  -webkit-backdrop-filter: blur(40px) saturate(1.8);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 16px 64px rgba(0,0,0,0.45), 0 0 0 0.5px rgba(255,255,255,0.06);
+  display: flex; flex-direction: column;
+}
+
+/* ─── Search row ─── */
+.search-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px;
+  -webkit-app-region: no-drag;
+}
+.search-icon {
+  flex-shrink: 0; width: 20px; height: 20px; color: var(--text3);
+}
+.search-input {
+  flex: 1; border: none; outline: none; background: none;
+  font: 600 20px/1.2 'DM Sans',sans-serif;
+  letter-spacing: 0.4px; color: var(--text);
+  caret-color: var(--accent);
+}
+.search-input::placeholder { color: var(--text3); font-weight: 400; }
+.hint-key {
+  flex-shrink: 0; font: 500 11px/1 'DM Sans',sans-serif;
+  color: var(--text3); background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 5px; padding: 3px 7px;
+}
+
+/* ─── Divider ─── */
+.divider { height: 1px; background: var(--border); margin: 0; }
+
+/* ─── Results ─── */
+.results {
+  max-height: 340px; overflow-y: auto; padding: 6px 0;
+  -webkit-app-region: no-drag;
+}
+.results:empty { display: none; }
+.results:empty + .divider { display: none; }
+
+.result-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 16px; cursor: pointer;
+  transition: background .1s;
+}
+.result-item:hover { background: var(--hover); }
+.result-item.selected { background: var(--selected); border-left: 2px solid var(--selected-border); padding-left: 14px; }
+
+.result-ext {
+  flex-shrink: 0; font: 700 10px/1 'DM Sans',sans-serif;
+  text-transform: uppercase; padding: 3px 6px; border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+.ext-dwg { background: rgba(0,180,216,0.12); color: var(--dwg); }
+.ext-pdf { background: rgba(224,96,128,0.12); color: var(--pdf); }
+.ext-other { background: var(--input-bg); color: var(--text2); }
+
+.result-info { flex: 1; min-width: 0; }
+.result-name {
+  font: 600 13px/1.3 'DM Sans',sans-serif; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.result-meta {
+  font: 400 11px/1.3 'DM Sans',sans-serif; color: var(--text3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.result-rev {
+  flex-shrink: 0; font: 700 11px/1 'DM Sans',sans-serif;
+  color: var(--accent); margin-left: auto;
+}
+
+/* ─── Status bar ─── */
+.status-bar {
+  padding: 8px 16px; font: 400 11px/1.3 'DM Sans',sans-serif;
+  color: var(--text3); display: flex; align-items: center; gap: 6px;
+  -webkit-app-region: no-drag;
+}
+.status-bar:empty { display: none; }
+.status-bar .key { font: inherit; color: var(--text3); background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 4px; padding: 1px 5px; }
+
+/* ─── Spinner ─── */
+.spinner {
+  width: 16px; height: 16px; border: 2px solid var(--input-border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin .6s linear infinite; margin: 12px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Scrollbar */
+.results::-webkit-scrollbar { width: 6px; }
+.results::-webkit-scrollbar-track { background: transparent; }
+.results::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="search-row">
+    <svg class="search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4 4"/></svg>
+    <input class="search-input" id="inp" placeholder="Drawing number..." autofocus spellcheck="false" autocomplete="off">
+    <span class="hint-key">ESC</span>
+  </div>
+  <div class="divider" id="div-top"></div>
+  <div class="results" id="results"></div>
+  <div class="divider" id="div-bot"></div>
+  <div class="status-bar" id="status"></div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const inp = $('#inp');
+const results = $('#results');
+const status = $('#status');
+
+let items = [];      // Array of file objects from search result
+let selIdx = -1;     // Currently selected index
+let lastQuery = '';
+
+// Apply theme from main app config
+(async () => {
+  try {
+    const cfg = await window.qsApi.getConfig();
+    if (cfg.theme === 'light') document.documentElement.dataset.theme = 'light';
+    else if (cfg.theme === 'tron') document.documentElement.dataset.theme = 'tron';
+    // 'auto' / 'dark' stay default
+    if (cfg.theme === 'auto') {
+      const dark = await window.qsApi.getSystemDark();
+      if (!dark) document.documentElement.dataset.theme = 'light';
+    }
+  } catch {}
+})();
+
+// Auto-format drawing number as user types (mirroring main app logic)
+inp.addEventListener('input', () => {
+  let v = inp.value.replace(/[\s-]/g, '').toUpperCase();
+  const h = v.indexOf('#'); if (h !== -1) v = v.slice(0, h);
+  const alnum = v.replace(/[^0-9A-Za-z*%_]/g, '');
+  let display = alnum;
+  if (alnum.length >= 1 && !/[*%_]/.test(alnum) && /^[0-5]/.test(alnum)) {
+    const f = alnum[0];
+    let parts;
+    if ('123'.includes(f)) {
+      parts = [alnum.slice(0,1), alnum.slice(1,4), alnum.slice(4,5), alnum.slice(5,7), alnum.slice(7,10), alnum.slice(10,12)];
+    } else {
+      parts = [alnum.slice(0,1), alnum.slice(1,4), alnum.slice(4,6), alnum.slice(6,9), alnum.slice(9,12)];
+    }
+    display = parts.filter(p => p).join('-');
+  }
+  inp.value = display;
+  // Auto-search on full 12-digit number
+  if (alnum.length === 12) setTimeout(doSearch, 50);
+});
+
+inp.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    window.qsApi.closeQuickSearch();
+    return;
+  }
+  if (e.key === 'Enter') {
+    if (selIdx >= 0 && items[selIdx]) {
+      openItem(selIdx);
+    } else {
+      doSearch();
+    }
+    return;
+  }
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (items.length) { selIdx = Math.min(selIdx + 1, items.length - 1); renderSelection(); }
+    return;
+  }
+  if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (items.length) { selIdx = Math.max(selIdx - 1, 0); renderSelection(); }
+    return;
+  }
+});
+
+// Close on blur (clicking outside)
+window.addEventListener('blur', () => {
+  setTimeout(() => window.qsApi.closeQuickSearch(), 100);
+});
+
+async function doSearch() {
+  const raw = inp.value || '';
+  let cleaned = raw.trim().replace(/[\s-]/g, '');
+  const h = cleaned.indexOf('#'); if (h !== -1) cleaned = cleaned.slice(0, h);
+  if (!cleaned || cleaned === lastQuery) return;
+  lastQuery = cleaned;
+
+  // Show spinner
+  results.innerHTML = '<div class="spinner"></div>';
+  status.textContent = '';
+  resize();
+
+  let r;
+  try {
+    r = await window.qsApi.searchDrawing(cleaned);
+  } catch {
+    results.innerHTML = '';
+    status.textContent = 'Network error — check connection';
+    resize();
+    return;
+  }
+
+  if (!r.found) {
+    results.innerHTML = '';
+    const msg = r.offline ? 'Network offline' : `No files found for ${r.base || cleaned}`;
+    status.textContent = msg;
+    resize();
+    return;
+  }
+
+  // Build items list
+  if (r.wildcard) {
+    // Wildcard: show all files (filter BAK)
+    items = r.files.filter(f => f._ext !== 'BAK');
+  } else {
+    // Single drawing: show primary + alt + older revs
+    items = [];
+    if (r.primary) items.push(r.primary);
+    if (r.altFormat) items.push(r.altFormat);
+    if (r.otherRevs) items.push(...r.otherRevs);
+  }
+
+  // If exactly one result in non-wildcard mode, open it directly
+  if (!r.wildcard && items.length >= 1 && r.primary) {
+    // Add to recents and open
+    window.qsApi.addRecentDrawing(cleaned);
+    openItem(0);
+    return;
+  }
+
+  selIdx = items.length ? 0 : -1;
+  renderResults();
+  status.innerHTML = items.length
+    ? `${items.length} file${items.length !== 1 ? 's' : ''} &middot; <span class="key">&uarr;&darr;</span> navigate &middot; <span class="key">Enter</span> open`
+    : '';
+  resize();
+
+  // Add to recents
+  window.qsApi.addRecentDrawing(cleaned);
+}
+
+function renderResults() {
+  results.innerHTML = items.map((f, i) => {
+    const ext = f._ext || '';
+    const extCls = ext === 'DWG' ? 'ext-dwg' : ext === 'PDF' ? 'ext-pdf' : 'ext-other';
+    const name = f.displayName || f.name || '';
+    const loc = f.location || '';
+    const rev = f._rev || '';
+    const sel = i === selIdx ? ' selected' : '';
+    return `<div class="result-item${sel}" data-idx="${i}">
+      <span class="result-ext ${extCls}">${esc(ext)}</span>
+      <div class="result-info">
+        <div class="result-name">${esc(name)}</div>
+        <div class="result-meta">${esc(loc)}</div>
+      </div>
+      ${rev ? `<span class="result-rev">R${esc(rev)}</span>` : ''}
+    </div>`;
+  }).join('');
+
+  // Click handlers
+  results.querySelectorAll('.result-item').forEach(el => {
+    el.addEventListener('click', () => openItem(parseInt(el.dataset.idx)));
+  });
+
+  scrollToSelected();
+}
+
+function renderSelection() {
+  results.querySelectorAll('.result-item').forEach((el, i) => {
+    el.classList.toggle('selected', i === selIdx);
+  });
+  scrollToSelected();
+}
+
+function scrollToSelected() {
+  const sel = results.querySelector('.result-item.selected');
+  if (sel) sel.scrollIntoView({ block: 'nearest' });
+}
+
+function openItem(idx) {
+  const f = items[idx];
+  if (!f) return;
+  window.qsApi.openFile(f.filepath);
+  window.qsApi.addRecentOpenedDrawing(f.displayName || f.name, lastQuery);
+  // Close after a brief moment so the user sees it registered
+  setTimeout(() => window.qsApi.closeQuickSearch(), 150);
+}
+
+function resize() {
+  window.qsApi.resizeToContent(document.querySelector('.container').offsetHeight);
+}
+
+function esc(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Focus input whenever window appears
+window.addEventListener('focus', () => { inp.focus(); inp.select(); });
+
+// Initial resize
+requestAnimationFrame(resize);
+</script>
+</body>
+</html>
