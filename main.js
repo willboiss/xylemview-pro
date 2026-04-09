@@ -822,9 +822,8 @@ app.whenReady().then(() => {
     const logPath = path.join(SHARED_DATA_DIR, 'version-log.csv');
     const username = os.userInfo().username;
     const ts = new Date().toISOString();
-    const hasOda = !!findOdaConverter();
     const hasAcad = !!findPdfAccore();
-    const line = `${ts},${username},${CURRENT_VERSION},${IS_DEV ? 'dev' : 'installed'},oda=${hasOda},acad=${hasAcad}\n`;
+    const line = `${ts},${username},${CURRENT_VERSION},${IS_DEV ? 'dev' : 'installed'},acad=${hasAcad}\n`;
     fs.appendFile(logPath, line, () => {});
   } catch (e) {}
   logDiag('APP', `Started v${CURRENT_VERSION} (${IS_DEV ? 'dev' : 'installed'}) — Electron ${process.versions.electron}, ${os.platform()} ${os.release()}`);
@@ -2152,7 +2151,11 @@ ipcMain.handle('check-links-exist', async (_, orderPad, items) => {
 
 // ═══ Ask Claude — AI analysis of order documents ═══
 ipcMain.handle('ask-claude', async (_, orderPad) => {
-  const CLAUDE_KEY_DEFAULT = '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';
+  // Read API key from external file (gitignored) or network share, never from source code
+  let CLAUDE_KEY_DEFAULT = '';
+  for (const kp of [path.join(__dirname, 'claude-key.txt'), path.join(SHARED_DATA_DIR, 'claude-key.txt')]) {
+    try { CLAUDE_KEY_DEFAULT = fs.readFileSync(kp, 'utf-8').trim(); if (CLAUDE_KEY_DEFAULT) break; } catch {}
+  }
   const apiKey = config.claude_api_key || CLAUDE_KEY_DEFAULT;
   if (!apiKey) return { error: 'no_key' };
   try {
@@ -3838,6 +3841,17 @@ async function readJsonSafe(fp) {
 
 async function appendJsonMsg(fp, msg) {
   const msgs = await readJsonSafe(fp);
+  // Safety: if file exists but we read 0 messages, don't overwrite — likely a network read failure
+  if (msgs.length === 0) {
+    try {
+      const stat = await fsp.stat(fp);
+      if (stat.size > 10) {
+        logDiag('CHAT', `Safety: refusing to overwrite ${path.basename(fp)} (${stat.size} bytes) with empty read`);
+        // Still append the new message to whatever we can read
+        return [msg];
+      }
+    } catch {}
+  }
   msgs.push(msg);
   const trimmed = msgs.slice(-200);
   await fsp.mkdir(path.dirname(fp), { recursive: true });
@@ -3895,6 +3909,14 @@ async function getUserInfoCached() {
         if (result && result !== username) fullName = result;
       } catch (e) {}
     }
+  }
+  // If all lookups returned just the username, try dsquery as last resort
+  if (fullName === username && IS_WIN) {
+    try {
+      const result = execSync(`dsquery user -samid "${username}" | dsget user -display -L`, { encoding: 'utf-8', timeout: 5000 });
+      const m = result.match(/display\s+(.+)/i);
+      if (m && m[1].trim() && m[1].trim() !== username) fullName = m[1].trim();
+    } catch {}
   }
   _userInfoCache = { username, fullName };
   return _userInfoCache;
