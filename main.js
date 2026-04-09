@@ -830,7 +830,7 @@ app.whenReady().then(() => {
   // Join/leave chat messages disabled — was wiping chat.json due to network race conditions
   // TODO: re-enable once we have a safer append mechanism (file locking or server-side)
   createWindow();
-  nativeTheme.on('updated', () => { if (win) win.webContents.send('system-theme-changed'); });
+  nativeTheme.on('updated', () => { if (mainWindow) mainWindow.webContents.send('system-theme-changed'); });
   createTray();  // Always show tray icon
 
   // Global shortcut to show main window (Ctrl+Shift+X)

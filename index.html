@@ -2239,6 +2239,7 @@ function renderDrawingResult() {
   if (cardParent) { cardParent.style.flex = '1'; cardParent.style.alignSelf = 'flex-start'; cardParent.style.minWidth = '0'; }
 
   const p = r.primary;
+  if (!p) { card.innerHTML = ''; return; }
   const dispName = p.displayName || p.name;
   const rev = p.revDisplay || p._rev || '';
   const ext = p._ext || p.ext.replace(']','').toUpperCase();
@@ -5168,7 +5169,7 @@ async function init() {
         S.otpComplete = revert.length === 8;
         updateOtpDisplay();
         cancelShimmer();
-        renderFileList();
+        renderFiles();
       }
       _modeState.orders = { files: S.files, cntFiles: S.cntFiles, selected: S.selected, currentFolder: S.currentFolder, currentOrder: S.currentOrder, currentLine: S.currentLine, otpDigits: [...S.otpDigits], otpComplete: S.otpComplete, revWarnings: { ...S.revWarnings }, collapsedSections: { ...S.collapsedSections }, _checklistPath: S._checklistPath, _checklistName: S._checklistName };
     } else if (S.mode === 'drawings') {
@@ -6759,14 +6760,14 @@ function renderMarketingResults() {
   });
   // Copy requirements button
   area.querySelector('.mkt-copy-reqs')?.addEventListener('click', () => {
-    navigator.clipboard.writeText(cl.requirements);
+    window.api.copyText(cl.requirements);
     const btn = area.querySelector('.mkt-copy-reqs');
     btn.textContent = 'Copied!'; btn.style.color = 'var(--success)';
     setTimeout(() => { btn.textContent = 'Copy'; btn.style.color = ''; }, 1500);
   });
   // Copy comments button
   area.querySelector('.mkt-copy-comments')?.addEventListener('click', () => {
-    navigator.clipboard.writeText(cl.comments);
+    window.api.copyText(cl.comments);
     const btn = area.querySelector('.mkt-copy-comments');
     btn.textContent = 'Copied!'; btn.style.color = 'var(--success)';
     setTimeout(() => { btn.textContent = 'Copy'; btn.style.color = ''; }, 1500);
@@ -6920,7 +6921,7 @@ async function showChecklistReview(orderPad) {
     el.addEventListener('click', () => {
       const dwg = el.dataset.dwg;
       if (dwg) {
-        navigator.clipboard.writeText(dwg);
+        window.api.copyText(dwg);
         const badge = el.querySelector('div:last-child');
         const orig = badge.textContent;
         badge.textContent = 'COPIED';
