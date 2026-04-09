@@ -827,16 +827,8 @@ app.whenReady().then(() => {
     fs.appendFile(logPath, line, () => {});
   } catch (e) {}
   logDiag('APP', `Started v${CURRENT_VERSION} (${IS_DEV ? 'dev' : 'installed'}) — Electron ${process.versions.electron}, ${os.platform()} ${os.release()}`);
-  // Post "joined the chat" on first install (not updates)
-  if (_isFirstInstall) {
-    (async () => {
-      try {
-        const info = await getUserInfoCached();
-        await appendJsonMsg(getChatFile(), { user: info.username, name: info.fullName, text: 'has joined the chat.', ts: Date.now(), system: true });
-        logDiag('CHAT', `Posted join message for ${info.fullName}`);
-      } catch {}
-    })();
-  }
+  // Join/leave chat messages disabled — was wiping chat.json due to network race conditions
+  // TODO: re-enable once we have a safer append mechanism (file locking or server-side)
   createWindow();
   nativeTheme.on('updated', () => { if (win) win.webContents.send('system-theme-changed'); });
   createTray();  // Always show tray icon
