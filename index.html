@@ -2476,7 +2476,7 @@ function updateCnt() {
     btn.textContent = t('Contingency');
     ident.textContent = '';
   }
-  if (btn.window._cntLoading) {
+  if (window._cntLoading) {
     btn._origText = btn._origText || t('Contingency');
     btn.innerHTML = '<span class="deep-spinner" style="width:12px;height:12px"></span>';
   }
@@ -7539,7 +7539,7 @@ bootLog('script parsed');
         window.api.onContingencyLoading((loading) => {
           const btn = document.querySelector('#cnt-btn');
           if (!btn) return;
-          btn.window._cntLoading = loading;
+          window._cntLoading = loading;
           if (loading) {
             btn._origText = btn._origText || btn.textContent;
             btn.innerHTML = '<span class="deep-spinner" style="width:12px;height:12px"></span>';
