@@ -83,15 +83,21 @@ function findAccoreConsole() {
 
 function findOdaConverter() {
   if (!IS_WIN) return null;
-  const base = 'C:\\Program Files\\ODA';
-  try {
-    if (!fs.existsSync(base)) return null;
-    const dirs = fs.readdirSync(base).filter(d => d.toLowerCase().startsWith('odafileconverter')).sort().reverse();
-    for (const d of dirs) {
-      const candidate = path.join(base, d, 'ODAFileConverter.exe');
-      if (fs.existsSync(candidate)) return candidate;
-    }
-  } catch (e) {}
+  // Check local install first (faster), then network share as fallback
+  for (const base of ['C:\\Program Files\\ODA', path.join(SHARED_DATA_DIR, 'ODAFileConverter')]) {
+    try {
+      if (!fs.existsSync(base)) continue;
+      // Check if ODAFileConverter.exe is directly in the folder
+      const direct = path.join(base, 'ODAFileConverter.exe');
+      if (fs.existsSync(direct)) return direct;
+      // Check subfolders (versioned install dirs like "ODAFileConverter 27.1.0")
+      const dirs = fs.readdirSync(base).filter(d => d.toLowerCase().startsWith('odafileconverter')).sort().reverse();
+      for (const d of dirs) {
+        const candidate = path.join(base, d, 'ODAFileConverter.exe');
+        if (fs.existsSync(candidate)) return candidate;
+      }
+    } catch (e) {}
+  }
   return null;
 }
 
