@@ -5327,9 +5327,9 @@ async function init() {
       if (isDev) vEl.classList.add('dev');
     }
     // Dev-only theme options
+    const mb = $('#btn-mode-marketing'); if (mb) mb.style.display = '';
     if (isDev) {
       const cb = $('#btn-theme-classic'); if (cb) cb.style.display = '';
-      const mb = $('#btn-mode-marketing'); if (mb) mb.style.display = '';
     }
   } catch (e) {}
 
@@ -5966,7 +5966,7 @@ async function init() {
       return;
     }
     // Ctrl+V: paste files into current folder
-    if (e.ctrlKey && e.key === 'v' && !e.shiftKey && !e.altKey && S.mode === 'orders' && S.currentFolder) {
+    if (e.ctrlKey && e.key === 'v' && !e.shiftKey && !e.altKey && S.mode === 'orders' && S.currentFolder && !_onInput) {
       e.preventDefault();
       doPaste();
       return;

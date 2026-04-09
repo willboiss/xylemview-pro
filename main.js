@@ -4209,7 +4209,7 @@ ipcMain.handle('convert-dwg-pdf', async (_, dwgPath, outDir) => {
 });
 
 // ─── Auto-update check ─────────────────────────────────────────────────
-const CURRENT_VERSION = '1.1.0';
+const CURRENT_VERSION = '1.1.1';
 
 async function findInstallerExe() {
   if (!IS_WIN) return null;
