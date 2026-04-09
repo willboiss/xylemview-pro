@@ -6663,7 +6663,7 @@ function renderMarketingResults() {
     const btn = area.querySelector('#mkt-ask-claude');
     const responseDiv = area.querySelector('#mkt-claude-response');
     const textDiv = area.querySelector('#mkt-claude-text');
-    if (false) { // Default key is built into main.js — no prompt needed
+    if (S._claudeKeyFailed && !S.config.claude_api_key) {
       const ov = document.createElement('div'); ov.className = 'modal-overlay';
       ov.innerHTML = `<div class="modal glass-strong" style="color:var(--text);width:420px;padding:24px">
         <h3 style="font:700 16px/1.3 'DM Sans',sans-serif;margin:0 0 8px">Set up Ask Claude</h3>
@@ -6696,8 +6696,8 @@ function renderMarketingResults() {
     btn.innerHTML = '<span class="deep-spinner" style="width:10px;height:10px"></span> Analyzing\u2026';
     const result = await window.api.askClaude(orderPad);
     if (result.error === 'invalid_key') {
-      textDiv.textContent = 'Invalid API key. Click Ask Claude to re-enter.'; textDiv.style.color = 'var(--danger)';
-      S.config.claude_api_key = ''; btn.disabled = false; btn.innerHTML = 'Ask Claude';
+      textDiv.textContent = 'API key expired or invalid. Click Ask Claude to enter a new one.'; textDiv.style.color = 'var(--danger)';
+      S.config.claude_api_key = ''; S._claudeKeyFailed = true; btn.disabled = false; btn.innerHTML = 'Ask Claude';
     } else if (result.error === 'no_key') {
       responseDiv.style.display = 'none'; S.config.claude_api_key = ''; btn.disabled = false; btn.innerHTML = 'Ask Claude';
       area.querySelector('#mkt-ask-claude')?.click();
@@ -6999,7 +6999,7 @@ function showLinkDialog() {
 //  What's New
 // ═══════════════════════════════════════════════════════════════════════
 const CHANGELOG = [
-  { ver: '1.1.1', date: 'Apr 9, 2026', items: [
+  { ver: '1.1.2', date: 'Apr 9, 2026', items: [
     // --- Big features ---
     { type: 'feat', text: 'Order History \u2014 search any drawing and instantly see every order it\u2019s been built on, with dates, customers, quantities, and click-to-copy item numbers. Powered by a live BPCS query.' },
     { type: 'feat', text: 'Marketing Mode \u2014 new tab for reviewing order checklists, with parsed line items, repeat/new detection, drawing linking, and PDF preview' },

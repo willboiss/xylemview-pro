@@ -1,6 +1,6 @@
 {
   "name": "xylemview-pro",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "XylemView Pro — A premium drawing & order viewer for Xylem",
   "main": "main.js",
   "scripts": {

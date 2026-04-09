@@ -1800,7 +1800,7 @@ async function parseChecklistPdf(filepath) {
   if (poMatch) result.poNumber = poMatch[1];
 
   // Extract AE name (auto-capitalize)
-  const aeMatch = text.match(/AE\n(\w+)/i);
+  const aeMatch = text.match(/AE\s*\n?\s*(\w+)/i);
   if (aeMatch) result.ae = aeMatch[1].charAt(0).toUpperCase() + aeMatch[1].slice(1).toLowerCase();
 
   // Extract dates
@@ -2152,7 +2152,7 @@ ipcMain.handle('check-links-exist', async (_, orderPad, items) => {
 
 // ═══ Ask Claude — AI analysis of order documents ═══
 ipcMain.handle('ask-claude', async (_, orderPad) => {
-  const CLAUDE_KEY_DEFAULT = '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';
+  const CLAUDE_KEY_DEFAULT = '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';
   const apiKey = config.claude_api_key || CLAUDE_KEY_DEFAULT;
   if (!apiKey) return { error: 'no_key' };
   try {
@@ -4220,7 +4220,7 @@ ipcMain.handle('convert-dwg-pdf', async (_, dwgPath, outDir) => {
 });
 
 // ─── Auto-update check ─────────────────────────────────────────────────
-const CURRENT_VERSION = '1.1.1';
+const CURRENT_VERSION = '1.1.2';
 
 async function findInstallerExe() {
   if (!IS_WIN) return null;
