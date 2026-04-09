@@ -423,7 +423,7 @@ body.win10[data-theme="disco"] .glass-strong{background:rgba(40,0,50,0.82)}
 .file-name{font-size:13.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .file-num{font-family:'IBM Plex Mono',monospace;font-weight:600;letter-spacing:.3px}
 .file-rev{font-weight:500;font-size:12.5px;opacity:.7}
-.dwg-copy-btn{background:none;border:none;cursor:pointer;color:var(--text3);padding:2px 4px;margin-left:2px;border-radius:4px;opacity:0;transition:opacity .15s,color .15s,background .15s;vertical-align:middle}
+.dwg-copy-btn{background:none;border:none;cursor:pointer;color:var(--text3);padding:3px 5px;margin-left:3px;border-radius:5px;opacity:0;transition:opacity .15s,color .15s,background .15s;vertical-align:middle}
 .file-row:hover .dwg-copy-btn,.dwg-result:hover .dwg-copy-btn{opacity:.6}
 .dwg-copy-btn:hover{opacity:1!important;color:var(--accent);background:var(--accent-soft)}
 [data-theme="tron"] .file-num{text-shadow:0 0 10px color-mix(in srgb,var(--file-color,var(--text)) 35%,transparent)}
@@ -6560,10 +6560,13 @@ function renderMarketingResults() {
   const linkSvg = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9.5a3.5 3.5 0 005 0l2-2a3.5 3.5 0 00-5-5l-1 1"/><path d="M9.5 6.5a3.5 3.5 0 00-5 0l-2 2a3.5 3.5 0 005 5l1-1"/></svg>';
 
   const lineItemsHtml = cl.lineItems.map(li => `
-    <div class="mkt-line-item" data-dwg="${escHtml(li.dwgNorm)}" data-line="${escHtml(li.line)}" title="Click to copy ${escHtml(li.dwgNorm)}">
+    <div class="mkt-line-item" data-dwg="${escHtml(li.dwgNorm)}" data-line="${escHtml(li.line)}" title="Double-click to open drawing">
       <div style="font:700 13px/1 'IBM Plex Mono',monospace;color:var(--accent);min-width:24px">${li.line}</div>
       <div style="flex:1">
-        <div style="font:600 12px/1.3 'IBM Plex Mono',monospace;color:var(--dwg)">${escHtml(fmtDwg(li.dwgRaw))}</div>
+        <div style="display:flex;align-items:center;gap:2px">
+          <span style="font:600 12px/1.3 'IBM Plex Mono',monospace;color:var(--dwg)">${escHtml(fmtDwg(li.dwgRaw))}</span>
+          ${li.dwgNorm ? `<button class="dwg-copy-btn mkt-dwg-copy no-drag" data-dwg="${escHtml(li.dwgNorm)}" title="Copy ${escHtml(li.dwgNorm)}" style="opacity:.4" onclick="event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>` : ''}
+        </div>
         <div style="font:400 10px/1.3 'DM Sans',sans-serif;color:var(--text3);margin-top:2px">${escHtml(li.template)}${li.price ? ' \u2022 $' + escHtml(li.price) : ''}</div>
       </div>
       <button class="mkt-link-btn btn-glass" data-dwg="${escHtml(li.dwgNorm)}" data-line="${escHtml(li.line)}" style="font-size:10px;height:30px;padding:0 10px;flex-shrink:0;display:flex;align-items:center;gap:4px" title="Link drawing to order folder" onclick="event.stopPropagation()"><span class="deep-spinner" style="width:10px;height:10px"></span></button>
@@ -6723,16 +6726,28 @@ function renderMarketingResults() {
     btn.textContent = 'Copied!'; btn.style.color = 'var(--success)';
     setTimeout(() => { btn.textContent = 'Copy'; btn.style.color = ''; }, 1500);
   });
+  // Double-click line item to open drawing in Drawings tab
   area.querySelectorAll('.mkt-line-item').forEach(el => {
-    el.addEventListener('click', () => {
+    el.addEventListener('dblclick', () => {
       const dwg = el.dataset.dwg;
       if (dwg) {
-        navigator.clipboard.writeText(dwg);
-        const badge = el.querySelector('div:last-child');
-        const orig = badge.textContent;
-        badge.textContent = 'COPIED';
-        setTimeout(() => { badge.textContent = orig; }, 1200);
+        const modeBtn = document.querySelector('#mode-seg button[data-val="drawings"]');
+        if (modeBtn) modeBtn.click();
+        setTimeout(() => {
+          const inp = $('#inp-dwg');
+          if (inp) { inp.value = dwg; inp.dispatchEvent(new Event('input')); }
+        }, 100);
       }
+    });
+  });
+  // Copy buttons on line items
+  area.querySelectorAll('.mkt-dwg-copy').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      window.api.copyText(btn.dataset.dwg);
+      const svg = btn.innerHTML;
+      btn.innerHTML = '<span style="font-size:9px;font-weight:600;color:var(--accent)">OK</span>';
+      setTimeout(() => { btn.innerHTML = svg; }, 800);
     });
   });
   // Async link checking — runs after render, updates link buttons

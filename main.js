@@ -1819,7 +1819,12 @@ async function parseChecklistPdf(filepath) {
     const hits = [];
     let m;
     while ((m = templateRe.exec(section)) !== null) {
-      hits.push({ template: m[1], dwgRaw: m[2].trim(), end: m.index + m[0].length });
+      // Clean trailing non-drawing text (e.g. "523208060013QTY" → "523208060013")
+      let rawDwg = m[2].trim();
+      // Drawing numbers are digits+hyphens, with at most one letter at position 5 or 7.
+      // Strip trailing alpha runs that are clearly not part of the number (QTY, EA, etc.)
+      rawDwg = rawDwg.replace(/[A-Za-z]{2,}$/, '');
+      hits.push({ template: m[1], dwgRaw: rawDwg, end: m.index + m[0].length });
     }
     // Pass 2: extract price from the text chunk between each hit and the next
     // Comma-aware grouping (\d{1,3}(,\d{3})*) prevents grabbing leadtime digits
@@ -1965,7 +1970,7 @@ async function parseChecklistXlsx(filepath) {
       const tm = templateRe.exec(val);
       if (tm) {
         const template = tm[1];
-        const dwgRaw = tm[2].trim();
+        const dwgRaw = tm[2].trim().replace(/[A-Za-z]{2,}$/, '');
         const dwgNorm = dwgRaw.replace(/-/g, '');
         const rowNum = parseInt(rn);
         const price = cell(rowNum, 'C') || '';
