@@ -59,6 +59,7 @@
     "@anthropic-ai/sdk": "^0.85.0",
     "mdb-reader": "^3.2.0",
     "msgreader": "^1.0.1",
+    "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1"
   }
 }

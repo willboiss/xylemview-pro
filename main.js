@@ -46,6 +46,7 @@ const DEFAULTS = {
   recent_opened_drawings: [],  // [{name, query, ts}]
   launch_on_startup: true,
   seen_changelog_ver: '',
+  language: 'en',  // 'en' or 'tlh' (Klingon)
 };
 
 // Auto-detect the newest AutoCAD installation
@@ -378,6 +379,14 @@ function parseDrawingInput(raw) {
   return s || null;
 }
 
+function getTabularBase(base) {
+  if (!base || base.length !== 12 || /[^0-9A-Za-z]/.test(base)) return null;
+  const f = base[0];
+  if ('045'.includes(f) && base[6] === '9') return base.slice(0, 9) + '000';
+  if ('123'.includes(f) && base[7] === '9') return base.slice(0, 10) + '00';
+  return null;
+}
+
 function buildWildcardRegex(pattern) {
   // Convert wildcard pattern: * and % = multi-char, _ = single-char
   const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
@@ -636,8 +645,8 @@ function createWindow() {
   const winOpts = {
     width: 490, height: 600, minWidth: 360, minHeight: 440,
     frame: false,
-    maximizable: IS_DEV,
-    fullscreenable: IS_DEV,
+    maximizable: false,  // Maximize permanently kills acrylic (known Electron bug). Snap sadly lost too.
+    fullscreenable: false,
     titleBarStyle: 'hidden',
     titleBarOverlay: false,
     webPreferences: {
@@ -677,9 +686,7 @@ function createWindow() {
   mainWindow.on('focus', () => { _lastFocusedAt = Date.now(); });
   mainWindow.on('blur',  () => { _lastFocusedAt = Date.now(); });
 
-  // Re-apply acrylic after maximize/unmaximize (Windows kills it on state change)
-  // Also tell the renderer so it can toggle rounded corners
-  // Notify renderer of maximize state (for future corner/layout adjustments)
+  // Maximize is disabled (kills acrylic permanently). These events are kept for edge cases.
   mainWindow.on('maximize', () => mainWindow.webContents.send('maximized-changed', true));
   mainWindow.on('unmaximize', () => mainWindow.webContents.send('maximized-changed', false));
 
@@ -1213,7 +1220,24 @@ ipcMain.handle('search-drawing', async (_, rawInput) => {
   if (!base) return { found: false, error: 'Invalid drawing number' };
   // Pass the raw pattern (with wildcards preserved) for regex matching
   const wcPattern = wildcard ? rawInput.replace(/[\s-]/g, '').toUpperCase() : null;
-  const { acad, ds, all } = await searchDrawings(base, wildcard, wcPattern);
+  let { acad, ds, all } = await searchDrawings(base, wildcard, wcPattern);
+
+  // Tabular fallback: if no results and item looks like a tabular member, search for the parent drawing
+  let tabularFallback = null;
+  if (!all.length && !wildcard) {
+    const tabBase = getTabularBase(base);
+    if (tabBase) {
+      logDiag('SEARCH', `Tabular fallback: "${base}" → "${tabBase}"`);
+      const tabResult = await searchDrawings(tabBase, false, null);
+      if (tabResult.all.length) {
+        acad = tabResult.acad;
+        ds = tabResult.ds;
+        all = tabResult.all;
+        tabularFallback = { originalBase: base, tabularBase: tabBase };
+      }
+    }
+  }
+
   if (!all.length) {
     const offline = !(await networkReachable());
     return { found: false, base, wildcard, offline };
@@ -1276,7 +1300,7 @@ ipcMain.handle('search-drawing', async (_, rawInput) => {
     found: true, base, wildcard: false, newestRev,
     dir: path.dirname(primary.filepath),
     primary, altFormat, otherRevs,
-    crossWarning, bakWarning,
+    crossWarning, bakWarning, tabularFallback,
     files: filtered,
   };
 });
@@ -1344,7 +1368,10 @@ ipcMain.handle('find-checklist', async (_, order) => {
     if (!(await dirExists(folder))) continue;
     const entries = await readdirSafe(folder);
     for (const name of entries) {
-      if (!name.toLowerCase().startsWith('1_checklist')) continue;
+      const nameLc = name.toLowerCase();
+      if (!nameLc.startsWith('1_checklist') && !nameLc.startsWith('copy of 1_checklist') && !nameLc.startsWith('copyof1_checklist')) continue;
+      const ext = nameLc.slice(nameLc.lastIndexOf('.') + 1);
+      if (!['pdf', 'xls', 'xlsm'].includes(ext)) continue;
       const fp = path.join(folder, name);
       try {
         const st = await fsp.stat(fp);
@@ -1826,18 +1853,164 @@ async function parseChecklistPdf(filepath) {
   return result;
 }
 
+async function parseChecklistXlsx(filepath) {
+  // Parse XLSM/XLS checklist by extracting as zip and reading sheet XML
+  const stat = await fsp.stat(filepath);
+  const result = { filepath, lineItems: [], poNumber: '', ae: '', date: '', dateApproved: '', fileDate: stat.mtime.toISOString(), fileDateCreated: stat.birthtime.toISOString(), comments: '' };
+
+  let zip, ssXml, sheetXml;
+  try {
+    // Read xlsx as zip
+    const buf = await fsp.readFile(filepath);
+    const JSZip = await (async () => {
+      // Simple zip extraction using Node built-ins
+      const tmpDir = path.join(app.getPath('temp'), 'xl_' + Date.now());
+      await fsp.mkdir(tmpDir, { recursive: true });
+      const tmpZip = path.join(tmpDir, 'cl.zip');
+      await fsp.writeFile(tmpZip, buf);
+      const { execSync } = require('child_process');
+      execSync(`powershell -NoProfile -Command "Expand-Archive -Path '${tmpZip}' -DestinationPath '${tmpDir}/ex' -Force"`, { timeout: 10000 });
+      const ssPath = path.join(tmpDir, 'ex', 'xl', 'sharedStrings.xml');
+      const s1Path = path.join(tmpDir, 'ex', 'xl', 'worksheets', 'sheet1.xml');
+      const ssData = fs.existsSync(ssPath) ? await fsp.readFile(ssPath, 'utf-8') : '';
+      const s1Data = fs.existsSync(s1Path) ? await fsp.readFile(s1Path, 'utf-8') : '';
+      // Cleanup
+      try { fs.rmSync(tmpDir, { recursive: true }); } catch {}
+      return { ssData, s1Data };
+    })();
+    ssXml = JSZip.ssData;
+    sheetXml = JSZip.s1Data;
+  } catch (e) {
+    logDiag('CHECKLIST', `XLSM parse failed (zip): ${e.message}`);
+    return { ...result, error: 'Failed to read XLSM: ' + e.message };
+  }
+
+  if (!sheetXml) return { ...result, error: 'No sheet1 found in XLSM' };
+
+  // Parse shared strings (handle rich text <si> with multiple <t> tags)
+  const ss = [];
+  const siRe = /<si>([\s\S]*?)<\/si>/g;
+  let sm;
+  while ((sm = siRe.exec(ssXml)) !== null) {
+    const tMatches = sm[1].match(/<t[^>]*>([^<]*)<\/t>/g) || [];
+    ss.push(tMatches.map(t => t.replace(/<t[^>]*>/, '').replace(/<\/t>/, '')).join('')
+      .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'));
+  }
+
+  // Parse all cells from sheet1
+  const cells = {};
+  const cellRe = /<c r="([A-Z]+)(\d+)"([^>]*)(?:\/>|>([\s\S]*?)<\/c>)/g;
+  let cm;
+  while ((cm = cellRe.exec(sheetXml)) !== null) {
+    const col = cm[1], row = parseInt(cm[2]), attrs = cm[3], inner = cm[4] || '';
+    const vMatch = inner.match(/<v>([^<]*)<\/v>/);
+    if (!vMatch) continue;
+    const val = vMatch[1];
+    const isShared = attrs.includes('t="s"');
+    const resolved = isShared ? (ss[parseInt(val)] || '') : val;
+    if (!cells[row]) cells[row] = {};
+    cells[row][col] = resolved;
+  }
+
+  // Helper: get cell value
+  const cell = (row, col) => (cells[row] && cells[row][col]) || '';
+
+  // Extract PO number — look for the cell near "PO Number" label
+  for (const [rn, data] of Object.entries(cells)) {
+    for (const [col, val] of Object.entries(data)) {
+      if (/^PO Number/i.test(val)) {
+        // PO value is usually in the next column or same row
+        const nextCol = String.fromCharCode(col.charCodeAt(0) + 1);
+        const poVal = cell(parseInt(rn), nextCol) || cell(parseInt(rn), 'C');
+        if (poVal && /\d/.test(poVal)) result.poNumber = poVal.trim();
+      }
+      if (/^AE$/i.test(val.trim())) {
+        const aeVal = cell(parseInt(rn), String.fromCharCode(col.charCodeAt(0) + 1)) || cell(parseInt(rn), 'C');
+        if (aeVal) result.ae = aeVal.trim().charAt(0).toUpperCase() + aeVal.trim().slice(1).toLowerCase();
+      }
+    }
+  }
+
+  // Extract date fields (Excel serial dates → JS dates)
+  for (const [rn, data] of Object.entries(cells)) {
+    for (const [col, val] of Object.entries(data)) {
+      if (/Date Submitted/i.test(val)) {
+        const dVal = cell(parseInt(rn), String.fromCharCode(col.charCodeAt(0) + 1)) || cell(parseInt(rn), 'C');
+        if (dVal && !isNaN(dVal)) {
+          const d = new Date((parseFloat(dVal) - 25569) * 86400000);
+          result.date = `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
+        } else if (dVal) result.date = dVal.trim();
+      }
+      if (/Date Approved/i.test(val)) {
+        const dVal = cell(parseInt(rn), String.fromCharCode(col.charCodeAt(0) + 1)) || cell(parseInt(rn), 'C');
+        if (dVal && !isNaN(dVal)) {
+          const d = new Date((parseFloat(dVal) - 25569) * 86400000);
+          result.dateApproved = `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
+        } else if (dVal) result.dateApproved = dVal.trim();
+      }
+    }
+  }
+
+  // Extract line items — look for cells containing %XX template patterns
+  // Format: "%SN5032  /  5-163-08-048-074" in column B, price in C, qty in D
+  const templateRe = /(%[A-Z]{2}\w+)\s*(?:\/|Ref\s*PN|Ref|PN|ref)\s*([\d][\d\-A-Za-z]+)/;
+  for (const [rn, data] of Object.entries(cells).sort((a, b) => a[0] - b[0])) {
+    for (const [col, val] of Object.entries(data)) {
+      const tm = templateRe.exec(val);
+      if (tm) {
+        const template = tm[1];
+        const dwgRaw = tm[2].trim();
+        const dwgNorm = dwgRaw.replace(/-/g, '');
+        const rowNum = parseInt(rn);
+        const price = cell(rowNum, 'C') || '';
+        const rawQty = cell(rowNum, 'D') || '1';
+        const qty = parseInt(rawQty) || 1;
+        result.lineItems.push({
+          line: String(result.lineItems.length + 1).padStart(2, '0'),
+          template, dwgRaw, dwgNorm,
+          price: price ? parseFloat(price).toFixed(2) : '',
+          qty, isRepeat: true,
+        });
+      }
+    }
+  }
+
+  // Extract comments
+  for (const [rn, data] of Object.entries(cells)) {
+    for (const [col, val] of Object.entries(data)) {
+      if (/Comments and Additional Requirements/i.test(val)) {
+        // Gather text from rows below this one
+        const comments = [];
+        for (let r = parseInt(rn) + 1; r < parseInt(rn) + 20; r++) {
+          const rowData = cells[r];
+          if (!rowData) continue;
+          for (const v of Object.values(rowData)) {
+            if (v.trim() && !/^(Order Review|Checklist for|Page \d)/i.test(v)) comments.push(v.trim());
+          }
+        }
+        if (comments.length) result.comments = comments.join('\n');
+      }
+    }
+  }
+
+  logDiag('CHECKLIST', `XLSM parsed: ${result.lineItems.length} line items from ${path.basename(filepath)}`);
+  return result;
+}
+
 // Scan an order's 00 folder for checklist files
 async function findChecklists(orderPad) {
   const folder00 = path.join(config.order_path, orderPad + '00');
   if (!(await dirExists(folder00))) return [];
   const files = await readdirSafe(folder00);
-  const checklists = files.filter(f => /^1_checklist/i.test(f) && f.toLowerCase().endsWith('.pdf'));
+  const clRe = /^(1_checklist|copy of 1_checklist|copyof1_checklist)/i;
+  const clExt = /\.(pdf|xls|xlsm)$/i;
+  const checklists = files.filter(f => clRe.test(f) && clExt.test(f));
   // Also check Marketing subfolder
   const mktgDir = path.join(folder00, 'Marketing');
   if (await dirExists(mktgDir)) {
     const mktgFiles = await readdirSafe(mktgDir);
     for (const f of mktgFiles) {
-      if (/^1_checklist/i.test(f) && f.toLowerCase().endsWith('.pdf'))
+      if (clRe.test(f) && clExt.test(f))
         checklists.push(path.join('Marketing', f));
     }
   }
@@ -1890,7 +2063,10 @@ ipcMain.handle('scan-checklists', async (_, orderPad) => {
     const results = [];
     for (const cl of checklists) {
       try {
-        const data = await parseChecklistPdf(cl.path);
+        const extLc = cl.path.slice(cl.path.lastIndexOf('.') + 1).toLowerCase();
+        const data = (extLc === 'xls' || extLc === 'xlsm')
+          ? await parseChecklistXlsx(cl.path)
+          : await parseChecklistPdf(cl.path);
         results.push(data);
       } catch (e) {
         results.push({ filepath: cl.path, error: e.message, lineItems: [] });
@@ -1965,7 +2141,9 @@ ipcMain.handle('check-links-exist', async (_, orderPad, items) => {
 
 // ═══ Ask Claude — AI analysis of order documents ═══
 ipcMain.handle('ask-claude', async (_, orderPad) => {
-  if (!config.claude_api_key) return { error: 'no_key' };
+  const CLAUDE_KEY_DEFAULT = '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';
+  const apiKey = config.claude_api_key || CLAUDE_KEY_DEFAULT;
+  if (!apiKey) return { error: 'no_key' };
   try {
     const Anthropic = require('@anthropic-ai/sdk');
     const pdfParse = require('pdf-parse');
@@ -2017,7 +2195,7 @@ ipcMain.handle('ask-claude', async (_, orderPad) => {
 
     const docTexts = docs.map(d => `\u2500\u2500\u2500 ${d.name} \u2500\u2500\u2500\n${d.text}`).join('\n\n');
 
-    const client = new Anthropic({ apiKey: config.claude_api_key });
+    const client = new Anthropic({ apiKey });
     const stream = client.messages.stream({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 2048,
@@ -2231,6 +2409,7 @@ ipcMain.handle('get-version', () => ({ version: CURRENT_VERSION, isDev: IS_DEV, 
 
 // Window controls (frameless window)
 ipcMain.handle('win-minimize', () => mainWindow?.minimize());
+// Window controls (maximize disabled — acrylic breaks on maximize, snap/split still works)
 ipcMain.handle('win-maximize', () => {
   if (mainWindow?.isMaximized()) mainWindow.unmaximize();
   else mainWindow?.maximize();
@@ -3450,7 +3629,7 @@ ipcMain.handle('bpcs-drawing-history', async (_, drawingNumber) => {
   const dwg = String(drawingNumber).replace(/[^0-9A-Za-z]/g, '');
   if (!dwg || dwg.length < 6) return { ok: false, error: 'Invalid drawing number' };
   logDiag('BPCS', `DrawingHistory("${dwg}")`);
-  const sql = `SELECT BPCSP25F.ECHL02.HORD, BPCSP25F.ECLL12.LLINE, rtrim(BPCSP25F.IIML01.IPROD) AS IPROD, BPCSP25F.ECLL12.LRDTE, BPCSP25F.ECLL12.LODTE, BPCSP25F.RCML02.CNME, rtrim(BPCSP25F.CICL01.ICCLAS) AS ICCLAS, BPCSP25F.ECLL12.LQORD FROM BPCSP25F.IIML01 LEFT OUTER JOIN BPCSP25F.CICL01 ON (BPCSP25F.IIML01.IPROD=BPCSP25F.CICL01.ICPROD) LEFT OUTER JOIN BPCSP25F.ECLL12 ON (BPCSP25F.CICL01.ICPROD=BPCSP25F.ECLL12.LPROD AND BPCSP25F.CICL01.ICFAC=BPCSP25F.ECLL12.LICFAC) INNER JOIN BPCSP25F.ECHL02 ON (BPCSP25F.ECLL12.LORD=BPCSP25F.ECHL02.HORD) RIGHT OUTER JOIN BPCSP25F.RCML02 ON (BPCSP25F.ECHL02.HCUST=BPCSP25F.RCML02.CCUST) WHERE BPCSP25F.IIML01.IDRAW = '${escXml(dwg)}' AND BPCSP25F.ECHL02.HORD NOT BETWEEN 800000 AND 899999 ORDER BY BPCSP25F.ECLL12.LODTE DESC`;
+  const sql = `SELECT BPCSP25F.ECHL02.HORD, BPCSP25F.ECLL12.LLINE, rtrim(BPCSP25F.IIML01.IPROD) AS IPROD, BPCSP25F.ECLL12.LRDTE, BPCSP25F.ECLL12.LODTE, BPCSP25F.RCML02.CNME, rtrim(BPCSP25F.CICL01.ICCLAS) AS ICCLAS, BPCSP25F.ECLL12.LQORD FROM BPCSP25F.IIML01 LEFT OUTER JOIN BPCSP25F.CICL01 ON (BPCSP25F.IIML01.IPROD=BPCSP25F.CICL01.ICPROD) LEFT OUTER JOIN BPCSP25F.ECLL12 ON (BPCSP25F.CICL01.ICPROD=BPCSP25F.ECLL12.LPROD AND BPCSP25F.CICL01.ICFAC=BPCSP25F.ECLL12.LICFAC) INNER JOIN BPCSP25F.ECHL02 ON (BPCSP25F.ECLL12.LORD=BPCSP25F.ECHL02.HORD) RIGHT OUTER JOIN BPCSP25F.RCML02 ON (BPCSP25F.ECHL02.HCUST=BPCSP25F.RCML02.CCUST) WHERE BPCSP25F.IIML01.IDRAW = '${escXml(dwg)}' AND BPCSP25F.ECHL02.HORD NOT BETWEEN 800000 AND 899999 ORDER BY BPCSP25F.ECLL12.LODTE DESC, BPCSP25F.ECHL02.HORD DESC, BPCSP25F.ECLL12.LLINE DESC`;
   try {
     const xml = await bpcsSoapCall(BPCS_WS_LIVE, 'SelectQuery', {
       ConnectionType: 'LIVE',
@@ -3997,10 +4176,33 @@ ipcMain.handle('convert-dwg-pdf', async (_, dwgPath, outDir) => {
 
   const result = await runAccore(accore, dwgPath, plotScript, 120000);
 
-  // Verify PDF
+  // Verify PDF and strip bookmarks
   try {
     const stat = fs.statSync(pdfPath);
-    if (stat.size > 0) return { ok: true, pdfPath, msg: `Created ${path.basename(pdfPath)}` };
+    if (stat.size > 0) {
+      // Remove "Sheets & Views" / "Model" bookmarks from the PDF
+      try {
+        const { PDFDocument, PDFName } = require('pdf-lib');
+        const pdfBytes = await fsp.readFile(pdfPath);
+        const doc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+        // Remove /Outlines (bookmarks) from the document catalog
+        const catalog = doc.catalog;
+        const outlinesKey = PDFName.of('Outlines');
+        if (catalog.get(outlinesKey)) {
+          catalog.delete(outlinesKey);
+          // Also remove /PageMode if it was set to show bookmarks
+          const pageModeKey = PDFName.of('PageMode');
+          const pm = catalog.get(pageModeKey);
+          if (pm && pm.toString() === '/UseOutlines') catalog.delete(pageModeKey);
+          const cleaned = await doc.save();
+          await fsp.writeFile(pdfPath, cleaned);
+          logDiag('CONVERT', 'Stripped PDF bookmarks');
+        }
+      } catch (pdfErr) {
+        logDiag('CONVERT', `Bookmark strip failed (non-fatal): ${pdfErr.message}`);
+      }
+      return { ok: true, pdfPath, msg: `Created ${path.basename(pdfPath)}` };
+    }
   } catch (e) {}
   const raw = (result.stderr || result.stdout).replace(/[\x00-\x09\x0B\x0C\x0E-\x1F]/g, '').trim();
   return { ok: false, msg: `PDF conversion failed: ${raw.slice(-300) || 'No output from AutoCAD'}` };
