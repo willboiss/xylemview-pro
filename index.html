@@ -1980,7 +1980,10 @@ async function doOrderSearch() {
     if (idx >= 0) S.selected = idx;
   }
   // Preload contingency database in background when a .cnt] file is present
-  if (r.cntFiles.some(f => f.isCnt)) window.api.preloadContingency().catch(() => {});
+  if (r.cntFiles.some(f => f.isCnt) && !window._cntLoaded) {
+    window._cntLoading = true;
+    window.api.preloadContingency().then(() => { window._cntLoaded = true; }).catch(() => {}).finally(() => { window._cntLoading = false; });
+  }
   S.currentOrder = order.padStart(6,'0'); S.currentLine = line.padStart(2,'0');
   const prevCollapsed = sameOrder ? { ...S.collapsedSections } : {};
   S.collapsedSections = {};
@@ -2473,7 +2476,7 @@ function updateCnt() {
     btn.textContent = t('Contingency');
     ident.textContent = '';
   }
-  if (btn._cntLoading) {
+  if (btn.window._cntLoading) {
     btn._origText = btn._origText || t('Contingency');
     btn.innerHTML = '<span class="deep-spinner" style="width:12px;height:12px"></span>';
   }
@@ -5340,6 +5343,42 @@ async function init() {
   } catch (e) {}
   startChatPoll(false);
 
+  // Opportunistic contingency preload — loads after 60s of inactivity
+  // Pauses if user does something, resumes when idle again
+  // These are module-level so order search handler can access them
+  window.window._cntIdleTimer = null;
+  window.window._cntLoading = false;
+  window.window._cntLoaded = false;
+  function scheduleCntPreload() {
+    if (window._cntLoaded || window._cntLoading) return;
+    clearTimeout(window._cntIdleTimer);
+    window._cntIdleTimer = setTimeout(() => {
+      if (window._cntLoaded) return;
+      window._cntLoading = true;
+      window.api.preloadContingency().then(() => { window._cntLoaded = true; }).catch(() => {}).finally(() => { window._cntLoading = false; });
+    }, 60000);
+  }
+  // Reset idle timer on user activity
+  ['keydown', 'mousedown', 'input'].forEach(evt => {
+    document.addEventListener(evt, () => {
+      if (window._cntLoading) return; // Don't restart timer if already loading
+      scheduleCntPreload();
+    }, { passive: true });
+  });
+  // Also preload when app loses focus (user switched to another app)
+  window.addEventListener('blur', () => {
+    if (!window._cntLoaded && !window._cntLoading) {
+      clearTimeout(window._cntIdleTimer);
+      window._cntIdleTimer = setTimeout(() => {
+        if (window._cntLoaded) return;
+        window._cntLoading = true;
+        window.api.preloadContingency().then(() => { window._cntLoaded = true; }).catch(() => {}).finally(() => { window._cntLoading = false; });
+      }, 5000); // Start after 5s of being unfocused
+    }
+  });
+  // Start the initial 60s timer
+  scheduleCntPreload();
+
   // Birthday
   const bday = await window.api.getBirthdays();
   if (bday) { const el = $('#birthday'); el.textContent = bday; el.style.display = 'block'; }
@@ -7041,6 +7080,7 @@ const CHANGELOG = [
     { type: 'ui',   text: 'Classic theme (dev only) \u2014 XylemView nostalgia mode with Windows gray, 3D borders, and radio buttons' },
     { type: 'ui',   text: 'Light mode glass panels no longer wash out text near the edges' },
     { type: 'feat', text: 'ODA File Converter now served from the network \u2014 no install needed, everyone gets PDF/DXF conversion automatically' },
+    { type: 'ui',   text: 'Contingency database loads in the background during idle time instead of on startup \u2014 app opens and searches faster' },
     { type: 'feat', text: 'Marketing mode now available for all users' },
     { type: 'feat', text: 'Ask Claude works out of the box \u2014 no API key setup required' },
     // --- Fixes ---
@@ -7499,7 +7539,7 @@ bootLog('script parsed');
         window.api.onContingencyLoading((loading) => {
           const btn = document.querySelector('#cnt-btn');
           if (!btn) return;
-          btn._cntLoading = loading;
+          btn.window._cntLoading = loading;
           if (loading) {
             btn._origText = btn._origText || btn.textContent;
             btn.innerHTML = '<span class="deep-spinner" style="width:12px;height:12px"></span>';
@@ -7508,7 +7548,8 @@ bootLog('script parsed');
             btn._origText = null;
           }
         });
-        window.api.preloadContingency().catch(() => {}); bootLog('cnt preload');
+        // Contingency DB load deferred — loads on first need or after 60s idle
+        bootLog('cnt preload deferred');
       } catch(e) {}
       if (content) {
         content.classList.add('show');
