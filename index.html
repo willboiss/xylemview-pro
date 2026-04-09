@@ -5346,9 +5346,9 @@ async function init() {
   // Opportunistic contingency preload — loads after 60s of inactivity
   // Pauses if user does something, resumes when idle again
   // These are module-level so order search handler can access them
-  window.window._cntIdleTimer = null;
-  window.window._cntLoading = false;
-  window.window._cntLoaded = false;
+  window._cntIdleTimer = null;
+  window._cntLoading = false;
+  window._cntLoaded = false;
   function scheduleCntPreload() {
     if (window._cntLoaded || window._cntLoading) return;
     clearTimeout(window._cntIdleTimer);

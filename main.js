@@ -3840,14 +3840,19 @@ async function readJsonSafe(fp) {
 }
 
 async function appendJsonMsg(fp, msg) {
-  const msgs = await readJsonSafe(fp);
-  // Safety: if file exists but we read 0 messages, don't overwrite — likely a network read failure
+  // Read with retry — network files can fail transiently
+  let msgs = await readJsonSafe(fp);
+  if (msgs.length === 0) {
+    // Retry once after a short delay
+    await new Promise(r => setTimeout(r, 500));
+    msgs = await readJsonSafe(fp);
+  }
+  // Safety: if file exists but still empty after retry, read the file size to decide
   if (msgs.length === 0) {
     try {
       const stat = await fsp.stat(fp);
       if (stat.size > 10) {
         logDiag('CHAT', `Safety: refusing to overwrite ${path.basename(fp)} (${stat.size} bytes) with empty read`);
-        // Still append the new message to whatever we can read
         return [msg];
       }
     } catch {}
