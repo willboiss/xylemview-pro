@@ -2916,7 +2916,7 @@ function adjustBomQuantities(items) {
 
 // Format BOM as pipe-delimited .bom file (matches current BPCS upload format)
 function formatBomFile(order, lineItem, parentPn, items, model) {
-  const header = `REMARKS->>  ORDER: ${order}-${lineItem}, ....MODEL: ${model || ''}`;
+  const header = order ? `REMARKS->>  ORDER: ${order}-${lineItem}, ....MODEL: ${model || ''}` : `REMARKS->>  MODEL: ${model || ''}`;
   const padPn = parentPn.padEnd(15);
   const bomLines = items.map((item, idx) => {
     const seq = String(idx + 1).padStart(3, '0');
@@ -2956,12 +2956,12 @@ ipcMain.handle('extract-bom-from-dwg', async (_, dwgPath) => {
 });
 
 ipcMain.handle('save-bom', async (_, { order, lineItem, parentPn, items, upload, model }) => {
-  if (!order || order.length !== 6) return { ok: false, msg: 'Order must be 6 digits.' };
-  if (!lineItem || !/^\d{1,2}$/.test(lineItem)) return { ok: false, msg: 'Line item must be 1-2 digits.' };
+  if (order && order.length !== 6) return { ok: false, msg: 'Order must be 6 digits.' };
+  if (lineItem && !/^\d{1,2}$/.test(lineItem)) return { ok: false, msg: 'Line item must be 1-2 digits.' };
   if (!parentPn) return { ok: false, msg: 'Parent part number is required.' };
   if (!items || items.length === 0) return { ok: false, msg: 'No BOM items to save.' };
 
-  const li = lineItem.padStart(2, '0');
+  const li = (lineItem || '').padStart(2, '0');
   // Filename based on parent item number (cleaned for filesystem safety)
   const safePn = parentPn.replace(/[<>:"/\\|?*]/g, '_');
   const baseName = `${safePn}_xvp`;
@@ -3149,9 +3149,9 @@ ipcMain.handle('scan-folder-utube', async (_, folderPath) => {
     } else if (d.nameLower === 'bundle.dwg') {
       bundles.push(d);
     } else if (n4 !== null) {
-      if (n4 >= 5254 && n4 <= 5299) settings.push(d);
-      else if (n4 >= 4600 && n4 <= 4699) shells.push(d);
-      else if (n4 >= 4220 && n4 <= 4249) bundles.push(d);
+      if (n4 >= 5254 && n4 <= 5294) settings.push(d);
+      else if ((n4 >= 4620 && n4 <= 4626) || n4 === 4646) shells.push(d);
+      else if ((n4 >= 4220 && n4 <= 4263) || (n4 >= 4298 && n4 <= 4299)) bundles.push(d);
     }
   }
 
@@ -3330,6 +3330,37 @@ MsgBox msg, 64, "Route-O-Matic"
     return { ok: true, msg: `Route-O-Matic launched (${ops.length} operations, session ${sessionLetter})` };
   } catch (e) {
     logDiag('ROUTE', `Route-O-Matic FAILED: ${e.message}`);
+    return { ok: false, msg: e.message };
+  }
+});
+
+// ─── Read item number from PCOMM screen ─────────────────────────────────
+ipcMain.handle('read-pcomm-item', async (_, sessionLetter) => {
+  if (!sessionLetter) return { ok: false, msg: 'No session specified' };
+  const vbs = `' Read item number from SFC100-01 row 5, col 35
+On Error Resume Next
+Dim s
+Set s = CreateObject("PCOMM.autECLSession")
+If Err.Number <> 0 Then
+  WScript.StdOut.Write "ERR:PCOMM not available"
+  WScript.Quit
+End If
+On Error GoTo 0
+s.SetConnectionByName "${sessionLetter}"
+Dim txt
+txt = Trim(s.autECLPS.GetText(5, 35, 15))
+WScript.StdOut.Write txt
+`;
+  const vbsPath = path.join(app.getPath('temp'), 'xv_read_item.vbs');
+  try {
+    await fsp.writeFile(vbsPath, vbs, 'utf-8');
+    const { execSync } = require('child_process');
+    const out = execSync(`"C:\\Windows\\SysWOW64\\cscript.exe" //NoLogo "${vbsPath}"`, { timeout: 5000, encoding: 'utf-8' }).trim();
+    try { fs.unlinkSync(vbsPath); } catch {}
+    if (out.startsWith('ERR:')) return { ok: false, msg: out.slice(4) };
+    return { ok: true, item: out };
+  } catch (e) {
+    try { fs.unlinkSync(vbsPath); } catch {}
     return { ok: false, msg: e.message };
   }
 });
@@ -3583,6 +3614,22 @@ ipcMain.handle('bpcs-get-item-number', async (_, connectionType, orderNumber, li
     return { ok: true, result, raw: xml };
   } catch (e) {
     logDiag('BPCS', `GetItemNumber FAILED: ${e.message}`);
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('bpcs-check-existing-bom', async (_, connectionType, partNumber) => {
+  logDiag('BPCS', `CheckForExistingBOM(${connectionType}, ${partNumber})`);
+  try {
+    const xml = await bpcsSoapCall(BPCS_WS_SANDBOX, 'CheckForExistingBOM', {
+      ConnectionType: connectionType,
+      PartNumber: partNumber,
+    });
+    const result = soapExtractTag(xml, 'CheckForExistingBOMResult');
+    logDiag('BPCS', `CheckForExistingBOM → ${result}`);
+    return { ok: true, result: parseInt(result, 10), raw: xml };
+  } catch (e) {
+    logDiag('BPCS', `CheckForExistingBOM FAILED: ${e.message}`);
     return { ok: false, error: e.message };
   }
 });
@@ -4099,7 +4146,7 @@ app.on('will-quit', () => {
   }
 });
 
-ipcMain.handle('convert-dwg-pdf', async (_, dwgPath, outDir) => {
+ipcMain.handle('convert-dwg-pdf', async (_, dwgPath, outDir, opts) => {
   logDiag('CONVERT', `DWG→PDF ${path.basename(dwgPath)}`);
   const accore = findPdfAccore();
   if (!accore) return { ok: false, msg: 'PDF conversion requires AutoCAD.' };
@@ -4173,64 +4220,164 @@ ipcMain.handle('convert-dwg-pdf', async (_, dwgPath, outDir) => {
     console.log(`PDF: detection failed, fallback ${paper} ${orient}`);
   }
 
+  // GPHE setting drawings: override to ANSI C Landscape
+  if (opts && opts.gphe) {
+    paper = ANSI_PAPERS.C.name;
+    orient = 'Landscape';
+    detectedLetter = 'C';
+    console.log('PDF: GPHE override → ANSI C Landscape');
+  }
+
+  // U-Tube setting + ANSI B portrait = double ANSI A — ask renderer for split choice
+  if (opts && opts.utubeSetting && detectedLetter === 'B' && orient === 'Portrait') {
+    console.log('PDF: U-Tube setting detected as ANSI B Portrait → requesting split choice');
+    return { ok: false, splitChoice: true, limX, limY };
+  }
+
   // Notify renderer of detected size (for toast)
   if (mainWindow) mainWindow.webContents.send('pdf-paper-detected', detectedLetter, orient);
 
-  // Step 2: Plot to PDF (native lineweights — preserves drawing's visual hierarchy)
-  const plotLines = [
-    '_ZOOM _E',
-    '-PLOT',
-    'Y',                                    // Detailed config
-    'Model',                                // Layout
-    'DWG To PDF.pc3',                       // Device
-    paper,                                  // Paper size (auto-detected)
-    'Inches',                               // Units
-    orient,                                 // Orientation (auto-detected)
-    'N',                                    // Upside down
-  ];
-  plotLines.push(
-    'E',                                    // Plot area: Extents
-    'Fit',                                  // Scale
-    'Center',                               // Centered on page
-    'Y',                                    // Plot with styles
-    'monochrome.ctb',                       // Style table
-    'Y',                                    // Lineweights (native — thicker than DWGSee but no anti-aliasing)
-    'A',                                    // Shade plot (As displayed)
-    pdfScr,                                 // Output filename
-    'N',                                    // Save changes to page setup
-    'Y',                                    // Proceed with plot
-    '_QUIT',
-    'Y',
-  );
-  const plotScript = plotLines.join('\r\n') + '\r\n';
+  // ── Helper: build a plot script for a given area ──
+  function buildPlotScript(plotPaper, plotOrient, plotArea, outFile) {
+    const lines = [
+      '_ZOOM _E',
+      '-PLOT',
+      'Y',                                    // Detailed config
+      'Model',                                // Layout
+      'DWG To PDF.pc3',                       // Device
+      plotPaper,                               // Paper size
+      'Inches',                               // Units
+      plotOrient,                              // Orientation
+      'N',                                    // Upside down
+    ];
+    if (plotArea === 'E') {
+      lines.push('E');                         // Plot area: Extents
+    } else {
+      // Window mode: plotArea = { x1, y1, x2, y2 }
+      lines.push('W', `${plotArea.x1},${plotArea.y1}`, `${plotArea.x2},${plotArea.y2}`);
+    }
+    lines.push(
+      'Fit',                                  // Scale
+      'Center',                               // Centered on page
+      'Y',                                    // Plot with styles
+      'monochrome.ctb',                       // Style table
+      'Y',                                    // Lineweights
+      'A',                                    // Shade plot (As displayed)
+      outFile.replace(/\\/g, '/'),            // Output filename
+      'N',                                    // Save changes to page setup
+      'Y',                                    // Proceed with plot
+      '_QUIT',
+      'Y',
+    );
+    return lines.join('\r\n') + '\r\n';
+  }
 
+  // ── Helper: strip PDF bookmarks ──
+  async function stripBookmarks(filePath) {
+    try {
+      const { PDFDocument, PDFName } = require('pdf-lib');
+      const pdfBytes = await fsp.readFile(filePath);
+      const doc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+      const catalog = doc.catalog;
+      const outlinesKey = PDFName.of('Outlines');
+      if (catalog.get(outlinesKey)) {
+        catalog.delete(outlinesKey);
+        const pageModeKey = PDFName.of('PageMode');
+        const pm = catalog.get(pageModeKey);
+        if (pm && pm.toString() === '/UseOutlines') catalog.delete(pageModeKey);
+        const cleaned = await doc.save();
+        await fsp.writeFile(filePath, cleaned);
+        logDiag('CONVERT', 'Stripped PDF bookmarks');
+      }
+    } catch (pdfErr) {
+      logDiag('CONVERT', `Bookmark strip failed (non-fatal): ${pdfErr.message}`);
+    }
+  }
+
+  // ── Double ANSI A split mode ──
+  if (opts && opts.splitDoubleA && opts.limX && opts.limY) {
+    const midY = opts.limY / 2;
+    const ansiA = ANSI_PAPERS.A.name;
+    const bottomArea = { x1: 0, y1: 0, x2: opts.limX, y2: midY };
+    const topArea    = { x1: 0, y1: midY, x2: opts.limX, y2: opts.limY };
+
+    if (mainWindow) mainWindow.webContents.send('pdf-paper-detected', 'A', 'Landscape');
+
+    if (opts.splitDoubleA === 'bottomOnly') {
+      // Plot bottom half only as ANSI A Landscape
+      const script = buildPlotScript(ansiA, 'Landscape', bottomArea, pdfPath);
+      const result = await runAccore(accore, dwgPath, script, 120000);
+      try {
+        if (fs.statSync(pdfPath).size > 0) {
+          await stripBookmarks(pdfPath);
+          return { ok: true, pdfPath, msg: `Created ${path.basename(pdfPath)}` };
+        }
+      } catch {}
+      const raw = (result.stderr || result.stdout).replace(/[\x00-\x09\x0B\x0C\x0E-\x1F]/g, '').trim();
+      return { ok: false, msg: `PDF conversion failed: ${raw.slice(-300) || 'No output from AutoCAD'}` };
+    }
+
+    if (opts.splitDoubleA === 'twoPages') {
+      // Plot bottom half and top half as separate temp PDFs, then merge
+      const tmpBottom = pdfPath.replace(/\.pdf$/i, '_bottom_tmp.pdf');
+      const tmpTop    = pdfPath.replace(/\.pdf$/i, '_top_tmp.pdf');
+
+      const scriptBottom = buildPlotScript(ansiA, 'Landscape', bottomArea, tmpBottom);
+      const resultBottom = await runAccore(accore, dwgPath, scriptBottom, 120000);
+      let bottomOk = false;
+      try { bottomOk = fs.statSync(tmpBottom).size > 0; } catch {}
+      if (!bottomOk) {
+        try { fs.unlinkSync(tmpBottom); } catch {}
+        const raw = (resultBottom.stderr || resultBottom.stdout).replace(/[\x00-\x09\x0B\x0C\x0E-\x1F]/g, '').trim();
+        return { ok: false, msg: `PDF conversion failed (bottom half): ${raw.slice(-300) || 'No output'}` };
+      }
+
+      const scriptTop = buildPlotScript(ansiA, 'Landscape', topArea, tmpTop);
+      const resultTop = await runAccore(accore, dwgPath, scriptTop, 120000);
+      let topOk = false;
+      try { topOk = fs.statSync(tmpTop).size > 0; } catch {}
+      if (!topOk) {
+        try { fs.unlinkSync(tmpBottom); } catch {}
+        try { fs.unlinkSync(tmpTop); } catch {}
+        const raw = (resultTop.stderr || resultTop.stdout).replace(/[\x00-\x09\x0B\x0C\x0E-\x1F]/g, '').trim();
+        return { ok: false, msg: `PDF conversion failed (top half): ${raw.slice(-300) || 'No output'}` };
+      }
+
+      // Merge: bottom page first, top page second
+      try {
+        const { PDFDocument } = require('pdf-lib');
+        const merged = await PDFDocument.create();
+        for (const tmpFile of [tmpBottom, tmpTop]) {
+          const bytes = await fsp.readFile(tmpFile);
+          const src = await PDFDocument.load(bytes, { ignoreEncryption: true });
+          const pages = await merged.copyPages(src, src.getPageIndices());
+          pages.forEach(p => merged.addPage(p));
+        }
+        const mergedBytes = await merged.save();
+        await fsp.writeFile(pdfPath, mergedBytes);
+      } finally {
+        try { fs.unlinkSync(tmpBottom); } catch {}
+        try { fs.unlinkSync(tmpTop); } catch {}
+      }
+
+      try {
+        if (fs.statSync(pdfPath).size > 0) {
+          return { ok: true, pdfPath, msg: `Created ${path.basename(pdfPath)} (2 pages)` };
+        }
+      } catch {}
+      return { ok: false, msg: 'PDF merge failed' };
+    }
+  }
+
+  // Step 2: Plot to PDF (native lineweights — preserves drawing's visual hierarchy)
+  const plotScript = buildPlotScript(paper, orient, 'E', pdfPath);
   const result = await runAccore(accore, dwgPath, plotScript, 120000);
 
   // Verify PDF and strip bookmarks
   try {
     const stat = fs.statSync(pdfPath);
     if (stat.size > 0) {
-      // Remove "Sheets & Views" / "Model" bookmarks from the PDF
-      try {
-        const { PDFDocument, PDFName } = require('pdf-lib');
-        const pdfBytes = await fsp.readFile(pdfPath);
-        const doc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
-        // Remove /Outlines (bookmarks) from the document catalog
-        const catalog = doc.catalog;
-        const outlinesKey = PDFName.of('Outlines');
-        if (catalog.get(outlinesKey)) {
-          catalog.delete(outlinesKey);
-          // Also remove /PageMode if it was set to show bookmarks
-          const pageModeKey = PDFName.of('PageMode');
-          const pm = catalog.get(pageModeKey);
-          if (pm && pm.toString() === '/UseOutlines') catalog.delete(pageModeKey);
-          const cleaned = await doc.save();
-          await fsp.writeFile(pdfPath, cleaned);
-          logDiag('CONVERT', 'Stripped PDF bookmarks');
-        }
-      } catch (pdfErr) {
-        logDiag('CONVERT', `Bookmark strip failed (non-fatal): ${pdfErr.message}`);
-      }
+      await stripBookmarks(pdfPath);
       return { ok: true, pdfPath, msg: `Created ${path.basename(pdfPath)}` };
     }
   } catch (e) {}

@@ -172,6 +172,9 @@ input,button,.no-drag{-webkit-app-region:no-drag}
 body.maximized .glass,body.maximized .glass-strong{border-radius:0}
 body.maximized .glass::before,body.maximized .glass-strong::before{border-radius:0}
 body.maximized .glass::after,body.maximized .glass-strong::after{border-radius:0}
+body.unfocused .otp-box.focused{border-color:var(--glass-border);box-shadow:none}
+body.unfocused .field-input:focus{border-color:var(--input-border);box-shadow:none}
+body.unfocused .card-glow{box-shadow:none}
 body.maximized .app{padding:0 12px 8px}
 
 /* Win10 fallback — designed-solid panels (no OS acrylic to blur through) */
@@ -1982,8 +1985,8 @@ async function doOrderSearch() {
   }
   // Preload contingency database in background when a .cnt] file is present
   if (r.cntFiles.some(f => f.isCnt) && !window._cntLoaded) {
-    window._cntLoading = true; updateCntIndicator();
-    window.api.preloadContingency().then(() => { window._cntLoaded = true; }).catch(() => {}).finally(() => { window._cntLoading = false; updateCntIndicator(); });
+    window._cntLoading = true; window.updateCntIndicator();
+    window.api.preloadContingency().then(() => { window._cntLoaded = true; }).catch(() => {}).finally(() => { window._cntLoading = false; window.updateCntIndicator(); });
   }
   S.currentOrder = order.padStart(6,'0'); S.currentLine = line.padStart(2,'0');
   const prevCollapsed = sameOrder ? { ...S.collapsedSections } : {};
@@ -2434,7 +2437,7 @@ function setStatus(t) {
   if (!toast) {
     toast = document.createElement('div');
     toast.id = 'status-toast';
-    toast.style.cssText = 'position:fixed;bottom:48px;left:50%;transform:translateX(-50%);background:var(--glass-strong);backdrop-filter:blur(16px);border:1px solid var(--glass-border);border-radius:10px;padding:6px 16px;font:500 11px/1.4 \'DM Sans\',sans-serif;color:var(--text);z-index:40;pointer-events:none;opacity:0;transition:opacity .3s';
+    toast.style.cssText = 'position:fixed;bottom:48px;left:50%;transform:translateX(-50%);background:var(--glass-strong);backdrop-filter:blur(16px);border:1px solid var(--glass-border);border-radius:10px;padding:6px 16px;font:500 11px/1.4 \'DM Sans\',sans-serif;color:var(--text);z-index:200;pointer-events:none;opacity:0;transition:opacity .3s';
     document.body.appendChild(toast);
   }
   toast.textContent = t;
@@ -2930,7 +2933,7 @@ async function pollChat() {
       if (_chatInitialized && newMsgs.length > 0) {
         const userInfo = await window.api.getUserInfo();
         const fromOthers = newMsgs.filter(m => (m.user || '').toLowerCase() !== (userInfo.username || '').toLowerCase());
-        if (fromOthers.length > 0) {
+        if (fromOthers.length > 0 && !S.config.mute_chat) {
           playChatBubble();
           const focused = await window.api.isWindowFocused();
           const onChatTab = S.mode === 'chat';
@@ -3929,6 +3932,22 @@ function isGpheDrawing(drawingNum) {
   return false;
 }
 
+// Classify a drawing filename as U-Tube setting, shell, or bundle (or null)
+function classifyUtubeDwg(name) {
+  const base = (name || '').replace(/^\[|\]$/g, '');
+  const lo = base.toLowerCase();
+  if (lo === 'setting.dwg') return 'setting';
+  if (lo === 'shell.dwg') return 'shell';
+  if (lo === 'bundle.dwg') return 'bundle';
+  const m = base.match(/^(\d{4})/);
+  if (!m) return null;
+  const n4 = parseInt(m[1], 10);
+  if (n4 >= 5254 && n4 <= 5294) return 'setting';
+  if ((n4 >= 4620 && n4 <= 4626) || n4 === 4646) return 'shell';
+  if ((n4 >= 4220 && n4 <= 4263) || (n4 >= 4298 && n4 <= 4299)) return 'bundle';
+  return null;
+}
+
 function gpheCalculateRouting(drawingNum, bomData) {
   const digits = gpheBaseDigits(drawingNum);
   if (!isGpheDrawing(drawingNum)) return null;
@@ -4200,7 +4219,7 @@ function askSessionLetter() {
   });
 }
 
-function showRoutingResults(overlay, allOps, allVars, warnings) {
+function showRoutingResults(overlay, allOps, allVars, warnings, scanNames) {
   const modal = overlay.querySelector('.modal');
   const fmt = rtFmt, fmtTotal = rtFmtTotal;
   const typeLabel = { shell: 'Shell', bundle: 'Bundle', setting: 'Setting (final)' };
@@ -4298,19 +4317,77 @@ function showRoutingResults(overlay, allOps, allVars, warnings) {
   });
   // Route-O-Matic — drive PCOMM to enter operations
   modal.querySelector('#route-pcomm').addEventListener('click', async function() {
-    const session = await askSessionLetter();
-    if (!session) return;
-    // Flatten all ops with auto-numbering (10, 20, 30...)
+    const pick = await askSessionLetter();
+    if (!pick) return;
+
+    // Determine which ops to upload
+    let targetOps = allOps;
+
+    // Orders mode with multiple drawing types — auto-detect from PCOMM item number
+    if (scanNames && allOps.length > 1) {
+      this.textContent = 'Reading...';
+      const rd = await window.api.readPcommItem(pick.session);
+      if (rd.ok && rd.item) {
+        const item = rd.item.toUpperCase().replace(/-/g, '');
+        let matchedType = null;
+
+        // Check prefixes: % or BY/SY → setting (final assembly)
+        if (item.startsWith('%') || item.startsWith('BY') || item.startsWith('SY')) {
+          matchedType = 'setting';
+        }
+
+        // Check against drawing filenames
+        if (!matchedType) {
+          for (const type of ['shell', 'bundle', 'setting']) {
+            if (!scanNames[type]) continue;
+            // Strip extension and revision, extract digits for comparison
+            const dwgDigits = scanNames[type].replace(/\.\w+$/i, '').replace(/[rR]\d+$/, '').replace(/[^0-9]/g, '');
+            if (dwgDigits && item.includes(dwgDigits)) { matchedType = type; break; }
+          }
+        }
+
+        // For generic names (SHELL.dwg, BUNDLE.dwg), classify by item number ranges
+        if (!matchedType) {
+          const m = item.match(/(\d{4})/);
+          if (m) {
+            const n4 = parseInt(m[1], 10);
+            if ((n4 >= 4620 && n4 <= 4626) || n4 === 4646) matchedType = 'shell';
+            else if ((n4 >= 4220 && n4 <= 4263) || (n4 >= 4298 && n4 <= 4299)) matchedType = 'bundle';
+            else if (n4 >= 5254 && n4 <= 5294) matchedType = 'setting';
+          }
+        }
+
+        if (matchedType) {
+          const matched = allOps.filter(o => o.type === matchedType);
+          if (matched.length) {
+            targetOps = matched;
+            console.log(`Route-O-Matic: PCOMM item "${rd.item}" → ${matchedType}`);
+          }
+        }
+
+        if (!matchedType) {
+          this.textContent = 'Route-O-Matic';
+          alert(`Could not determine item type from PCOMM item "${rd.item}".`);
+          return;
+        }
+      } else {
+        // Couldn't read PCOMM — fall back to uploading all ops
+        console.log('Route-O-Matic: could not read PCOMM item, uploading all ops');
+      }
+    }
+
+    // Flatten selected ops with auto-numbering
     const flatOps = [];
-    let opNum = 10;
-    for (const { ops } of allOps) {
+    let opNum = pick.startOp;
+    for (const { ops } of targetOps) {
       for (const op of ops) {
         flatOps.push({ op: opNum, wc: op.wc, desc: (op.op || '').slice(0, 30), run: op.run || 0, setup: op.setup || 0, basis: op.basis || '' });
         opNum += 10;
       }
     }
+    this.textContent = 'Launching...';
     const r = await window.api.routeOMatic(flatOps, pick.session);
-    if (r.ok) { this.textContent = t('Launched!'); } else { alert('Error: ' + r.msg); }
+    if (r.ok) { this.textContent = t('Launched!'); } else { alert('Error: ' + r.msg); this.textContent = 'Route-O-Matic'; }
   });
   // Route-O-Matic ACS — generate .mac file
   modal.querySelector('#route-acs').addEventListener('click', async function() {
@@ -4794,6 +4871,57 @@ async function checkRouteability() {
         return;
       }
     }
+    // U-Tube check for single-drawing card mode (setting or shell only)
+    if (S.dwgResult && S.dwgResult.primary) {
+      const utype = classifyUtubeDwg(S.dwgResult.primary.name || '');
+      if (utype === 'setting' || utype === 'shell') {
+        const dxfConv = await window.api.checkDxfConverter();
+        if (!dxfConv) {
+          btn.classList.remove('route-ready');
+          btn.classList.add('route-locked');
+          btn.disabled = true;
+          btn.style.opacity = '';
+          btn.innerHTML = '<span class="lock-icon">&#128274;</span>Route';
+          btn.setAttribute('data-tip', 'Install ODA File Converter (free) or AutoCAD');
+          return;
+        }
+        btn.classList.remove('route-locked');
+        btn.innerHTML = t('Route');
+        btn.removeAttribute('data-tip');
+        S.routeScan = { ok: true, utube: true, utubeType: utype, utubeFile: S.dwgResult.primary, msg: `U-Tube ${utype} drawing` };
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.classList.add('route-ready');
+        return;
+      }
+    }
+    // U-Tube check for wildcard mode (setting or shell only)
+    if (S.dwgResult && S.dwgResult.wildcard && S.selected >= 0) {
+      const sel = S.files[S.selected];
+      if (sel && sel.type !== 'section-header') {
+        const utype = classifyUtubeDwg(sel.name || '');
+        if (utype === 'setting' || utype === 'shell') {
+          const dxfConv = await window.api.checkDxfConverter();
+          if (!dxfConv) {
+            btn.classList.remove('route-ready');
+            btn.classList.add('route-locked');
+            btn.disabled = true;
+            btn.style.opacity = '';
+            btn.innerHTML = '<span class="lock-icon">&#128274;</span>Route';
+            btn.setAttribute('data-tip', 'Install ODA File Converter (free) or AutoCAD');
+            return;
+          }
+          btn.classList.remove('route-locked');
+          btn.innerHTML = t('Route');
+          btn.removeAttribute('data-tip');
+          S.routeScan = { ok: true, utube: true, utubeType: utype, utubeFile: sel, msg: `U-Tube ${utype} drawing` };
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          btn.classList.add('route-ready');
+          return;
+        }
+      }
+    }
     resetRouteState();
     return;
   }
@@ -4947,6 +5075,38 @@ async function runRoutingFlow() {
     }
   }
 
+  // U-Tube single drawing from Drawings tab (setting or shell only)
+  if (S.mode === 'drawings' && S.routeScan && S.routeScan.utube && S.routeScan.utubeFile) {
+    const utype = S.routeScan.utubeType;
+    const ufile = S.routeScan.utubeFile;
+    let dwgPath = ufile.filepath;
+    if (ufile.isLink) {
+      try { const lnk = await window.api.readLink(dwgPath); if (lnk) dwgPath = lnk; } catch {}
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = '<div class="modal glass-strong" style="color:var(--text);width:260px;padding:24px"><div style="text-align:center;padding:14px 0"><div class="route-spinner" style="margin:0 auto 10px"></div><div style="font:500 11px/1.4 \'DM Sans\',sans-serif;color:var(--text2)">Analyzing drawing\u2026</div></div></div>';
+    document.body.appendChild(overlay);
+    modalDismiss(overlay);
+
+    try {
+      const dxfResult = await window.api.convertDwgDxfText(dwgPath);
+      if (!dxfResult.ok) {
+        overlay.querySelector('.modal').innerHTML = `<div style="text-align:center;padding:14px 0;color:var(--text)">${dxfResult.msg || 'DXF conversion failed'}</div>`;
+        return;
+      }
+      const vars = rtExtractVariables(rtParseDXF(dxfResult.text));
+      const ops = rtCalculateRouting(vars);
+      const allOps = [{ type: utype, ops, vars }];
+      const allVars = { [utype]: vars };
+      showRoutingResults(overlay, allOps, allVars, []);
+    } catch (err) {
+      overlay.querySelector('.modal').innerHTML = `<div style="text-align:center;padding:14px 0;color:var(--text)">Error: ${err.message}</div>`;
+    }
+    return;
+  }
+
   const overlay = showRoutingOverlay();
   const totalSteps = 3;
   let stepsComplete = 0;
@@ -5093,7 +5253,12 @@ async function runRoutingFlow() {
     rtSetStatus(overlay, 'Complete');
     await new Promise(r => setTimeout(r, 400));
 
-    showRoutingResults(overlay, allOps, allVars, warnings);
+    const scanNames = {
+      setting: scan.setting ? scan.setting.name : null,
+      shell: scan.shell ? scan.shell.name : null,
+      bundle: scan.bundle ? scan.bundle.name : null,
+    };
+    showRoutingResults(overlay, allOps, allVars, warnings, scanNames);
 
   } catch (err) {
     clearInterval(timerIv);
@@ -5351,18 +5516,18 @@ async function init() {
   window._cntIdleTimer = null;
   window._cntLoading = false;
   window._cntLoaded = false;
-  function updateCntIndicator() {
+  window.updateCntIndicator = function() {
     if (!S._isDev) return;
     const el = $('#cnt-load-indicator');
     if (el) el.style.display = window._cntLoading ? '' : 'none';
-  }
+  };
   function scheduleCntPreload() {
     if (window._cntLoaded || window._cntLoading) return;
     clearTimeout(window._cntIdleTimer);
     window._cntIdleTimer = setTimeout(() => {
       if (window._cntLoaded) return;
-      window._cntLoading = true;
-      window.api.preloadContingency().then(() => { window._cntLoaded = true; }).catch(() => {}).finally(() => { window._cntLoading = false; });
+      window._cntLoading = true; window.updateCntIndicator();
+      window.api.preloadContingency().then(() => { window._cntLoaded = true; }).catch(() => {}).finally(() => { window._cntLoading = false; window.updateCntIndicator(); });
     }, 60000);
   }
   // Reset idle timer on user activity
@@ -5373,13 +5538,15 @@ async function init() {
     }, { passive: true });
   });
   // Also preload when app loses focus (user switched to another app)
+  window.addEventListener('focus', () => { document.body.classList.remove('unfocused'); });
   window.addEventListener('blur', () => {
+    document.body.classList.add('unfocused');
     if (!window._cntLoaded && !window._cntLoading) {
       clearTimeout(window._cntIdleTimer);
       window._cntIdleTimer = setTimeout(() => {
         if (window._cntLoaded) return;
-        window._cntLoading = true;
-        window.api.preloadContingency().then(() => { window._cntLoaded = true; }).catch(() => {}).finally(() => { window._cntLoading = false; });
+        window._cntLoading = true; window.updateCntIndicator();
+        window.api.preloadContingency().then(() => { window._cntLoaded = true; }).catch(() => {}).finally(() => { window._cntLoading = false; window.updateCntIndicator(); });
       }, 5000); // Start after 5s of being unfocused
     }
   });
@@ -5530,7 +5697,54 @@ async function init() {
       try { const lnk = await window.api.readLink(fp); if (lnk) fp = lnk; } catch(e) {}
     }
     const outDir = S.config.convert_save_location === 'source' ? null : await window.api.getDownloadsPath();
-    const r = await window.api.convertDwgPdf(fp, outDir);
+    const gphe = isGpheDrawing(f.name);
+    let opts = gphe ? { gphe: true } : undefined;
+    if (classifyUtubeDwg(f.name) === 'setting') opts = { ...(opts || {}), utubeSetting: true };
+
+    let r = await window.api.convertDwgPdf(fp, outDir, opts);
+
+    // U-Tube setting detected as ANSI B portrait → show split choice
+    if (r.splitChoice) {
+      btn.textContent = 'PDF'; btn.disabled = false;
+      setStatus('');
+      const choice = await new Promise(resolve => {
+        const ov = document.createElement('div');
+        ov.className = 'modal-overlay no-drag';
+        ov.innerHTML = `<div class="modal glass-strong" style="color:var(--text);width:340px;padding:24px">
+          <div style="font:700 14px/1.3 'DM Sans',sans-serif;margin-bottom:14px">This drawing contains two pages</div>
+          <div style="font:400 12px/1.5 'DM Sans',sans-serif;color:var(--text2);margin-bottom:18px">How would you like to export it?</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn-pdf-split" data-val="twoPages" style="padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font:500 12px/1.3 'DM Sans',sans-serif;cursor:pointer;text-align:left">
+              <div style="font-weight:600">Two ANSI A pages</div>
+              <div style="color:var(--text2);font-size:11px;margin-top:2px">Bottom half on page 1, top half on page 2</div>
+            </button>
+            <button class="btn-pdf-split" data-val="bottomOnly" style="padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font:500 12px/1.3 'DM Sans',sans-serif;cursor:pointer;text-align:left">
+              <div style="font-weight:600">Bottom half only</div>
+              <div style="color:var(--text2);font-size:11px;margin-top:2px">Single ANSI A page</div>
+            </button>
+            <button class="btn-pdf-split" data-val="whole" style="padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font:500 12px/1.3 'DM Sans',sans-serif;cursor:pointer;text-align:left">
+              <div style="font-weight:600">Whole drawing</div>
+              <div style="color:var(--text2);font-size:11px;margin-top:2px">Single ANSI B portrait page</div>
+            </button>
+          </div>
+        </div>`;
+        document.body.appendChild(ov);
+        ov.querySelectorAll('.btn-pdf-split').forEach(b => {
+          b.addEventListener('mouseenter', () => { b.style.borderColor = 'var(--accent)'; });
+          b.addEventListener('mouseleave', () => { b.style.borderColor = 'var(--border)'; });
+          b.addEventListener('click', () => { ov.remove(); resolve(b.dataset.val); });
+        });
+        ov.addEventListener('click', e => { if (e.target === ov) { ov.remove(); resolve(null); } });
+      });
+      if (!choice) return;
+      btn.innerHTML = '<span class="deep-spinner"></span>'; btn.disabled = true;
+      setStatus(t('Converting to PDF\u2026'));
+      const splitOpts = choice !== 'whole'
+        ? { splitDoubleA: choice, limX: r.limX, limY: r.limY }
+        : undefined;
+      r = await window.api.convertDwgPdf(fp, outDir, splitOpts);
+    }
+
     btn.textContent = 'PDF'; btn.disabled = false;
     if (r.ok) {
       playChime();
@@ -5567,6 +5781,9 @@ async function init() {
     overlay.className = 'modal-overlay';
     overlay.id = 'bom-overlay';
 
+    // Clean up spaces before # in part numbers (e.g. "462010039001 #16" → "462010039001#16")
+    items.forEach(item => { if (item.pn) item.pn = item.pn.replace(/\s+#(\d)/g, '#$1'); });
+
     // Validate items
     const errors = [];
     items.forEach((item, i) => {
@@ -5574,6 +5791,9 @@ async function init() {
       if (!item.item || !/^\d+$/.test(item.item.trim())) errs.push('bad item#');
       if (!item.qty || !/^[\d.]+$/.test(item.qty.trim())) errs.push('bad qty');
       if (!item.pn || item.pn.trim().length < 5) errs.push('bad PN');
+      const pnClean = (item.pn || '').replace(/-/g, '');
+      if (pnClean.length > 15) errs.push('PN > 15 chars');
+      if (/[a-z]/.test(item.pn || '')) errs.push('lowercase in PN');
       if (errs.length) errors.push({ idx: i, errs });
     });
     const errorSet = new Set(errors.map(e => e.idx));
@@ -5644,12 +5864,18 @@ async function init() {
       // Drawing starts with 5 + Orders tab → fetch %P/N from BPCS
       parentInput.value = 'Loading\u2026';
       parentInput.disabled = true;
+      const saveBtn = overlay.querySelector('#bom-save');
+      const uploadBtn = overlay.querySelector('#bom-upload');
+      if (saveBtn) { saveBtn.disabled = true; saveBtn.style.opacity = '.4'; }
+      if (uploadBtn) { uploadBtn.disabled = true; uploadBtn.style.opacity = '.4'; }
       (async () => {
         try {
           const r = await window.api.bpcsGetItemNumber('LIVE', S.currentOrder, S.currentLine);
           parentInput.value = (r.ok && r.result) ? r.result.trim() : '';
         } catch { parentInput.value = ''; }
         parentInput.disabled = false;
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.style.opacity = ''; }
+        if (uploadBtn) { uploadBtn.disabled = false; uploadBtn.style.opacity = ''; }
         if (!parentInput.value) parentInput.focus();
       })();
     } else if (!dwgBase.startsWith('5')) {
@@ -5663,10 +5889,15 @@ async function init() {
 
     // Validate BOM fields — returns { order, lineItem, parentPn } or null
     function validateBomFields() {
-      const parentPn = overlay.querySelector('#bom-parent').value.trim().toUpperCase();
+      const parentEl = overlay.querySelector('#bom-parent');
+      const parentPn = parentEl.value.trim().toUpperCase();
       const order = S.currentOrder || '';
       const lineItem = S.currentLine || '';
-      if (!parentPn || parentPn.length < 5) { overlay.querySelector('#bom-parent').style.borderColor = 'var(--err,#f44)'; overlay.querySelector('#bom-parent').focus(); return null; }
+      if (!parentPn || parentPn.length < 5 || parentEl.disabled || /^LOADING/i.test(parentPn)) {
+        parentEl.style.borderColor = 'var(--err,#f44)';
+        if (!parentEl.disabled) parentEl.focus();
+        return null;
+      }
       return { order, lineItem, parentPn };
     }
 
@@ -5693,7 +5924,17 @@ async function init() {
       const fields = validateBomFields();
       if (!fields) return;
       const uploadBtn = overlay.querySelector('#bom-upload');
-      uploadBtn.disabled = true; uploadBtn.textContent = 'Uploading\u2026';
+      uploadBtn.disabled = true; uploadBtn.textContent = 'Checking\u2026';
+      try {
+        const chk = await window.api.bpcsCheckExistingBom('LIVE', fields.parentPn);
+        if (chk.ok && chk.result > 0) {
+          playError();
+          uploadBtn.disabled = false; uploadBtn.textContent = 'Upload to BPCS';
+          setStatus(`\u26A0  BOM already exists for ${fields.parentPn}`);
+          return;
+        }
+      } catch (e) {}
+      uploadBtn.textContent = 'Uploading\u2026';
       const result = await window.api.saveBom({ ...fields, items, upload: true, model: header.model || '' });
       if (result.ok) {
         playChime();
@@ -5952,10 +6193,10 @@ async function init() {
 
   // Contingency
   $('#cnt-btn').addEventListener('click', async () => {
-    // If there's a PDF contingency in the folder, open it directly
+    // If there's a PDF contingency in the folder, preview it in-app
     const pdfCnt = S.cntFiles.find(cf => cf.ext !== 'CNT]');
     if (pdfCnt) {
-      await window.api.openFile(pdfCnt.filepath);
+      await window.api.previewPdf(pdfCnt.filepath, `Contingency — ${S.currentOrder || ''}`);
       return;
     }
     // Otherwise use the built-in database viewer — show spinner on button
@@ -7359,6 +7600,10 @@ async function showSettings() {
             <input type="checkbox" id="set-startup" ${cfg.launch_on_startup !== false ? 'checked' : ''} style="accent-color:var(--accent)">
             ${t('Launch on Windows startup')}
           </label>
+          <label style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="set-mute-chat" ${cfg.mute_chat ? 'checked' : ''} style="accent-color:var(--accent)">
+            Mute chat notifications
+          </label>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
             <span style="font-size:10px;color:var(--text2)">${t('DWG double-click')}</span>
             <div class="set-radio no-drag" id="dwg-action-radio">
@@ -7478,6 +7723,7 @@ async function showSettings() {
     }
     newCfg.minimize_to_tray = $('#set-tray').checked;
     newCfg.launch_on_startup = $('#set-startup').checked;
+    newCfg.mute_chat = $('#set-mute-chat').checked;
     const activeBtn = $('#dwg-action-radio button.active');
     newCfg.default_dwg_action = activeBtn ? activeBtn.dataset.val : 'viewer';
     const fmtBtn = $('#pref-format-radio button.active');
