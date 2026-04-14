@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f1117">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="256x256" href="icon.png">
+<link rel="apple-touch-icon" sizes="256x256" href="icon.png">
+<meta property="og:title" content="XylemView Chat">
+<meta property="og:description" content="Chat with the XylemView team">
+<meta property="og:image" content="https://xylemview-pro.web.app/icon.png">
+<meta property="og:type" content="website">
+<title>XylemView Chat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.25)}
+:root{
+  --bg:#0f1117;--surface:#1a1d27;--border:#2a2d3a;--text:#e4e4e7;--text2:#8b8d97;
+  --accent:#0a84ff;--input-bg:#12141c;--input-border:#2a2d3a;--input-focus:rgba(10,132,255,.25);
+}
+html,body{height:100%;font-family:'DM Sans',system-ui,-apple-system,sans-serif;background:linear-gradient(145deg,#0f1117 0%,#141822 40%,#0d1a2a 70%,#0f1117 100%);color:var(--text)}
+.app{display:flex;flex-direction:column;height:100%;max-width:600px;margin:0 auto}
+
+/* Header */
+.header{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+.header-icon{width:32px;height:32px;border-radius:8px}
+.header h1{font-size:16px;font-weight:700;flex:1}
+.header-badge{font-size:11px;color:var(--text2);background:var(--surface);border:1px solid var(--border);padding:2px 8px;border-radius:20px}
+.online-dot{width:6px;height:6px;border-radius:50%;background:#00b894;display:inline-block;margin-right:4px;vertical-align:middle}
+
+/* Spinner */
+.join-spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--text2);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Login screen */
+.login{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:40px 24px;gap:16px;text-align:center}
+.login h2{font-size:20px;font-weight:700}
+.login p{color:var(--text2);font-size:13px;max-width:280px}
+.login input{width:100%;max-width:280px;height:44px;border-radius:12px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font:400 14px/1 'DM Sans',sans-serif;padding:0 16px;outline:none;text-align:center}
+.login input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--input-focus)}
+.login button{width:100%;max-width:280px;height:44px;border-radius:12px;border:none;background:var(--accent);color:#fff;font:700 14px/1 'DM Sans',sans-serif;cursor:pointer}
+.login button:active{transform:scale(.98)}
+
+/* Messages */
+.messages{flex:1;overflow-y:auto;padding:12px 18px;min-height:0;-webkit-overflow-scrolling:touch}
+.msg{display:flex;gap:8px;padding:4px 0;max-width:100%}
+.msg.mine{flex-direction:row-reverse}
+.msg.mine .bubble .name{display:none}
+.msg.mine .bubble{background:var(--accent);border-color:transparent;border-radius:16px 4px 16px 16px;text-align:right}
+.msg.mine .bubble a{color:#fff !important;text-decoration:underline}
+.msg.mine .bubble .text{color:#fff}
+.msg.mine .bubble .time{color:rgba(255,255,255,.55)}
+.msg.mine .bubble .edited{color:rgba(255,255,255,.45)}
+.msg.system{max-width:100%;justify-content:center}
+.msg.system .sys-text{font-size:11px;color:var(--text2)}
+.avatar{width:28px;height:28px;min-width:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;margin-top:2px;background-size:cover;background-position:center;position:relative}
+.avatar.active::after{content:'';position:absolute;bottom:-1px;right:-1px;width:8px;height:8px;border-radius:50%;background:#00b894;border:2px solid #0f1117}
+.bubble{min-width:0;position:relative;max-width:75%;background:var(--surface);border:1px solid var(--border);border-radius:4px 16px 16px 16px;padding:8px 12px}
+@media (hover:none) and (pointer:coarse){.bubble{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}}
+.bubble .name{font-size:11px;font-weight:600;margin-bottom:2px}
+.bubble .text{font-size:13px;line-height:1.45;word-wrap:break-word;overflow-wrap:break-word}
+.bubble .time{font-size:10px;color:var(--text2);margin-top:2px}
+.bubble .edited{font-size:9px;color:var(--text2);font-style:italic;margin-top:1px}
+.msg-actions{display:none;position:absolute;top:4px;right:36px;gap:2px;z-index:5}
+.msg:hover .msg-actions{display:flex}
+.msg.mine .msg-actions{right:auto;left:36px}
+.action-btn{width:20px;height:20px;border-radius:50%;background:var(--surface);border:1px solid var(--border);font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:.7;transition:opacity .12s}
+.action-btn:hover{opacity:1}
+
+/* Input */
+.input-row{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg)}
+.input-row input{flex:1;height:40px;border-radius:12px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font:400 13px/1 'DM Sans',sans-serif;padding:0 14px;outline:none}
+.input-row input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--input-focus)}
+.input-row button{height:40px;padding:0 18px;border-radius:12px;border:none;background:var(--accent);color:#fff;font:700 12px/1 'DM Sans',sans-serif;cursor:pointer;white-space:nowrap}
+.input-row button:active{transform:scale(.97)}
+
+/* Reactions */
+.reactions{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.reaction{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:10px;border:1px solid var(--border);background:var(--surface);font-size:12px;cursor:pointer;transition:background .12s,border-color .12s;user-select:none}
+.reaction:hover{background:rgba(10,132,255,.15);border-color:var(--accent)}
+.reaction.mine{border-color:var(--accent);background:rgba(10,132,255,.15)}
+.reaction .r-count{font:600 10px/1 'DM Sans',sans-serif;color:var(--text2)}
+.react-btn{opacity:0;position:absolute;bottom:-4px;right:-4px;width:22px;height:22px;border-radius:50%;background:var(--surface);border:1px solid var(--border);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .12s;z-index:5}
+.msg:hover .react-btn{opacity:1}
+.msg.mine .react-btn{right:auto;left:-4px}
+.bubble{min-width:0;position:relative}
+.react-picker{display:none;position:absolute;bottom:calc(100% + 4px);left:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px 6px;gap:2px;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.react-picker.show{display:flex}
+.msg.mine .react-picker{left:auto;right:0}
+@media (hover:none) and (pointer:coarse){.react-btn{display:none}}
+.react-picker span{cursor:pointer;padding:2px 4px;border-radius:6px;font-size:16px;transition:background .1s}
+.react-picker span:hover{background:rgba(10,132,255,.15)}
+
+/* Empty state */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;color:var(--text2);gap:8px;padding:40px}
+.empty-icon{font-size:40px;opacity:.4}
+.empty p{font-size:13px;text-align:center}
+
+/* New messages divider */
+.new-divider{display:flex;align-items:center;gap:10px;padding:6px 0}
+.new-divider::before,.new-divider::after{content:'';flex:1;height:1px;background:#ff3b30;opacity:.4}
+.new-divider span{font:600 9px/1 'DM Sans',sans-serif;color:#ff3b30;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+
+/* Safe area for notched phones */
+@supports(padding-bottom: env(safe-area-inset-bottom)){
+  .input-row{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+  .header{padding-top:calc(14px + env(safe-area-inset-top))}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <a id="header-home" href="#" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:inherit">
+      <img class="header-icon" src="icon.png" alt="XylemView" style="border-radius:8px">
+      <h1 style="font-size:16px;font-weight:700">XylemView Chat</h1>
+    </a>
+    <div style="flex:1"></div>
+    <span class="header-badge"><span class="online-dot"></span>Live</span>
+    <div id="header-avatar" title="Click to set picture" style="display:none;width:28px;height:28px;border-radius:50%;font-size:11px;font-weight:700;color:#fff;text-align:center;line-height:28px;flex-shrink:0;text-transform:uppercase;background-size:cover;background-position:center;cursor:pointer"></div>
+    <input type="file" id="pfp-file" accept="image/*" style="display:none">
+  </div>
+
+  <!-- Login -->
+  <div class="login" id="login">
+    <h2>Join the chat</h2>
+    <p><b>Xylem employees:</b> enter your Windows username. <b>Everyone else:</b> just pick a name.</p>
+    <input id="handle-input" placeholder="Username or name" autocomplete="username" maxlength="40">
+    <div id="login-status" style="font-size:11px;color:var(--text2);min-height:16px"></div>
+    <button id="join-btn">Join</button>
+  </div>
+
+  <!-- Chat (hidden until login) -->
+  <div style="position:relative;flex:1;display:flex;flex-direction:column;min-height:0">
+    <div class="messages" id="messages" style="display:none"></div>
+    <button id="scroll-bottom-btn" style="position:absolute;bottom:70px;left:50%;transform:translateX(-50%);width:32px;height:32px;border-radius:50%;background:var(--surface);border:1px solid var(--border);cursor:pointer;font-size:14px;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:opacity .2s ease">↓</button>
+  </div>
+  <div class="input-row" id="input-row" style="display:none">
+    <input id="chat-input" placeholder="Type a message..." autocomplete="off" maxlength="500">
+    <button id="send-btn">Send</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
+import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, doc, getDoc, getDocs, setDoc, updateDoc, arrayUnion, arrayRemove } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
+import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD0uwSfreBjUJsORShRGuG3RXrFWpOKLGc",
+  authDomain: "xylemview-pro.firebaseapp.com",
+  projectId: "xylemview-pro",
+  storageBucket: "xylemview-pro.firebasestorage.app",
+  messagingSenderId: "596655103646",
+  appId: "1:596655103646:web:e24b263d6ead0fd35c658f",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+let userName = '';
+let userKey = '';  // lowercase key for color/identity
+let lastCount = 0;
+
+// ─── UI refs ────────────────────────────────────────────────────────────
+const loginEl = document.getElementById('login');
+const messagesEl = document.getElementById('messages');
+const inputRow = document.getElementById('input-row');
+const handleInput = document.getElementById('handle-input');
+const loginStatus = document.getElementById('login-status');
+const chatInput = document.getElementById('chat-input');
+const joinBtn = document.getElementById('join-btn');
+const sendBtn = document.getElementById('send-btn');
+
+// ─── Name formatting (matches desktop app) ──────────────────────────────
+// Parses AD-style names: "Last, First - Company" → "First Last"
+function fixName(raw) {
+  if (!raw) return raw;
+  const m = raw.match(/^([^,]+),\s*([^-–]+?)(?:\s*[-–]\s*.+)?$/);
+  if (m) return m[2].trim() + ' ' + m[1].trim();
+  const m2 = raw.match(/^(.+?)\s*[-–]\s*.+$/);
+  if (m2) return m2[1].trim();
+  return raw;
+}
+
+// ─── Chat colors ────────────────────────────────────────────────────────
+const PALETTE = ['#0a84ff','#ff6b6b','#00b894','#e17055','#a29bfe','#00cec9','#fdcb6e','#e84393','#2ecc71','#f39c12','#6c5ce7','#eb4d4b'];
+function userColor(name) {
+  const k = fixName(name || '').toLowerCase().trim();
+  let h = 0;
+  for (let i = 0; i < k.length; i++) h = ((h << 5) - h + k.charCodeAt(i)) | 0;
+  return PALETTE[Math.abs(h) % PALETTE.length];
+}
+function getInitials(name) {
+  const fixed = fixName(name || '?');
+  const parts = fixed.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+  return (parts[0][0] || '?').toUpperCase();
+}
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function linkify(html) {
+  return html.replace(/(https?:\/\/[^\s<]+|(?<![\/\w])(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+(?:com|org|net|io|gov|edu|co|app|dev|me|info|biz|us|uk|ca|au)\b[^\s<]*)/gi, (match) => {
+    const cleaned = match.replace(/[!?,.:;)]+$/, '');
+    const trailing = match.slice(cleaned.length);
+    const href = cleaned.startsWith('http') ? cleaned : 'https://' + cleaned;
+    return `<a href="${href}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;overflow-wrap:break-word">${cleaned}</a>${trailing}`;
+  });
+}
+function isEmojiOnly(text) {
+  const stripped = (text || '').replace(/[\s\uFE0F\u200D]/g, '');
+  if (!stripped) return false;
+  const noEmoji = stripped.replace(/(?:\p{Emoji_Presentation}|\p{Extended_Pictographic})/gu, '');
+  return noEmoji.length === 0 && stripped.length <= 24;
+}
+
+// ─── Time formatting ────────────────────────────────────────────────────
+function timeAgo(ts) {
+  if (!ts) return '';
+  const diff = (Date.now() - ts) / 1000;
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return new Date(ts).toLocaleDateString();
+}
+
+// ─── Render ─────────────────────────────────────────────────────────────
+const REACT_EMOJIS = ['👍','😂','❤️','😮','😢','🎉'];
+
+function renderReactions(reactions, msgId) {
+  if (!reactions || Object.keys(reactions).length === 0) return '';
+  let html = '<div class="reactions">';
+  for (const [emoji, users] of Object.entries(reactions)) {
+    if (!users || users.length === 0) continue;
+    const isMine = users.includes(userKey);
+    const names = users.map(u => fixName(_userNames[u] || u)).join(', ');
+    html += `<span class="reaction${isMine ? ' mine' : ''}" data-msg="${msgId}" data-emoji="${emoji}" title="${escHtml(names)}">${emoji}<span class="r-count">${users.length}</span></span>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+let _webPfps = {};
+let _webLastSeen = {};
+let _userNames = {};  // username → display name lookup
+let _lastPfpFetch = 0;
+let _heartbeatInterval = null;
+
+function renderMessages(msgs) {
+  // Build username → display name lookup
+  loadPfps();  // non-blocking, throttled to every 2 min
+  msgs.forEach(m => { if (m.user && m.name) _userNames[m.user.toLowerCase()] = m.name; });
+  if (msgs.length === 0) {
+    messagesEl.innerHTML = '<div class="empty"><div class="empty-icon">💬</div><p>No messages yet. Say hello!</p></div>';
+    return;
+  }
+  const wasAtBottom = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 40;
+  messagesEl.innerHTML = msgs.map(m => {
+    if (m.system) {
+      return `<div class="msg system"><span class="sys-text">${escHtml(fixName(m.name || m.user))} ${escHtml(m.text)}</span></div>`;
+    }
+    if (m.unsent) {
+      const rawWho = (m.unsendBy || m.user || '').toLowerCase();
+      const who = fixName(_userNames[rawWho] || m.unsendBy || m.name || m.user);
+      return `<div class="msg system"><span class="sys-text">${escHtml(who)} unsent a message</span></div>`;
+    }
+    const rawName = m.name || m.user || 'Anonymous';
+    const displayName = fixName(rawName);
+    const initials = getInitials(rawName);
+    const color = userColor(rawName);
+    const bigEmoji = isEmojiOnly(m.text || '');
+    const isMine = userKey && (m.user || '').toLowerCase() === userKey;
+    const pickerHtml = REACT_EMOJIS.map(e => `<span data-msg="${m.id}" data-emoji="${e}">${e}</span>`).join('');
+    const ageMs = Date.now() - (m.ts || 0);
+    const canUnsend = isMine && ageMs < 2 * 60 * 1000;
+    const canEdit = isMine && ageMs < 15 * 60 * 1000;
+    let actionsHtml = '';
+    if (canUnsend || canEdit) {
+      actionsHtml = '<div class="msg-actions">';
+      if (canEdit) actionsHtml += `<button class="action-btn" data-action="edit" data-msgid="${m.id}" title="Edit">✏️</button>`;
+      if (canUnsend) actionsHtml += `<button class="action-btn" data-action="unsend" data-msgid="${m.id}" title="Unsend">🗑️</button>`;
+      actionsHtml += '</div>';
+    }
+    const editedHtml = m.edited ? '<div class="edited">edited</div>' : '';
+    const mKey = (m.user || '').toLowerCase();
+    const pfp = _webPfps[mKey];
+    const pfpStyle = pfp ? `background-image:url(${pfp});color:transparent` : `background:${color}`;
+    const isActive = _webLastSeen[mKey] && (Date.now() - _webLastSeen[mKey] < 180000);
+    return `<div class="msg${isMine ? ' mine' : ''}">
+      <div class="avatar${isActive ? ' active' : ''}" style="${pfpStyle}">${escHtml(initials)}</div>
+      <div class="bubble">
+        ${actionsHtml}
+        <button class="react-btn" data-msgid="${m.id}">😊</button>
+        <div class="react-picker" id="picker-${m.id}">${pickerHtml}</div>
+        <div class="name" style="color:${color}">${escHtml(displayName)}</div>
+        <div class="text"${bigEmoji ? ' style="font-size:28px;line-height:1.2"' : ''}>${linkify(escHtml(m.text))}</div>
+        <div class="time">${timeAgo(m.ts)}</div>
+        ${editedHtml}
+        ${renderReactions(m.reactions, m.id)}
+      </div>
+    </div>`;
+  }).join('');
+  if (wasAtBottom) messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+// ─── Sound ──────────────────────────────────────────────────────────────
+function playBubble() {
+  try {
+    const ctx = new AudioContext();
+    [600, 900].forEach((f, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = f;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.08, ctx.currentTime + i * 0.07);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.07 + 0.15);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(ctx.currentTime + i * 0.07);
+      osc.stop(ctx.currentTime + i * 0.07 + 0.15);
+    });
+  } catch {}
+}
+
+// ─── Join ───────────────────────────────────────────────────────────────
+function enterChat(name, handle) {
+  userName = name;
+  userKey = handle.toLowerCase();
+  localStorage.setItem('xylemchat-name', name);
+  localStorage.setItem('xylemchat-handle', userKey);
+  loginEl.style.display = 'none';
+  messagesEl.style.display = '';
+  inputRow.style.display = '';
+  chatInput.focus();
+  // Show avatar in header
+  const avatar = document.getElementById('header-avatar');
+  const displayName = fixName(name);
+  const pfp = _webPfps[userKey];
+  if (pfp) {
+    avatar.style.backgroundImage = `url(${pfp})`;
+    avatar.textContent = '';
+  } else {
+    avatar.style.background = userColor(name);
+    avatar.textContent = getInitials(name);
+  }
+  avatar.style.display = '';
+  startListener();
+  startHeartbeat();
+}
+
+// Pre-auth on page load so it's ready when user clicks Join
+let _authReady = false;
+signInAnonymously(auth).then(() => { _authReady = true; }).catch(() => {});
+
+async function join() {
+  const input = handleInput.value.trim();
+  if (!input) { handleInput.focus(); return; }
+  const key = input.toLowerCase();
+  joinBtn.disabled = true;
+  loginStatus.innerHTML = '<span class="join-spinner"></span>';
+  try {
+    // Ensure auth is ready (usually instant since we pre-authed)
+    if (!_authReady) await signInAnonymously(auth);
+    // Load pfps and check user in parallel
+    const [, userSnap] = await Promise.all([
+      loadPfps(),
+      getDoc(doc(db, 'users', key)),
+    ]);
+    if (userSnap.exists() && userSnap.data().name) {
+      const storedName = userSnap.data().name;
+      loginStatus.textContent = 'Welcome back, ' + fixName(storedName) + '!';
+      enterChat(storedName, key);
+    } else {
+      enterChat(input, key);
+    }
+  } catch (e) {
+    loginStatus.textContent = 'Connection failed. Try again.';
+    joinBtn.disabled = false;
+  }
+}
+
+// Check for saved handle — prefill
+const savedHandle = localStorage.getItem('xylemchat-handle');
+if (savedHandle) {
+  handleInput.value = savedHandle;
+}
+
+joinBtn.addEventListener('click', join);
+handleInput.addEventListener('keydown', e => { if (e.key === 'Enter') join(); });
+
+// ─── Firebase listener ──────────────────────────────────────────────────
+async function loadPfps() {
+  if (Date.now() - _lastPfpFetch < 120000) return;
+  _lastPfpFetch = Date.now();
+  try {
+    const snap = await getDocs(collection(db, 'users'));
+    snap.forEach(d => {
+      const data = d.data();
+      if (data.pfp) _webPfps[d.id] = data.pfp;
+      _webLastSeen[d.id] = data.lastSeen ? data.lastSeen.toMillis() : 0;
+    });
+  } catch {}
+}
+
+function startHeartbeat() {
+  if (_heartbeatInterval || !userKey) return;
+  const beat = () => {
+    setDoc(doc(db, 'users', userKey), { lastSeen: serverTimestamp() }, { merge: true }).catch(() => {});
+  };
+  beat();
+  _heartbeatInterval = setInterval(beat, 60000);
+}
+
+// Check first-time join for web users
+async function checkWebFirstJoin() {
+  const userRef = doc(db, 'users', userKey);
+  try {
+    const snap = await getDoc(userRef);
+    if (!snap.exists()) {
+      await setDoc(userRef, { name: userName, joinedAt: serverTimestamp() });
+      await addDoc(collection(db, 'messages'), {
+        user: userKey, name: userName, text: 'joined the chat',
+        ts: serverTimestamp(), source: 'web', system: true,
+      });
+    }
+  } catch {}
+}
+
+async function startListener() {
+  checkWebFirstJoin();
+  const q = query(collection(db, 'messages'), orderBy('ts', 'asc'), limit(200));
+  onSnapshot(q, snap => {
+    const msgs = snap.docs.map(d => {
+      const data = d.data();
+      return {
+        id: d.id,
+        user: data.user || data.name || 'Anonymous',
+        name: data.name || data.user || 'Anonymous',
+        text: data.text,
+        ts: data.ts ? data.ts.toMillis() : Date.now(),
+        source: data.source || 'xylemview',
+        reactions: data.reactions || {},
+        system: data.system || false,
+        edited: data.edited || false,
+        unsent: data.unsent || false,
+        unsendBy: data.unsendBy || '',
+      };
+    });
+    if (lastCount > 0 && msgs.length > lastCount) {
+      const newMsgs = msgs.slice(lastCount);
+      const fromOthers = newMsgs.filter(m => (m.user || '').toLowerCase() !== userKey);
+      if (fromOthers.length > 0) playBubble();
+    }
+    lastCount = msgs.length;
+    renderMessages(msgs);
+  });
+}
+
+// ─── Send / Edit ────────────────────────────────────────────────────────
+let _editMsgId = null;
+
+async function sendMessage() {
+  const text = chatInput.value.trim();
+  if (!text) return;
+  chatInput.value = '';
+  // If editing
+  if (_editMsgId) {
+    try {
+      await updateDoc(doc(db, 'messages', _editMsgId), { text, edited: true });
+    } catch (e) { console.error('Edit failed:', e); }
+    _editMsgId = null;
+    return;
+  }
+  try {
+    await addDoc(collection(db, 'messages'), {
+      user: userKey,
+      name: userName,
+      text,
+      ts: serverTimestamp(),
+      source: 'web',
+    });
+  } catch (e) {
+    console.error('Send failed:', e);
+  }
+}
+
+async function unsendMessage(msgId) {
+  try {
+    await updateDoc(doc(db, 'messages', msgId), { text: '', unsent: true, unsendBy: userName });
+  } catch (e) { console.error('Unsend failed:', e); }
+}
+
+sendBtn.addEventListener('click', sendMessage);
+chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+
+// ─── Reactions ──────────────────────────────────────────────────────────
+async function toggleReaction(msgId, emoji) {
+  const ref = doc(db, 'messages', msgId);
+  try {
+    const snap = await getDoc(ref);
+    const reactions = snap.data()?.reactions || {};
+    const users = reactions[emoji] || [];
+    if (users.includes(userKey)) {
+      await updateDoc(ref, { [`reactions.${emoji}`]: arrayRemove(userKey) });
+    } else {
+      // Remove from any other emoji first (one reaction per person)
+      const updates = {};
+      for (const [otherEmoji, otherUsers] of Object.entries(reactions)) {
+        if (otherEmoji !== emoji && otherUsers.includes(userKey)) {
+          updates[`reactions.${otherEmoji}`] = arrayRemove(userKey);
+        }
+      }
+      updates[`reactions.${emoji}`] = arrayUnion(userKey);
+      await updateDoc(ref, updates);
+    }
+  } catch (e) {
+    console.error('Reaction failed:', e);
+  }
+}
+
+messagesEl.addEventListener('click', e => {
+  const reactBtn = e.target.closest('.react-btn');
+  if (reactBtn) {
+    e.stopPropagation();
+    document.querySelectorAll('.react-picker.show').forEach(p => p.classList.remove('show'));
+    const picker = document.getElementById('picker-' + reactBtn.dataset.msgid);
+    if (picker) picker.classList.toggle('show');
+    return;
+  }
+  const pickerEmoji = e.target.closest('.react-picker span');
+  if (pickerEmoji) {
+    e.stopPropagation();
+    toggleReaction(pickerEmoji.dataset.msg, pickerEmoji.dataset.emoji);
+    pickerEmoji.closest('.react-picker').classList.remove('show');
+    return;
+  }
+  const existing = e.target.closest('.reaction');
+  if (existing) {
+    e.stopPropagation();
+    toggleReaction(existing.dataset.msg, existing.dataset.emoji);
+    return;
+  }
+  // Edit/unsend actions
+  const actionBtn = e.target.closest('.action-btn');
+  if (actionBtn) {
+    e.stopPropagation();
+    const msgId = actionBtn.dataset.msgid;
+    const action = actionBtn.dataset.action;
+    if (action === 'unsend') {
+      unsendMessage(msgId);
+    } else if (action === 'edit') {
+      const bubble = actionBtn.closest('.bubble');
+      const textEl = bubble.querySelector('.text');
+      chatInput.value = textEl.textContent;
+      chatInput.focus();
+      _editMsgId = msgId;
+    }
+    return;
+  }
+  document.querySelectorAll('.react-picker.show').forEach(p => p.classList.remove('show'));
+});
+
+// ─── Long-press to react (mobile) ───────────────────────────────────────
+let _lpTimer = null;
+let _lpFired = false;
+messagesEl.addEventListener('touchstart', e => {
+  const bubble = e.target.closest('.bubble');
+  if (!bubble) return;
+  _lpFired = false;
+  _lpTimer = setTimeout(() => {
+    _lpFired = true;
+    document.querySelectorAll('.react-picker.show').forEach(p => p.classList.remove('show'));
+    const picker = bubble.querySelector('.react-picker');
+    if (picker) picker.classList.add('show');
+    // Gentle haptic feedback if available
+    if (navigator.vibrate) navigator.vibrate(30);
+  }, 500);
+}, { passive: true });
+messagesEl.addEventListener('touchend', e => {
+  if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; }
+  if (_lpFired) { e.preventDefault(); _lpFired = false; }
+});
+messagesEl.addEventListener('touchmove', () => {
+  if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; }
+});
+// Prevent context menu on messages so long-press doesn't conflict
+messagesEl.addEventListener('contextmenu', e => {
+  if (e.target.closest('.bubble')) e.preventDefault();
+});
+
+// Scroll-to-bottom button
+const scrollBottomBtn = document.getElementById('scroll-bottom-btn');
+messagesEl.addEventListener('scroll', () => {
+  const atBottom = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 40;
+  scrollBottomBtn.style.opacity = atBottom ? '0' : '1';
+  scrollBottomBtn.style.pointerEvents = atBottom ? 'none' : 'auto';
+});
+scrollBottomBtn.addEventListener('click', () => { messagesEl.scrollTop = messagesEl.scrollHeight; });
+
+// ─── Sign out (return to login) ─────────────────────────────────────────
+document.getElementById('header-home').addEventListener('click', e => {
+  e.preventDefault();
+  messagesEl.style.display = 'none';
+  inputRow.style.display = 'none';
+  document.getElementById('header-avatar').style.display = 'none';
+  loginEl.style.display = '';
+  handleInput.value = localStorage.getItem('xylemchat-handle') || '';
+  joinBtn.disabled = false;
+  loginStatus.textContent = '';
+  userName = '';
+  userKey = '';
+  lastCount = 0;
+  if (_heartbeatInterval) { clearInterval(_heartbeatInterval); _heartbeatInterval = null; }
+  _lastPfpFetch = 0;
+});
+
+// ─── Profile picture upload ─────────────────────────────────────────────
+document.getElementById('header-avatar').addEventListener('click', () => document.getElementById('pfp-file').click());
+document.getElementById('pfp-file').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  img.onload = async () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 96; canvas.height = 96;
+    const ctx = canvas.getContext('2d');
+    const size = Math.min(img.width, img.height);
+    const sx = (img.width - size) / 2, sy = (img.height - size) / 2;
+    ctx.drawImage(img, sx, sy, size, size, 0, 0, 96, 96);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+    try {
+      await setDoc(doc(db, 'users', userKey), { pfp: dataUrl }, { merge: true });
+      _webPfps[userKey] = dataUrl;
+      // Update header avatar
+      const avatar = document.getElementById('header-avatar');
+      avatar.style.backgroundImage = `url(${dataUrl})`;
+      avatar.textContent = '';
+      // Force chat re-render
+      lastCount = 0;
+    } catch (err) { console.error('PFP upload failed:', err); }
+  };
+  img.src = URL.createObjectURL(file);
+  e.target.value = '';
+});
+</script>
+</body>
+</html>

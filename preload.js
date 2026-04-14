@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld('api', {
   openLink:        (fp)         => ipcRenderer.invoke('open-link', fp),
   readLink:        (fp)         => ipcRenderer.invoke('read-link', fp),
   openFolder:      (fp)         => ipcRenderer.invoke('open-folder', fp),
+  showInFolder:    (fp)         => ipcRenderer.invoke('show-in-folder', fp),
 
   // Nicknames (shared username → display name map)
   getNicknames:       ()         => ipcRenderer.invoke('get-nicknames'),
@@ -77,6 +78,8 @@ contextBridge.exposeInMainWorld('api', {
   // Recent orders
   getRecentOrders: ()           => ipcRenderer.invoke('get-recent-orders'),
   addRecentOrder: (o, l)        => ipcRenderer.invoke('add-recent-order', o, l),
+  getRecentMktOrders: ()        => ipcRenderer.invoke('get-recent-mkt-orders'),
+  addRecentMktOrder: (o)        => ipcRenderer.invoke('add-recent-mkt-order', o),
 
   // Recent drawings
   getRecentDrawings: ()         => ipcRenderer.invoke('get-recent-drawings'),
@@ -117,8 +120,9 @@ contextBridge.exposeInMainWorld('api', {
 
   // DWG → DXF / PDF
   convertDwgDxf:  (fp, outDir)  => ipcRenderer.invoke('convert-dwg-dxf', fp, outDir),
-  convertDwgPdf:  (fp, outDir)  => ipcRenderer.invoke('convert-dwg-pdf', fp, outDir),
+  convertDwgPdf:  (fp, outDir, opts)  => ipcRenderer.invoke('convert-dwg-pdf', fp, outDir, opts),
   getDownloadsPath: ()          => ipcRenderer.invoke('get-downloads-path'),
+  scanTubesheet:  (fp)          => ipcRenderer.invoke('scan-tubesheet', fp),
 
   // Routing
   parseDrsGphe:      (fp)     => ipcRenderer.invoke('parse-drs-gphe', fp),
@@ -127,9 +131,15 @@ contextBridge.exposeInMainWorld('api', {
   convertDwgDxfText: (fp)     => ipcRenderer.invoke('convert-dwg-dxf-text', fp),
   cancelConvert:    ()        => ipcRenderer.invoke('cancel-convert'),
 
-  // Chat
+  // Chat (Firebase real-time)
   chatRead:       ()            => ipcRenderer.invoke('chat-read'),
   chatSend:       (text)        => ipcRenderer.invoke('chat-send', text),
+  chatReact:      (msgId, emoji) => ipcRenderer.invoke('chat-react', msgId, emoji),
+  chatEdit:       (msgId, text)  => ipcRenderer.invoke('chat-edit', msgId, text),
+  chatUnsend:     (msgId)        => ipcRenderer.invoke('chat-unsend', msgId),
+  chatSetPfp:     (dataUrl)      => ipcRenderer.invoke('chat-set-pfp', dataUrl),
+  chatGetPfps:    ()             => ipcRenderer.invoke('chat-get-pfps'),
+  onChatUpdate:   (cb)          => ipcRenderer.on('chat-update', (_, msgs) => cb(msgs)),
   notifyChat:     (title, body) => ipcRenderer.invoke('notify-chat', title, body),
   isWindowFocused: ()           => ipcRenderer.invoke('is-window-focused'),
   commentsRead:   (ol)          => ipcRenderer.invoke('comments-read', ol),
@@ -137,6 +147,7 @@ contextBridge.exposeInMainWorld('api', {
 
   // Route-O-Matic (PCOMM)
   routeOMatic:    (ops, session)  => ipcRenderer.invoke('route-o-matic', ops, session),
+  readPcommItem:  (session)       => ipcRenderer.invoke('read-pcomm-item', session),
   routeOMaticAcs: (ops)           => ipcRenderer.invoke('route-o-matic-acs', ops),
 
   // Diagnostics
@@ -145,11 +156,29 @@ contextBridge.exposeInMainWorld('api', {
 
   // BPCS web service (read-only test methods)
   bpcsGetItemNumber:      (ct, order, line) => ipcRenderer.invoke('bpcs-get-item-number', ct, order, line),
+  bpcsCheckPnExists:        (ct, pn)        => ipcRenderer.invoke('bpcs-check-pn-exists', ct, pn),
+  bpcsCheckExistingBom:     (ct, pn)        => ipcRenderer.invoke('bpcs-check-existing-bom', ct, pn),
   bpcsCheckExistingRouters: (ct, pn)        => ipcRenderer.invoke('bpcs-check-existing-routers', ct, pn),
   bpcsGetRouters:         (pn)              => ipcRenderer.invoke('bpcs-get-routers', pn),
+  bpcsOrderEom:           (order)         => ipcRenderer.invoke('bpcs-order-eom', order),
+  bpcsBacklogCheckin:     ()              => ipcRenderer.invoke('bpcs-backlog-checkin'),
   bpcsDrawingHistory:     (dwg)           => ipcRenderer.invoke('bpcs-drawing-history', dwg),
   bpcsCheckExistingFrtLine: (ct, pn, op) => ipcRenderer.invoke('bpcs-check-existing-frt-line', ct, pn, op),
   bpcsInsertFrtTest:      (pn, op, wc, desc) => ipcRenderer.invoke('bpcs-insert-frt-test', pn, op, wc, desc),
+  bpcsUploadRouting:      (ct, pn, ops)       => ipcRenderer.invoke('bpcs-upload-routing', ct, pn, ops),
+  bpcsMaxOrder:           ()                 => ipcRenderer.invoke('bpcs-max-order'),
+
+  // EOM direct (jt400 Java helper)
+  eomCheckin:     (contract, status, pename) => ipcRenderer.invoke('eom-checkin', contract, status, pename),
+  eomSetDates:    (contract, status, pe, df, bm, me) => ipcRenderer.invoke('eom-set-dates', contract, status, pe, df, bm, me),
+
+  // Saturn backlog API
+  saturnLogin:    (user, pass)        => ipcRenderer.invoke('saturn-login', user, pass),
+  saturnStatus:   ()                  => ipcRenderer.invoke('saturn-status'),
+  saturnBacklog:  (filter, size, pg)  => ipcRenderer.invoke('saturn-backlog', filter, size, pg),
+  saturnOrder:    (eid, contract)     => ipcRenderer.invoke('saturn-order', eid, contract),
+  saturnUsers:    ()                  => ipcRenderer.invoke('saturn-users'),
+  saturnSchedule: (action, payload)   => ipcRenderer.invoke('saturn-schedule', action, payload),
 
   // Window controls
   winMinimize:    ()            => ipcRenderer.invoke('win-minimize'),

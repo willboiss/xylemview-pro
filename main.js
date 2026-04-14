@@ -20,6 +20,22 @@ const execAsync = promisify(exec);
 const os = require('os');
 const { Worker } = require('worker_threads');
 
+// ─── Firebase ───────────────────────────────────────────────────────────
+const { initializeApp: fbInit } = require('firebase/app');
+const { getFirestore, collection, addDoc, query, orderBy, limit: fbLimit,
+        onSnapshot, serverTimestamp, getDocs, doc, getDoc: fbGetDoc, setDoc, updateDoc,
+        arrayUnion, arrayRemove, deleteField } = require('firebase/firestore');
+const { getAuth, signInAnonymously } = require('firebase/auth');
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyD0uwSfreBjUJsORShRGuG3RXrFWpOKLGc",
+  authDomain: "xylemview-pro.firebaseapp.com",
+  projectId: "xylemview-pro",
+  storageBucket: "xylemview-pro.firebasestorage.app",
+  messagingSenderId: "596655103646",
+  appId: "1:596655103646:web:e24b263d6ead0fd35c658f",
+};
+let fbApp, fbDb, fbAuth;
+
 // ─── Config defaults ────────────────────────────────────────────────────
 const IS_MAC = process.platform === 'darwin';
 const IS_WIN = process.platform === 'win32';
@@ -47,6 +63,7 @@ const DEFAULTS = {
   launch_on_startup: true,
   seen_changelog_ver: '',
   language: 'en',  // 'en' or 'tlh' (Klingon)
+  saturn_refresh_token: '',  // Saturn API refresh token — persists login across restarts
 };
 
 // Auto-detect the newest AutoCAD installation
@@ -243,6 +260,23 @@ const DWG_RE = /^\[?(\d{6}[A-Za-z\d]\d{5})r([0-9A-Za-z]+)\.(dwg|dxf|plt|pdf|bak)
 const TL_RE  = /^\[?(TL[A-Za-z0-9]+)r([0-9A-Za-z]+)\.(dwg|dxf|plt|pdf|bak)(\]?)$/i;
 const DWG_PDF_RE = /r[0-9][0-9A-Za-z]\.pdf\]?$/i;
 
+// TL drawing number hyphenation: TL-{size}{type}{gauge}-{C?tubes}{style}-{pass}
+// Gauge = tube OD in sixteenths of an inch (verified from DXF title blocks)
+const TL_GAUGES_2 = new Set(['10', '12', '14', '16', '20', '24']);
+const TL_GAUGES_1 = new Set(['3', '4', '6', '8']);
+function hyphenateTL(raw) {
+  const m = raw.match(/^TL(\d+(?:\.\d+)?)\s*([SU])(.+)$/);
+  if (!m) return raw;
+  const rest = m[3];
+  let gl = 0;
+  if (rest.length >= 2 && TL_GAUGES_2.has(rest.slice(0, 2))) gl = 2;
+  else if (rest.length >= 1 && TL_GAUGES_1.has(rest[0])) gl = 1;
+  if (!gl) return raw;
+  const sm = rest.slice(gl).match(/^(C?\d+)([TS])(\d+)$/);
+  if (!sm) return raw;
+  return `TL-${m[1]}${m[2]}${rest.slice(0, gl)}-${sm[1]}${sm[2]}-${sm[3]}`;
+}
+
 function formatDrawingName(filename) {
   let m = DWG_RE.exec(filename);
   if (m) {
@@ -259,7 +293,7 @@ function formatDrawingName(filename) {
   m = TL_RE.exec(filename);
   if (m) {
     const rev = (m[2].replace(/^0+/, '') || m[2].slice(-1)).toUpperCase();
-    return { name: m[1].toUpperCase(), rev };
+    return { name: hyphenateTL(m[1].toUpperCase()), rev };
   }
   return null;
 }
@@ -649,7 +683,7 @@ let isQuitting = false;
 
 function createWindow() {
   const winOpts = {
-    width: 490, height: 600, minWidth: 360, minHeight: 440,
+    width: 520, height: 640, minWidth: 360, minHeight: 440,
     frame: false,
     maximizable: false,  // Maximize permanently kills acrylic (known Electron bug). Snap sadly lost too.
     fullscreenable: false,
@@ -827,8 +861,8 @@ app.whenReady().then(() => {
     fs.appendFile(logPath, line, () => {});
   } catch (e) {}
   logDiag('APP', `Started v${CURRENT_VERSION} (${IS_DEV ? 'dev' : 'installed'}) — Electron ${process.versions.electron}, ${os.platform()} ${os.release()}`);
-  // Join/leave chat messages disabled — was wiping chat.json due to network race conditions
-  // TODO: re-enable once we have a safer append mechanism (file locking or server-side)
+  // Initialize Firebase for cloud chat
+  initFirebase();
   createWindow();
   nativeTheme.on('updated', () => { if (mainWindow) mainWindow.webContents.send('system-theme-changed'); });
   createTray();  // Always show tray icon
@@ -1358,26 +1392,8 @@ ipcMain.handle('open-marketing', async (_, order) => {
 
 // ─── Find checklist ─────────────────────────────────────────────────────
 ipcMain.handle('find-checklist', async (_, order) => {
-  const base00 = path.join(config.order_path, order.padStart(6, '0') + '00');
-  const foldersToSearch = [base00, path.join(base00, 'Marketing')];
-  let best = null; // { filepath, mtime }
-  for (const folder of foldersToSearch) {
-    if (!(await dirExists(folder))) continue;
-    const entries = await readdirSafe(folder);
-    for (const name of entries) {
-      const nameLc = name.toLowerCase();
-      if (!nameLc.startsWith('1_checklist') && !nameLc.startsWith('copy of 1_checklist') && !nameLc.startsWith('copyof1_checklist')) continue;
-      const ext = nameLc.slice(nameLc.lastIndexOf('.') + 1);
-      if (!['pdf', 'xls', 'xlsm'].includes(ext)) continue;
-      const fp = path.join(folder, name);
-      try {
-        const st = await fsp.stat(fp);
-        if (!st.isFile()) continue;
-        if (!best || st.mtime > best.mtime) best = { filepath: fp, name, mtime: st.mtime };
-      } catch {}
-    }
-  }
-  if (best) return { found: true, filepath: best.filepath, name: best.name };
+  const results = await findChecklists(order.padStart(6, '0'));
+  if (results.length) return { found: true, filepath: results[0].path, name: results[0].name };
   return { found: false };
 });
 
@@ -1786,8 +1802,8 @@ async function parseChecklistPdf(filepath) {
   const fileDateCreated = stat.birthtime.toISOString();
   const result = { filepath, lineItems: [], poNumber: '', ae: '', date: '', dateApproved: '', fileDate, fileDateCreated, comments: '' };
 
-  // Extract PO number (some PDFs have no whitespace after "PO Number")
-  const poMatch = text.match(/PO Number\s*(\d[\d\-]+)/i);
+  // Extract PO number (may be on same line or next line, may start with letters like "POMD44672")
+  const poMatch = text.match(/PO Number\s*\n?\s*([A-Za-z0-9][\w\-#]+)/i);
   if (poMatch) result.poNumber = poMatch[1];
 
   // Extract AE name (auto-capitalize)
@@ -1795,10 +1811,10 @@ async function parseChecklistPdf(filepath) {
   if (aeMatch) result.ae = aeMatch[1].charAt(0).toUpperCase() + aeMatch[1].slice(1).toLowerCase();
 
   // Extract dates
-  const dateMatch = text.match(/Date Submitted:\s*\n(.+)/i);
-  if (dateMatch) result.date = dateMatch[1].trim();
-  const approvedMatch = text.match(/Date Approved:\s*\n(.+)/i);
-  if (approvedMatch) result.dateApproved = approvedMatch[1].trim();
+  const dateMatch = text.match(/Date Submitted:[ \t]*\n?(.+)/i);
+  if (dateMatch && /\d/.test(dateMatch[1])) result.date = dateMatch[1].trim();
+  const approvedMatch = text.match(/Date Approved:[ \t]*\n?(.+)/i);
+  if (approvedMatch && /\d/.test(approvedMatch[1])) result.dateApproved = approvedMatch[1].trim();
 
   // Extract line items from the section between "Line item" and "U1FORM"/"Standard Paint"/"PO approved"
   const sectionMatch = text.match(/Line item[\s\S]*?(?=U1FORM|Standard Paint|PO approved)/i);
@@ -1806,7 +1822,7 @@ async function parseChecklistPdf(filepath) {
     const section = sectionMatch[0];
     // Two-pass extraction: first find template+drawing, then price from each chunk.
     // Pass 1: template (%XX...) + separator (/, PN, ref, Ref, Ref PN) + drawing number
-    const templateRe = /(%[A-Z]{2}\w+)\s+(?:Ref\s+PN|Ref|PN|ref|\/)\s+([\d][\d\-A-Za-z]+)/g;
+    const templateRe = /(%[A-Z]{2}\w+)\s+(?:Ref\s+PN|Ref|PN|ref|\/)?\s*([\d][\d\-A-Za-z]+)/g;
     const hits = [];
     let m;
     while ((m = templateRe.exec(section)) !== null) {
@@ -1818,13 +1834,13 @@ async function parseChecklistPdf(filepath) {
       hits.push({ template: m[1], dwgRaw: rawDwg, end: m.index + m[0].length });
     }
     // Pass 2: extract price from the text chunk between each hit and the next
-    // Comma-aware grouping (\d{1,3}(,\d{3})*) prevents grabbing leadtime digits
-    const priceRe = /\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/;
+    // Require .XX decimal to distinguish prices from other numbers; handle both comma-formatted and plain
+    const priceRe = /\$\s*([\d,]+\.\d{2})/;
     for (let i = 0; i < hits.length; i++) {
       const chunk = section.substring(hits[i].end, i + 1 < hits.length ? section.indexOf(hits[i + 1].template, hits[i].end) : section.length);
       const pm = chunk.match(priceRe);
       const dwgNorm = hits[i].dwgRaw.replace(/-/g, '');
-      result.lineItems.push({ line: String(i + 1).padStart(2, '0'), template: hits[i].template, dwgRaw: hits[i].dwgRaw, dwgNorm, price: pm ? pm[1] : '', qty: 1, isRepeat: true });
+      result.lineItems.push({ line: String(i + 1).padStart(2, '0'), template: hits[i].template, dwgRaw: hits[i].dwgRaw, dwgNorm, price: pm ? pm[1].replace(/,/g, '') : '', qty: 1, isRepeat: true });
     }
   }
 
@@ -1926,36 +1942,54 @@ async function parseChecklistXlsx(filepath) {
         const poVal = cell(parseInt(rn), nextCol) || cell(parseInt(rn), 'C');
         if (poVal && /\d/.test(poVal)) result.poNumber = poVal.trim();
       }
-      if (/^AE$/i.test(val.trim())) {
+      if (/^A\/?\.?E\.?:?\s*$/i.test(val.trim())) {
         const aeVal = cell(parseInt(rn), String.fromCharCode(col.charCodeAt(0) + 1)) || cell(parseInt(rn), 'C');
         if (aeVal) result.ae = aeVal.trim().charAt(0).toUpperCase() + aeVal.trim().slice(1).toLowerCase();
       }
     }
   }
 
+  // Positional fallback for AE (commonly in B4→C4)
+  if (!result.ae) {
+    const aeVal = cell(4, 'C');
+    if (aeVal && /^[A-Za-z]/.test(aeVal.trim()) && aeVal.trim().length < 30) {
+      result.ae = aeVal.trim().charAt(0).toUpperCase() + aeVal.trim().slice(1).toLowerCase();
+    }
+  }
+
+  // Helper: parse Excel date value (serial or text) — use UTC to avoid timezone shift
+  function parseXlDate(dVal) {
+    if (!dVal) return '';
+    if (!isNaN(dVal)) {
+      const d = new Date((parseFloat(dVal) - 25569) * 86400000);
+      return `${d.getUTCMonth()+1}/${d.getUTCDate()}/${d.getUTCFullYear()}`;
+    }
+    return dVal.trim();
+  }
+
   // Extract date fields (Excel serial dates → JS dates)
   for (const [rn, data] of Object.entries(cells)) {
     for (const [col, val] of Object.entries(data)) {
-      if (/Date Submitted/i.test(val)) {
+      if (/Date Submitted|Submitted Date|Date Sub/i.test(val)) {
         const dVal = cell(parseInt(rn), String.fromCharCode(col.charCodeAt(0) + 1)) || cell(parseInt(rn), 'C');
-        if (dVal && !isNaN(dVal)) {
-          const d = new Date((parseFloat(dVal) - 25569) * 86400000);
-          result.date = `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
-        } else if (dVal) result.date = dVal.trim();
+        const parsed = parseXlDate(dVal);
+        if (parsed) result.date = parsed;
       }
-      if (/Date Approved/i.test(val)) {
+      if (/Date Approved|Approved Date|Date App/i.test(val)) {
         const dVal = cell(parseInt(rn), String.fromCharCode(col.charCodeAt(0) + 1)) || cell(parseInt(rn), 'C');
-        if (dVal && !isNaN(dVal)) {
-          const d = new Date((parseFloat(dVal) - 25569) * 86400000);
-          result.dateApproved = `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
-        } else if (dVal) result.dateApproved = dVal.trim();
+        const parsed = parseXlDate(dVal);
+        if (parsed) result.dateApproved = parsed;
       }
     }
   }
 
+  // Positional fallbacks for dates (commonly C3=submitted, C48=approved)
+  if (!result.date) { const v = parseXlDate(cell(3, 'C')); if (v) result.date = v; }
+  if (!result.dateApproved) { const v = parseXlDate(cell(48, 'C')); if (v) result.dateApproved = v; }
+
   // Extract line items — look for cells containing %XX template patterns
   // Format: "%SN5032  /  5-163-08-048-074" in column B, price in C, qty in D
-  const templateRe = /(%[A-Z]{2}\w+)\s*(?:\/|Ref\s*PN|Ref|PN|ref)\s*([\d][\d\-A-Za-z]+)/;
+  const templateRe = /(%[A-Z]{2}\w+)\s*(?:\/|Ref\s*PN|Ref|PN|ref)?\s*([\d][\d\-A-Za-z]+)/;
   for (const [rn, data] of Object.entries(cells).sort((a, b) => a[0] - b[0])) {
     for (const [col, val] of Object.entries(data)) {
       const tm = templateRe.exec(val);
@@ -1999,24 +2033,66 @@ async function parseChecklistXlsx(filepath) {
   return result;
 }
 
-// Scan an order's 00 folder for checklist files
+// Scan an order's 00 folder for checklist files (including inside .msg email attachments)
 async function findChecklists(orderPad) {
   const folder00 = path.join(config.order_path, orderPad + '00');
   if (!(await dirExists(folder00))) return [];
   const files = await readdirSafe(folder00);
   const clRe = /^(1_checklist|copy of 1_checklist|copyof1_checklist)/i;
   const clExt = /\.(pdf|xls|xlsm)$/i;
-  const checklists = files.filter(f => clRe.test(f) && clExt.test(f));
+  const results = [];
+
+  // Direct checklist files in 00 folder
+  for (const f of files) {
+    if (clRe.test(f) && clExt.test(f)) {
+      const fp = path.join(folder00, f);
+      const st = await fsp.stat(fp).catch(() => null);
+      results.push({ name: f, path: fp, mtime: st ? st.mtimeMs : 0 });
+    }
+  }
+
   // Also check Marketing subfolder
   const mktgDir = path.join(folder00, 'Marketing');
   if (await dirExists(mktgDir)) {
     const mktgFiles = await readdirSafe(mktgDir);
     for (const f of mktgFiles) {
-      if (clRe.test(f) && clExt.test(f))
-        checklists.push(path.join('Marketing', f));
+      if (clRe.test(f) && clExt.test(f)) {
+        const fp = path.join(folder00, 'Marketing', f);
+        const st = await fsp.stat(fp).catch(() => null);
+        results.push({ name: f, path: fp, mtime: st ? st.mtimeMs : 0 });
+      }
     }
   }
-  return checklists.map(f => ({ name: f, path: path.join(folder00, f) }));
+
+  // Also search inside .msg email attachments for checklists
+  const msgFiles = files.filter(f => /\.msg$/i.test(f));
+  for (const mf of msgFiles) {
+    try {
+      const MsgReader = require('msgreader').default;
+      const msgPath = path.join(folder00, mf);
+      const buf = await fsp.readFile(msgPath);
+      const msgSt = await fsp.stat(msgPath).catch(() => null);
+      const msg = new MsgReader(buf);
+      const info = msg.getFileData();
+      if (!info.attachments?.length) continue;
+      for (let ai = 0; ai < info.attachments.length; ai++) {
+        const att = info.attachments[ai];
+        if (clRe.test(att.fileName) && clExt.test(att.fileName)) {
+          const extracted = msg.getAttachment(ai);
+          const tmpPath = path.join(app.getPath('temp'), 'xv_msg_' + Date.now() + '_' + att.fileName);
+          await fsp.writeFile(tmpPath, Buffer.from(extracted.content));
+          results.push({ name: att.fileName, path: tmpPath, fromMsg: mf, temp: true, mtime: msgSt ? msgSt.mtimeMs : 0 });
+          logDiag('CHECKLIST', `Found checklist "${att.fileName}" inside ${mf}`);
+        }
+      }
+    } catch (e) {
+      logDiag('CHECKLIST', `Failed to scan .msg ${mf}: ${e.message}`);
+    }
+  }
+
+  // Most recently modified first
+  results.sort((a, b) => b.mtime - a.mtime);
+  return results;
 }
 
 // Parse the latest order acknowledgment to get line number → drawing number mapping
@@ -2073,6 +2149,7 @@ ipcMain.handle('scan-checklists', async (_, orderPad) => {
       } catch (e) {
         results.push({ filepath: cl.path, error: e.message, lineItems: [] });
       }
+      // Note: temp files from .msg extraction are left in OS temp dir for open/copy actions
     }
     // Cross-reference with acknowledgment to get correct line numbers
     const ackResult = await getAckLineMapping(orderPad);
@@ -2135,7 +2212,7 @@ ipcMain.handle('check-links-exist', async (_, orderPad, items) => {
     const folder = path.join(config.order_path, orderPad + line);
     try {
       const entries = await readdirSafe(folder);
-      results[line] = entries.some(f => f.startsWith('[') && f.toLowerCase().includes(dwgNorm.toLowerCase().substring(0, 6)));
+      results[line] = entries.some(f => f.startsWith('[') && f.toLowerCase().includes(dwgNorm.toLowerCase()));
     } catch { results[line] = false; }
   }
   return results;
@@ -2283,6 +2360,11 @@ ipcMain.handle('open-contingency-order', (_, ident) => {
 
 ipcMain.handle('open-folder', (_, folderPath) => {
   shell.openPath(folderPath);
+  return { ok: true };
+});
+
+ipcMain.handle('show-in-folder', (_, filePath) => {
+  shell.showItemInFolder(filePath);
   return { ok: true };
 });
 
@@ -2452,6 +2534,20 @@ ipcMain.handle('add-recent-order', async (_, order, line) => {
   config.recent_orders = list.slice(0, 15);
   saveConfig();
   return config.recent_orders;
+});
+
+ipcMain.handle('get-recent-mkt-orders', () => {
+  return config.recent_mkt_orders || [];
+});
+
+ipcMain.handle('add-recent-mkt-order', async (_, order) => {
+  const orderPad = order.padStart(6, '0');
+  let list = config.recent_mkt_orders || [];
+  list = list.filter(r => r.order !== orderPad);
+  list.unshift({ order: orderPad, ts: Date.now() });
+  config.recent_mkt_orders = list.slice(0, 10);
+  saveConfig();
+  return config.recent_mkt_orders;
 });
 
 ipcMain.handle('get-recent-drawings', () => {
@@ -3201,6 +3297,86 @@ ipcMain.handle('cancel-convert', () => {
   if (_routeProc) { try { _routeProc.kill(); } catch {} _routeProc = null; }
 });
 
+// ─── Tubesheet DXF scan ─────────────────────────────────────────────────
+ipcMain.handle('scan-tubesheet', async (_, dwgPath) => {
+  // If given a PDF, try to find the DWG sibling
+  if (/\.pdf$/i.test(dwgPath)) {
+    const dwgSibling = dwgPath.replace(/\.pdf$/i, '.dwg');
+    if (await isFile(dwgSibling)) dwgPath = dwgSibling;
+    else return { ok: false, msg: 'No DWG file found' };
+  }
+  // Get DXF text: prefer existing .dxf, fall back to ODA conversion
+  let dxfText = null;
+  const dxfPath = dwgPath.replace(/\.dwg$/i, '.dxf');
+  try {
+    dxfText = await fsp.readFile(dxfPath, 'utf-8');
+  } catch {
+    // No DXF on disk — try ODA conversion
+    const oda = findOdaConverter();
+    if (!oda) return { ok: false, msg: 'ODA File Converter not installed' };
+    const tmpDir = path.join(os.tmpdir(), 'xv_ts_' + Date.now());
+    try {
+      fs.mkdirSync(tmpDir, { recursive: true });
+      const r = await odaConvertDwgToDxf(dwgPath, tmpDir);
+      if (r.ok) {
+        dxfText = await fsp.readFile(r.dxfPath, 'utf-8');
+        try { fs.unlinkSync(r.dxfPath); fs.rmdirSync(tmpDir); } catch {}
+      }
+    } catch {}
+    try { fs.rmdirSync(tmpDir, { recursive: true }); } catch {}
+  }
+  if (!dxfText) return { ok: false, msg: 'Could not read DXF' };
+
+  // Extract all group-code-1 text values
+  const lines = dxfText.split(/\r?\n/);
+  const texts = [];
+  for (let i = 0; i < lines.length - 1; i++) {
+    if (lines[i].trim() === '1') texts.push(lines[i + 1]);
+  }
+  const blob = texts.join('\n');
+
+  // TL reference: "PER TL-..."
+  const tlMatch = blob.match(/PER\s+(TL-[A-Z0-9.,-]+)/i);
+  const tlRef = tlMatch ? tlMatch[1].toUpperCase().replace(/[.,]+$/, '') : null;
+
+  // Material: SA### pattern (ASME spec)
+  const matMatch = blob.match(/\b(SA-?\d{2,4}[- ]?(?:GR\.?\s*)?[A-Z0-9/.]+)/i);
+  const material = matMatch ? matMatch[1].toUpperCase().replace(/\s+/g, '') : null;
+
+  // Tube hole diameter: ".###-.###" near "TUBE HOLES"
+  const holeMatch = blob.match(/(\.\d{3}"?\s*-\s*\.\d{3}"?)\s*DIA\.?\s*TUBE\s*HOL/i);
+  const tubeHoleDia = holeMatch ? holeMatch[1].replace(/[""\s]/g, '') : null;
+
+  // Diameters from MTEXT: \A1;##.###\PDIA.
+  const diaMatches = [...blob.matchAll(/(\d+\.\d+)\\PDIA\./g)].map(m => parseFloat(m[1]));
+
+  // Find TL drawing files if reference found
+  let tlFiles = [];
+  if (tlRef) {
+    const tlBase = tlRef.replace(/-/g, '');
+    const tlFolder = path.join(config.drawing_path, 'TL');
+    try {
+      const entries = await fsp.readdir(tlFolder);
+      const baseLower = tlBase.toLowerCase();
+      for (const e of entries) {
+        const lower = e.toLowerCase();
+        if (lower.startsWith(baseLower + 'r') && (lower.endsWith('.dwg') || lower.endsWith('.pdf'))) {
+          tlFiles.push({ name: e, filepath: path.join(tlFolder, e) });
+        }
+      }
+    } catch {}
+  }
+
+  return {
+    ok: true,
+    tlRef,
+    tlFiles,
+    material,
+    tubeHoleDia,
+    diameters: diaMatches.length ? diaMatches.sort((a, b) => a - b) : null,
+  };
+});
+
 // ─── Route-O-Matic (PCOMM VBScript driver) ──────────────────────────────
 
 ipcMain.handle('route-o-matic', async (_, ops, sessionLetter) => {
@@ -3618,6 +3794,22 @@ ipcMain.handle('bpcs-get-item-number', async (_, connectionType, orderNumber, li
   }
 });
 
+ipcMain.handle('bpcs-check-pn-exists', async (_, connectionType, partNumber) => {
+  logDiag('BPCS', `CheckIfPartNumberExists(${connectionType}, ${partNumber})`);
+  try {
+    const xml = await bpcsSoapCall(BPCS_WS_SANDBOX, 'CheckIfPartNumberExists', {
+      ConnectionType: connectionType,
+      PartNumber: partNumber,
+    });
+    const result = soapExtractTag(xml, 'CheckIfPartNumberExistsResult');
+    logDiag('BPCS', `CheckIfPartNumberExists → ${result}`);
+    return { ok: true, result: parseInt(result, 10), raw: xml };
+  } catch (e) {
+    logDiag('BPCS', `CheckIfPartNumberExists FAILED: ${e.message}`);
+    return { ok: false, error: e.message };
+  }
+});
+
 ipcMain.handle('bpcs-check-existing-bom', async (_, connectionType, partNumber) => {
   logDiag('BPCS', `CheckForExistingBOM(${connectionType}, ${partNumber})`);
   try {
@@ -3676,6 +3868,80 @@ async function checkExistingFRTline(connectionType, partNumber, opNumber) {
     return parseInt(result, 10) || 0;
   } catch { return -1; }
 }
+
+// ─── Dashboard: highest order number ────────────────────────────────
+ipcMain.handle('bpcs-max-order', async () => {
+  logDiag('BPCS', 'MaxOrder query');
+  const sql = `SELECT MAX(BPCSP25F.ECHL02.HORD) AS MAXORD FROM BPCSP25F.ECHL02 WHERE BPCSP25F.ECHL02.HORD > 490000 AND BPCSP25F.ECHL02.HORD < 501000`;
+  try {
+    const xml = await bpcsSoapCall(BPCS_WS_LIVE, 'SelectQuery', {
+      ConnectionType: 'LIVE',
+      SelectText: sql,
+    });
+    const maxOrd = soapExtractTag(xml, 'MAXORD');
+    const val = maxOrd ? parseInt(maxOrd, 10) : null;
+    logDiag('BPCS', `MaxOrder → ${val}`);
+    return { ok: true, maxOrder: val };
+  } catch (e) {
+    logDiag('BPCS', `MaxOrder FAILED: ${e.message}`);
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('bpcs-order-eom', async (_, orderNum) => {
+  logDiag('BPCS', `EOM query for order ${orderNum}`);
+  const sql = `SELECT e.ECONTRACT, e.ESTATUS, e.ELORD, e.ELLINE, rtrim(e.PENAME) AS PENAME, rtrim(e.DFNAME) AS DFNAME, rtrim(e.BMNAME) AS BMNAME, e.PECKIN, e.PECKOUT, e.DFCKIN, e.DFCKOUT, e.BMCKIN, e.BMCKOUT, DATE(CHAR(e.PESIDTE)) AS PESIDTE, DATE(CHAR(e.DFSIDTE)) AS DFSIDTE, DATE(CHAR(e.BMSIDTE)) AS BMSIDTE, DATE(CHAR(e.MESIDTE)) AS MESIDTE, DATE(CHAR(e.ESTRTDTE)) AS ESTRTDTE, rtrim(l.LPROD) AS LPROD, rtrim(l.LDESC) AS LDESC, l.LUDTE1, rtrim(l.LSTAT) AS LSTAT, l.LID, rtrim(c2.L2LRSN) AS L2LRSN, rtrim(ci.ICCLAS) AS ICCLAS FROM STANDUSPF.EOML01 e INNER JOIN BPCSP25F.ECLL12 l ON e.ELORD = l.LORD AND e.ELLINE = l.LLINE LEFT OUTER JOIN FTCUSP25F.CL2L02 c2 ON l.LORD = c2.L2ORD AND l.LLINE = c2.L2LINE LEFT OUTER JOIN BPCSP25F.CICL01 ci ON l.LPROD = ci.ICPROD AND l.LICFAC = ci.ICFAC WHERE e.ELORD = ${parseInt(orderNum, 10)} ORDER BY e.ELLINE`;
+  try {
+    const xml = await bpcsSoapCall(BPCS_WS_LIVE, 'SelectQuery', { ConnectionType: 'LIVE', SelectText: sql });
+    const rows = [];
+    const rowRe = /<_x0030_[^>]*>([\s\S]*?)<\/_x0030_>/g;
+    let m;
+    while ((m = rowRe.exec(xml)) !== null) {
+      const get = (tag) => { const r2 = new RegExp('<' + tag + '>([^<]*)</' + tag + '>'); const mm = r2.exec(m[1]); return mm ? mm[1].replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').trim() : ''; };
+      rows.push({
+        contract: get('ECONTRACT'), status: get('ESTATUS'), order: get('ELORD'), line: get('ELLINE'),
+        pename: get('PENAME'), dfname: get('DFNAME'), bmname: get('BMNAME'),
+        peckin: get('PECKIN'), peckout: get('PECKOUT'), dfckin: get('DFCKIN'), dfckout: get('DFCKOUT'), bmckin: get('BMCKIN'), bmckout: get('BMCKOUT'),
+        pesidte: get('PESIDTE'), dfsidte: get('DFSIDTE'), bmsidte: get('BMSIDTE'), mesidte: get('MESIDTE'),
+        startDate: get('ESTRTDTE'), prod: get('LPROD'), desc: get('LDESC'),
+        ludte1: parseInt(get('LUDTE1'), 10) || 0, lstat: get('LSTAT'), lid: get('LID'),
+        hold: get('L2LRSN'), icclas: get('ICCLAS'),
+      });
+    }
+    logDiag('BPCS', `EOM for ${orderNum} → ${rows.length} lines`);
+    return { ok: true, rows };
+  } catch (e) {
+    logDiag('BPCS', `EOM query FAILED: ${e.message}`);
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('bpcs-backlog-checkin', async () => {
+  logDiag('BPCS', 'Backlog check-in query');
+  const sql = `SELECT e.ECONTRACT, e.ESTATUS, rtrim(e.PENAME) AS PENAME, rtrim(e.DFNAME) AS DFNAME, rtrim(e.BMNAME) AS BMNAME, e.PECKIN, e.PECKOUT, e.DFCKIN, e.DFCKOUT, e.BMCKIN, e.BMCKOUT, rtrim(l.LDESC) AS LDESC, rtrim(l.LPROD) AS LPROD, r.CNME, h.HSRCE, rtrim(c2.L2LRSN) AS L2LRSN, DATE(CHAR(e.PESIDTE)) AS PESIDTE, DATE(CHAR(e.MESIDTE)) AS MESIDTE FROM STANDUSPF.EOML01 e INNER JOIN BPCSP25F.ECLL12 l ON e.ELORD = l.LORD AND e.ELLINE = l.LLINE INNER JOIN BPCSP25F.ECHL02 h ON l.LORD = h.HORD INNER JOIN BPCSP25F.RCML02 r ON h.HCUST = r.CCUST LEFT OUTER JOIN FTCUSP25F.CL2L02 c2 ON l.LORD = c2.L2ORD AND l.LLINE = c2.L2LINE WHERE e.BMCKOUT = 0 AND (e.PECKIN = 0 AND e.DFCKIN = 0 AND e.BMCKIN = 0 OR e.PECKOUT = 1 AND e.DFCKIN = 0 AND e.BMCKIN = 0 OR e.DFCKOUT = 1 AND e.BMCKIN = 0) AND h.HID = 'CH' AND l.LSTAT IN ('E','C','F') AND rtrim(l.LDESC) <> '*Deleted with no shipments' ORDER BY e.ECONTRACT DESC`;
+  try {
+    const xml = await bpcsSoapCall(BPCS_WS_LIVE, 'SelectQuery', { ConnectionType: 'LIVE', SelectText: sql });
+    const rows = [];
+    const rowRe = /<_x0030_[^>]*>([\s\S]*?)<\/_x0030_>/g;
+    let m;
+    while ((m = rowRe.exec(xml)) !== null) {
+      const get = (tag) => { const r2 = new RegExp('<' + tag + '>([^<]*)</' + tag + '>'); const mm = r2.exec(m[1]); return mm ? mm[1].replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').trim() : ''; };
+      rows.push({
+        contract: get('ECONTRACT'), status: get('ESTATUS'),
+        pename: get('PENAME'), dfname: get('DFNAME'), bmname: get('BMNAME'),
+        peckin: get('PECKIN'), peckout: get('PECKOUT'), dfckin: get('DFCKIN'), dfckout: get('DFCKOUT'), bmckin: get('BMCKIN'), bmckout: get('BMCKOUT'),
+        desc: get('LDESC'), prod: get('LPROD'), customer: get('CNME'),
+        csr: get('HSRCE'), hold: get('L2LRSN'),
+        pedate: get('PESIDTE'), medate: get('MESIDTE'),
+      });
+    }
+    logDiag('BPCS', `Backlog check-in → ${rows.length} rows`);
+    return { ok: true, rows };
+  } catch (e) {
+    logDiag('BPCS', `Backlog check-in FAILED: ${e.message}`);
+    return { ok: false, error: e.message };
+  }
+});
 
 ipcMain.handle('bpcs-drawing-history', async (_, drawingNumber) => {
   // Query BPCS for all orders associated with a drawing number
@@ -3864,29 +4130,537 @@ ${frtXml}
   }
 });
 
-// ─── Chat Room ──────────────────────────────────────────────────────────
+// ─── BPCS Routing Upload (SOAP) ─────────────────────────────────────────
+ipcMain.handle('bpcs-upload-routing', async (_, connectionType, partNumber, ops) => {
+  // ops = [{ op: 10, wc: 116, desc: 'BURN PIPE & HOLES', run: 0.45, setup: 0.16, basis: '' }, ...]
+  if (!partNumber) return { ok: false, error: 'No part number.' };
+  if (!ops || !ops.length) return { ok: false, error: 'No operations.' };
+  const ct = connectionType === 'LIVE' ? 'LIVE' : 'SANDBOX';
+
+  // BPCS Y2K date: YYMMDD with 28-year offset
+  const now = new Date();
+  const storedYear = ((now.getFullYear() - 28) % 100 + 100) % 100;
+  const todayBPCS = storedYear * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+
+  const results = [];
+  for (const op of ops) {
+    const opNo = parseInt(op.op, 10) || 10;
+    const wcInt = parseInt(op.wc, 10) || 999;
+    const desc = String(op.desc || '').slice(0, 30);
+    const run = Math.round((parseFloat(op.run) || 0) * 100) / 100;
+    const setup = Math.round((parseFloat(op.setup) || 0) * 100) / 100;
+    const basis = String(op.basis || '').slice(0, 1);
+
+    // Pre-check for duplicates
+    const existing = await checkExistingFRTline(ct, partNumber, opNo);
+    if (existing > 0) {
+      logDiag('BPCS', `Upload SKIP: op ${opNo} already exists on ${partNumber}`);
+      results.push({ op: opNo, ok: false, skipped: true, error: `Op ${opNo} already exists` });
+      continue;
+    }
+    if (existing < 0) {
+      results.push({ op: opNo, ok: false, error: 'CheckForExistingFRTline failed' });
+      continue;
+    }
+
+    const frt = {
+      RID: 'RT', RPROD: partNumber, ROPNO: opNo, RSTAT: '1',
+      RWRKC: wcInt, ROPDS: desc, RBAS: basis,
+      RLAB: run, RSET: setup, RMAC: 0, ROPER: 1,
+      RTOOL: '', RMOVE: 0, RQUE: 0, RSTYD: 0,
+      REFDT: todayBPCS, RDDDT: 999999, RCEFD: todayBPCS, RCDSD: 999999,
+      RTWHS: 'HT', RSUOP: 0, RTOPGP: 0, RTSTOP: '', RTRTEM: '',
+    };
+
+    const frtXml = `        <RID>${escXml(frt.RID)}</RID>
+        <RPROD>${escXml(frt.RPROD)}</RPROD>
+        <ROPNO>${frt.ROPNO}</ROPNO>
+        <RSTAT>${escXml(frt.RSTAT)}</RSTAT>
+        <RWRKC>${frt.RWRKC}</RWRKC>
+        <ROPDS>${escXml(frt.ROPDS)}</ROPDS>
+        <RBAS>${escXml(frt.RBAS)}</RBAS>
+        <RLAB>${frt.RLAB}</RLAB>
+        <RSET>${frt.RSET}</RSET>
+        <RMAC>${frt.RMAC}</RMAC>
+        <ROPER>${frt.ROPER}</ROPER>
+        <RTOOL>${escXml(frt.RTOOL)}</RTOOL>
+        <RMOVE>${frt.RMOVE}</RMOVE>
+        <RQUE>${frt.RQUE}</RQUE>
+        <RSTYD>${frt.RSTYD}</RSTYD>
+        <REFDT>${frt.REFDT}</REFDT>
+        <RDDDT>${frt.RDDDT}</RDDDT>
+        <RCEFD>${frt.RCEFD}</RCEFD>
+        <RCDSD>${frt.RCDSD}</RCDSD>
+        <RTWHS>${escXml(frt.RTWHS)}</RTWHS>
+        <RSUOP>${frt.RSUOP}</RSUOP>
+        <RTOPGP>${frt.RTOPGP}</RTOPGP>
+        <RTSTOP>${escXml(frt.RTSTOP)}</RTSTOP>
+        <RTRTEM>${escXml(frt.RTRTEM)}</RTRTEM>`;
+
+    const soapBody = `<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <InsertFRTline xmlns="http://tempuri.org/">
+      <ConnectionType>${ct}</ConnectionType>
+      <FRT>
+${frtXml}
+      </FRT>
+    </InsertFRTline>
+  </soap:Body>
+</soap:Envelope>`;
+
+    logDiag('BPCS', `UploadRouting(${ct}, pn=${partNumber}, op=${opNo}, wc=${wcInt}, run=${run}, setup=${setup}, basis="${basis}", "${desc}")`);
+
+    try {
+      const xml = await bpcsSoapCall(soapBody, 'InsertFRTline');
+      const result = soapExtractTag(xml, 'InsertFRTlineResult');
+      logDiag('BPCS', `UploadRouting op ${opNo} → "${result}"`);
+      results.push({ op: opNo, ok: true, result });
+    } catch (e) {
+      logDiag('BPCS', `UploadRouting op ${opNo} FAILED: ${e.message}`);
+      results.push({ op: opNo, ok: false, error: e.message });
+    }
+  }
+
+  const succeeded = results.filter(r => r.ok).length;
+  const failed = results.filter(r => !r.ok && !r.skipped).length;
+  const skipped = results.filter(r => r.skipped).length;
+  logDiag('BPCS', `UploadRouting complete: ${succeeded} ok, ${failed} failed, ${skipped} skipped`);
+  return { ok: failed === 0, results, summary: { succeeded, failed, skipped, total: ops.length } };
+});
+
+// ─── EOM ODBC Connection (direct AS/400 access) ─────────────────────────
+let _odbcConn = null;
+let _odbcAvailable = null; // null = untested, true/false = tested
+
+async function getOdbcConn() {
+  if (_odbcConn) return _odbcConn;
+  const odbc = require('odbc');
+  _odbcConn = await odbc.connect('Driver={iSeries Access ODBC Driver};System=10.63.26.203;UID=HTJAVA;PWD=PACEQ21P;NAM=1;');
+  logDiag('EOM', 'ODBC connection established');
+  return _odbcConn;
+}
+
+async function eomQuery(sql) {
+  const conn = await getOdbcConn();
+  return await conn.query(sql);
+}
+
+ipcMain.handle('eom-checkin', async (_, contract, status, pename) => {
+  logDiag('EOM', `Check-in: ${contract} ${status} → ${pename}`);
+  try {
+    const sql = `UPDATE standuspf/eom SET PENAME = '${pename}', PECKIN = 1, PECKIDTE = CURRENT_TIMESTAMP WHERE ECONTRACT = ${parseInt(contract, 10)} AND ESTATUS = '${status}'`;
+    await eomQuery(sql);
+    return { ok: true, affected: 1 };
+  } catch (e) {
+    logDiag('EOM', `Check-in failed: ${e.message}`);
+    _odbcConn = null; // reset connection on error
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('eom-set-dates', async (_, contract, status, pesidte, dfsidte, bmsidte, mesidte) => {
+  logDiag('EOM', `Set dates: ${contract} PE=${pesidte} DF=${dfsidte} BM=${bmsidte} ME=${mesidte}`);
+  try {
+    const sql = `UPDATE standuspf/eom SET PESIDTE = '${pesidte}', DFSIDTE = '${dfsidte}', BMSIDTE = '${bmsidte}', MESIDTE = '${mesidte}' WHERE ECONTRACT = ${parseInt(contract, 10)} AND ESTATUS = '${status}'`;
+    await eomQuery(sql);
+    return { ok: true, affected: 1 };
+  } catch (e) {
+    logDiag('EOM', `Set dates failed: ${e.message}`);
+    _odbcConn = null;
+    return { ok: false, error: e.message };
+  }
+});
+
+// ─── Saturn Backlog API Client ───────────────────────────────────────────
+const https = require('https');
+const SATURN_API_BASE = 'https://servicesa.world.fluidtechnology.net/SaturnServices';
+const SATURN_APP_BASE = `${SATURN_API_BASE}/htbuffalo/api/v1/apps/htbuffalo`;
+const SATURN_AUTH_BASE = `${SATURN_API_BASE}/users/api/v1/users`;
+const SATURN_APP_GROUP_KEY = 'EYJHBGCIOIJIUZI1';
+
+let _saturnToken = null;
+let _saturnRefreshToken = null;
+let _saturnTokenExp = 0;
+
+function saturnRequest(urlPath, method = 'GET', body = null, isAuth = false) {
+  return new Promise((resolve, reject) => {
+    const base = isAuth ? SATURN_AUTH_BASE : SATURN_APP_BASE;
+    const fullUrl = new URL(base + urlPath);
+    const postData = body ? JSON.stringify(body) : null;
+    const options = {
+      hostname: fullUrl.hostname,
+      port: 443,
+      path: fullUrl.pathname,
+      method,
+      headers: {
+        'Accept': '*/*',
+        'appgroupkey': SATURN_APP_GROUP_KEY,
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+      timeout: 15000,
+    };
+    if (_saturnToken) options.headers['authorization'] = `Bearer ${_saturnToken}`;
+    if (postData) options.headers['Content-Length'] = Buffer.byteLength(postData);
+
+    options.rejectUnauthorized = false; // Internal Xylem CA not in Node's trust store
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          try { resolve(JSON.parse(data)); } catch { resolve(data); }
+        } else {
+          reject(new Error(`Saturn ${method} ${urlPath}: HTTP ${res.statusCode}`));
+        }
+      });
+    });
+    req.on('error', e => reject(new Error(`Saturn ${method} ${urlPath}: ${e.message}`)));
+    req.on('timeout', () => { req.destroy(); reject(new Error(`Saturn ${method} ${urlPath}: timeout`)); });
+    if (postData) req.write(postData);
+    req.end();
+  });
+}
+
+async function saturnLogin(username, password) {
+  logDiag('SATURN', `Login attempt for ${username}`);
+  const result = await saturnRequest('/auth/login', 'POST', { username, password }, true);
+  logDiag('SATURN', `Login response: ${JSON.stringify(result).slice(0, 200)}`);
+  if (result.jwtToken) {
+    _saturnToken = result.jwtToken;
+    _saturnRefreshToken = result.refreshToken;
+    _saturnTokenExp = Date.now() + 10500000; // ~2h55m (token lasts 3h, refresh early)
+    // Persist refresh token
+    config.saturn_refresh_token = result.refreshToken;
+    saveConfig();
+    logDiag('SATURN', 'Login successful');
+    return { ok: true };
+  }
+  return { ok: false, error: 'No token received' };
+}
+
+async function saturnRefresh() {
+  if (!_saturnRefreshToken && config.saturn_refresh_token) {
+    _saturnRefreshToken = config.saturn_refresh_token;
+  }
+  logDiag('SATURN', `Refresh: has token in memory=${!!_saturnRefreshToken}, in config=${!!config.saturn_refresh_token}`);
+  if (!_saturnRefreshToken) return { ok: false, error: 'No refresh token' };
+  try {
+    logDiag('SATURN', 'Refreshing token');
+    const result = await saturnRequest('/auth/refresh', 'POST', { refreshToken: _saturnRefreshToken }, true);
+    if (result.jwtToken) {
+      _saturnToken = result.jwtToken;
+      _saturnRefreshToken = result.refreshToken;
+      _saturnTokenExp = Date.now() + 10500000;
+      config.saturn_refresh_token = result.refreshToken;
+      saveConfig();
+      logDiag('SATURN', 'Token refreshed');
+      return { ok: true };
+    }
+  } catch (e) {
+    logDiag('SATURN', `Refresh failed: ${e.message}`);
+    _saturnRefreshToken = null;
+  }
+  return { ok: false, error: 'Refresh failed' };
+}
+
+async function saturnEnsureAuth() {
+  if (_saturnToken && Date.now() < _saturnTokenExp) return true;
+  const r = await saturnRefresh();
+  return r.ok;
+}
+
+async function saturnCall(urlPath, method = 'GET', body = null) {
+  const authed = await saturnEnsureAuth();
+  if (!authed) throw new Error('Not authenticated — please log in to Saturn');
+  return saturnRequest(urlPath, method, body);
+}
+
+// ── Saturn IPC Handlers ─────────────────────────────────────────────────
+
+ipcMain.handle('saturn-login', async (_, username, password) => {
+  try {
+    return await saturnLogin(username, password);
+  } catch (e) {
+    logDiag('SATURN', `Login failed: ${e.message}`);
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('saturn-status', async () => {
+  // Check if we can auto-refresh without prompting for password
+  if (_saturnToken && Date.now() < _saturnTokenExp) return { ok: true, status: 'authenticated' };
+  const r = await saturnRefresh();
+  return r.ok ? { ok: true, status: 'refreshed' } : { ok: false, status: 'login_required' };
+});
+
+ipcMain.handle('saturn-backlog', async (_, filter, pageSize, pageNumber) => {
+  try {
+    const now = new Date();
+    const yearAgo = new Date(now);
+    yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+    return await saturnCall('/backlog/all', 'POST', {
+      pageSize: pageSize || 100,
+      pageNumber: pageNumber || 1,
+      fromDate: yearAgo.toISOString(),
+      toDate: now.toISOString(),
+      filter: filter || '',
+      contractNumber: '',
+    });
+  } catch (e) {
+    logDiag('SATURN', `Backlog fetch failed: ${e.message}`);
+    return { error: e.message };
+  }
+});
+
+ipcMain.handle('saturn-order', async (_, eid, contract) => {
+  try {
+    return await saturnCall(`/backlog/${eid}/${contract}`, 'GET');
+  } catch (e) {
+    logDiag('SATURN', `Order detail failed: ${e.message}`);
+    return { error: e.message };
+  }
+});
+
+ipcMain.handle('saturn-users', async () => {
+  try {
+    return await saturnCall('/users/rough', 'GET');
+  } catch (e) {
+    logDiag('SATURN', `Users fetch failed: ${e.message}`);
+    return { error: e.message };
+  }
+});
+
+ipcMain.handle('saturn-schedule', async (_, action, payload) => {
+  // action = 'pein', 'peout', 'peuser', 'peschdate', etc.
+  try {
+    return await saturnCall(`/schedule/${action}`, 'POST', payload);
+  } catch (e) {
+    logDiag('SATURN', `Schedule ${action} failed: ${e.message}`);
+    return { error: e.message };
+  }
+});
+
+// ─── Firebase Init ──────────────────────────────────────────────────────
+let _firebaseReady = false;
+function initFirebase() {
+  try {
+    fbApp = fbInit(FIREBASE_CONFIG);
+    fbDb = getFirestore(fbApp);
+    fbAuth = getAuth(fbApp);
+    signInAnonymously(fbAuth).then(() => {
+      _firebaseReady = true;
+      logDiag('FIREBASE', 'Authenticated anonymously');
+      startChatListener();
+      checkFirstTimeJoin();
+      startPresenceHeartbeat();
+    }).catch(e => logDiag('FIREBASE', `Auth failed: ${e.message}`));
+  } catch (e) {
+    logDiag('FIREBASE', `Init failed: ${e.message}`);
+  }
+}
+
+// ─── Presence Heartbeat ─────────────────────────────────────────────────
+let _presenceInterval = null;
+async function startPresenceHeartbeat() {
+  if (_presenceInterval) return;
+  const info = await getUserInfoCached();
+  const userRef = doc(fbDb, 'users', info.username.toLowerCase());
+  const beat = () => {
+    setDoc(userRef, { lastSeen: serverTimestamp() }, { merge: true })
+      .catch(e => logDiag('FIREBASE', `Heartbeat failed: ${e.message}`));
+  };
+  beat();
+  _presenceInterval = setInterval(beat, 60000);
+}
+
+// Real-time Firestore listener — pushes new messages to renderer
+let _chatUnsubscribe = null;
+function msgFromDoc(d) {
+  const data = d.data();
+  return { id: d.id, user: data.user, name: data.name, text: data.text,
+           ts: data.ts ? data.ts.toMillis() : Date.now(), source: data.source || 'xylemview',
+           reactions: data.reactions || {}, system: data.system || false,
+           edited: data.edited || false, unsent: data.unsent || false,
+           unsendBy: data.unsendBy || '', pfp: data.pfp || '' };
+}
+
+function startChatListener() {
+  if (!fbDb || _chatUnsubscribe) return;
+  const q = query(collection(fbDb, 'messages'), orderBy('ts', 'asc'), fbLimit(200));
+  _chatUnsubscribe = onSnapshot(q, snap => {
+    const msgs = snap.docs.map(msgFromDoc);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('chat-update', msgs);
+    }
+  }, err => {
+    logDiag('FIREBASE', `Listener error: ${err.message}`);
+  });
+}
+
+// ─── Chat Room (Firebase) ───────────────────────────────────────────────
+ipcMain.handle('chat-read', async () => {
+  if (!_firebaseReady || !fbDb) return [];
+  try {
+    const q = query(collection(fbDb, 'messages'), orderBy('ts', 'asc'), fbLimit(200));
+    const snap = await getDocs(q);
+    return snap.docs.map(msgFromDoc);
+  } catch (e) {
+    logDiag('FIREBASE', `chat-read failed: ${e.message}`);
+    return [];
+  }
+});
+
+ipcMain.handle('chat-send', async (_, text) => {
+  if (!_firebaseReady || !fbDb) return [];
+  const info = await getUserInfoCached();
+  try {
+    await addDoc(collection(fbDb, 'messages'), {
+      user: info.username.toLowerCase(),
+      name: info.fullName,
+      text,
+      ts: serverTimestamp(),
+      source: 'xylemview',
+    });
+  } catch (e) {
+    logDiag('FIREBASE', `chat-send failed: ${e.message}`);
+  }
+  return [];
+});
+
+ipcMain.handle('chat-react', async (_, msgId, emoji) => {
+  if (!_firebaseReady || !fbDb) return;
+  const info = await getUserInfoCached();
+  const ref = doc(fbDb, 'messages', msgId);
+  try {
+    const snap = await fbGetDoc(ref);
+    if (!snap.exists()) return;
+    const reactions = snap.data().reactions || {};
+    const users = reactions[emoji] || [];
+    const username = info.username.toLowerCase();
+    if (users.includes(username)) {
+      // Toggle off
+      await updateDoc(ref, { [`reactions.${emoji}`]: arrayRemove(username) });
+    } else {
+      // Remove from any other emoji first (one reaction per person)
+      const updates = {};
+      for (const [otherEmoji, otherUsers] of Object.entries(reactions)) {
+        if (otherEmoji !== emoji && otherUsers.includes(username)) {
+          updates[`reactions.${otherEmoji}`] = arrayRemove(username);
+        }
+      }
+      updates[`reactions.${emoji}`] = arrayUnion(username);
+      await updateDoc(ref, updates);
+    }
+  } catch (e) {
+    logDiag('FIREBASE', `chat-react failed: ${e.message}`);
+  }
+});
+
+// ─── Chat: Edit (within 15 min) ─────────────────────────────────────────
+ipcMain.handle('chat-edit', async (_, msgId, newText) => {
+  if (!_firebaseReady || !fbDb) return;
+  const info = await getUserInfoCached();
+  const ref = doc(fbDb, 'messages', msgId);
+  try {
+    const snap = await fbGetDoc(ref);
+    if (!snap.exists()) return;
+    const data = snap.data();
+    if ((data.user || '').toLowerCase() !== info.username.toLowerCase()) return;
+    const ageMs = Date.now() - (data.ts ? data.ts.toMillis() : 0);
+    if (ageMs > 15 * 60 * 1000) return;
+    await updateDoc(ref, { text: newText, edited: true });
+  } catch (e) {
+    logDiag('FIREBASE', `chat-edit failed: ${e.message}`);
+  }
+});
+
+// ─── Chat: Unsend (own within 2 min, admin can unsend anyone's) ─────────
+const CHAT_ADMINS = ['wboisso'];
+
+ipcMain.handle('chat-unsend', async (_, msgId) => {
+  if (!_firebaseReady || !fbDb) return;
+  const info = await getUserInfoCached();
+  const ref = doc(fbDb, 'messages', msgId);
+  try {
+    const snap = await fbGetDoc(ref);
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const isAdmin = CHAT_ADMINS.includes(info.username.toLowerCase());
+    const isOwner = (data.user || '').toLowerCase() === info.username.toLowerCase();
+    const ageMs = Date.now() - (data.ts ? data.ts.toMillis() : 0);
+    if (!isAdmin && (!isOwner || ageMs > 2 * 60 * 1000)) return;
+    await updateDoc(ref, { text: '', unsent: true, unsendBy: info.username });
+  } catch (e) {
+    logDiag('FIREBASE', `chat-unsend failed: ${e.message}`);
+  }
+});
+
+// ─── Chat: First-time join message ──────────────────────────────────────
+async function checkFirstTimeJoin() {
+  if (!_firebaseReady || !fbDb) return;
+  const info = await getUserInfoCached();
+  const userRef = doc(fbDb, 'users', info.username.toLowerCase());
+  try {
+    const snap = await fbGetDoc(userRef);
+    if (!snap.exists()) {
+      await setDoc(userRef, { name: info.fullName, joinedAt: serverTimestamp() });
+      await addDoc(collection(fbDb, 'messages'), {
+        user: info.username, name: info.fullName, text: 'joined the chat',
+        ts: serverTimestamp(), source: 'xylemview', system: true,
+      });
+      logDiag('FIREBASE', `First-time join: ${info.username}`);
+    }
+  } catch (e) {
+    logDiag('FIREBASE', `First-time join check failed: ${e.message}`);
+  }
+}
+
+// ─── Chat: Profile picture ──────────────────────────────────────────────
+ipcMain.handle('chat-set-pfp', async (_, dataUrl) => {
+  if (!_firebaseReady || !fbDb) return;
+  const info = await getUserInfoCached();
+  const userRef = doc(fbDb, 'users', info.username.toLowerCase());
+  try {
+    await setDoc(userRef, { pfp: dataUrl }, { merge: true });
+  } catch (e) {
+    logDiag('FIREBASE', `set-pfp failed: ${e.message}`);
+  }
+});
+
+ipcMain.handle('chat-get-pfps', async () => {
+  if (!_firebaseReady || !fbDb) return {};
+  try {
+    const snap = await getDocs(collection(fbDb, 'users'));
+    const result = {};
+    snap.forEach(d => {
+      const data = d.data();
+      result[d.id] = { pfp: data.pfp || '', lastSeen: data.lastSeen ? data.lastSeen.toMillis() : 0 };
+    });
+    return result;
+  } catch (e) { return {}; }
+});
+
+// ─── Order Comments (still file-based) ──────────────────────────────────
 const CHAT_DIR_FALLBACK = path.join(os.homedir(), 'XylemTest');
 function getChatDir() { return IS_WIN ? SHARED_DATA_DIR : CHAT_DIR_FALLBACK; }
-function getChatFile() { return path.join(getChatDir(), 'chat.json'); }
 function getCommentsDir() { return path.join(getChatDir(), 'comments'); }
 
 async function readJsonSafe(fp) {
   try {
     await fsp.access(fp);
-    return JSON.parse(await fsp.readFile(fp, 'utf-8'));
+    const raw = await fsp.readFile(fp, 'utf-8');
+    return JSON.parse(raw.replace(/^\uFEFF/, ''));
   } catch (e) {}
   return [];
 }
 
 async function appendJsonMsg(fp, msg) {
-  // Read with retry — network files can fail transiently
   let msgs = await readJsonSafe(fp);
   if (msgs.length === 0) {
-    // Retry once after a short delay
     await new Promise(r => setTimeout(r, 500));
     msgs = await readJsonSafe(fp);
   }
-  // Safety: if file exists but still empty after retry, read the file size to decide
   if (msgs.length === 0) {
     try {
       const stat = await fsp.stat(fp);
@@ -3902,16 +4676,6 @@ async function appendJsonMsg(fp, msg) {
   await fsp.writeFile(fp, JSON.stringify(trimmed, null, 1));
   return trimmed;
 }
-
-ipcMain.handle('chat-read', async () => {
-  return await readJsonSafe(getChatFile());
-});
-
-ipcMain.handle('chat-send', async (_, text) => {
-  const info = await getUserInfoCached();
-  const msg = { user: info.username, name: info.fullName, text, ts: Date.now() };
-  return appendJsonMsg(getChatFile(), msg);
-});
 
 ipcMain.handle('comments-read', async (_, orderLine) => {
   return await readJsonSafe(path.join(getCommentsDir(), orderLine + '.json'));
@@ -3962,7 +4726,17 @@ async function getUserInfoCached() {
       if (m && m[1].trim() && m[1].trim() !== username) fullName = m[1].trim();
     } catch {}
   }
-  _userInfoCache = { username, fullName };
+  // Try to get email from Active Directory
+  let email = '';
+  if (IS_WIN) {
+    try {
+      email = execSync(
+        `powershell.exe -NoProfile -Command "$u = $env:USERNAME; ([adsisearcher]\\"samaccountname=$u\\").FindOne().Properties[\\"mail\\"]"`,
+        { encoding: 'utf-8', timeout: 5000 }
+      ).trim();
+    } catch {}
+  }
+  _userInfoCache = { username, fullName, email };
   return _userInfoCache;
 }
 
@@ -4386,7 +5160,7 @@ ipcMain.handle('convert-dwg-pdf', async (_, dwgPath, outDir, opts) => {
 });
 
 // ─── Auto-update check ─────────────────────────────────────────────────
-const CURRENT_VERSION = '1.1.2';
+const CURRENT_VERSION = '1.1.4';
 
 async function findInstallerExe() {
   if (!IS_WIN) return null;

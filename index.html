@@ -172,7 +172,7 @@ input,button,.no-drag{-webkit-app-region:no-drag}
 body.maximized .glass,body.maximized .glass-strong{border-radius:0}
 body.maximized .glass::before,body.maximized .glass-strong::before{border-radius:0}
 body.maximized .glass::after,body.maximized .glass-strong::after{border-radius:0}
-body.unfocused .otp-box.focused{border-color:var(--glass-border);box-shadow:none}
+body.unfocused .otp-box.focused,body.unfocused .otp-box.active{border-color:var(--glass-border);box-shadow:none}
 body.unfocused .field-input:focus{border-color:var(--input-border);box-shadow:none}
 body.unfocused .card-glow{box-shadow:none}
 body.maximized .app{padding:0 12px 8px}
@@ -206,10 +206,8 @@ body.win10[data-theme="disco"] .glass-strong{background:rgba(40,0,50,0.82)}
 
 /* Title bar */
 .titlebar{display:flex;align-items:center;height:38px;padding:0;flex-shrink:0}
-.titlebar .logo-img{display:none}
-.titlebar .logo-color{display:inline}
-[data-theme="dark"] .titlebar .logo-color,[data-theme="tron"] .titlebar .logo-color{display:none}
-[data-theme="dark"] .titlebar .logo-white,[data-theme="tron"] .titlebar .logo-white{display:inline}
+.titlebar .logo-svg{color:#007fa8}
+[data-theme="dark"] .titlebar .logo-svg,[data-theme="tron"] .titlebar .logo-svg{color:#fff}
 .titlebar .sep{width:1px;height:22px;margin:0 12px;background:linear-gradient(transparent,var(--glass-border),transparent)}
 .titlebar .app-name{font-size:18px;font-weight:700;letter-spacing:-0.4px;white-space:nowrap}
 [data-theme="tron"] .titlebar .app-name{text-shadow:0 0 12px color-mix(in srgb,var(--accent) 30%,transparent)}
@@ -277,16 +275,66 @@ body.win10[data-theme="disco"] .glass-strong{background:rgba(40,0,50,0.82)}
 .win-btn svg{width:10px;height:10px;stroke:currentColor;stroke-width:1.2;fill:none}
 
 /* Segmented control */
-.seg{display:inline-flex;gap:2px;padding:3px;border-radius:11px;border:1px solid var(--glass-border);background:var(--seg);position:relative}
-.seg .pill{position:absolute;top:3px;height:calc(100% - 6px);border-radius:9px;background:var(--seg-active);transition:left .3s cubic-bezier(.4,.2,.2,1),width .3s cubic-bezier(.4,.2,.2,1);z-index:0}
+.seg{display:inline-flex;align-items:center;gap:4px;padding:2px;border-radius:11px;border:1px solid var(--glass-border);background:var(--seg);position:relative;height:32px;box-sizing:border-box}
+.seg .pill{position:absolute;top:2px;bottom:2px;border-radius:9px;background:var(--seg-active);transition:left .3s cubic-bezier(.4,.2,.2,1),width .3s cubic-bezier(.4,.2,.2,1);z-index:0}
 [data-theme="tron"] .seg .pill{box-shadow:0 0 14px color-mix(in srgb,var(--accent) 40%,transparent)}
-.seg button{position:relative;z-index:1;padding:6px 18px;border-radius:9px;border:none;cursor:pointer;font:700 13px/1 'DM Sans',sans-serif;background:transparent;color:var(--seg-tx2);transition:color .25s;letter-spacing:.2px}
+.seg button{position:relative;z-index:1;padding:0 10px;border-radius:9px;border:none;cursor:pointer;background:transparent;color:var(--seg-tx2);transition:color .25s;display:flex;align-items:center;gap:0;height:28px;font:700 13px/1 'DM Sans',sans-serif;letter-spacing:.2px}
+.seg button svg{flex-shrink:0}
+.seg button .tab-label{font:700 12px/1 'DM Sans',sans-serif;letter-spacing:.2px;white-space:nowrap;overflow:visible;max-width:0;opacity:0;clip-path:inset(0 100% 0 0);transition:max-width .3s cubic-bezier(.4,.2,.2,1),opacity .2s .05s,margin .3s cubic-bezier(.4,.2,.2,1),clip-path .3s cubic-bezier(.4,.2,.2,1);margin-left:0}
+.seg button.active .tab-label{clip-path:inset(-4px 0 -4px 0)}
 .seg button.active{color:var(--seg-tx)}
+.seg button.active .tab-label{max-width:90px;opacity:1;margin-left:5px}
 .seg.sm button{padding:5px 12px;font-size:11.5px}
 /* Custom keyboard shortcut hints on mode buttons */
 #mode-seg button{position:relative}
-#mode-seg button::after{content:attr(data-hint);position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);font:500 9px/1 'DM Sans',sans-serif;color:var(--text3);white-space:nowrap;opacity:0;transition:opacity .15s;pointer-events:none;padding:2px 6px;border-radius:4px;background:var(--glass-strong);border:1px solid var(--glass-border)}
+#mode-seg button::after{content:attr(data-label) " (" attr(data-hint) ")";position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);font:500 9px/1 'DM Sans',sans-serif;color:var(--text3);white-space:nowrap;opacity:0;transition:opacity .15s;pointer-events:none;padding:2px 6px;border-radius:4px;background:var(--glass-strong);border:1px solid var(--glass-border);z-index:10}
 #mode-seg button:hover::after{opacity:1}
+#mode-seg button.active::after{display:none}
+/* Dashboard circular button */
+/* dash-btn class removed — all tabs are now icon-based */
+/* Dashboard container */
+.dashboard-container{display:none;flex:1;min-height:0;flex-direction:column;align-items:center;justify-content:center;padding:32px 18px;border-radius:18px;gap:8px}
+.dashboard-container.active{display:flex}
+.dash-label{font:600 12px/1 'DM Sans',sans-serif;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase}
+.dash-number{font:800 80px/1 'DM Sans',sans-serif;color:var(--text);letter-spacing:3px;font-variant-numeric:tabular-nums;margin:8px 0 4px}
+.dash-remaining{font:600 17px/1.4 'DM Sans',sans-serif;color:var(--text2)}
+.dash-bar-wrap{width:340px;max-width:80%;margin:12px 0 6px}
+.dash-bar-label{display:flex;justify-content:space-between;font:600 10px/1 'DM Sans',sans-serif;color:var(--text3);margin-bottom:4px}
+.dash-bar{height:18px;border-radius:9px;background:rgba(0,0,0,0.4);overflow:visible;box-shadow:inset 0 2px 4px rgba(0,0,0,0.5),0 0 12px color-mix(in srgb,var(--accent) 25%,transparent);position:relative}
+.dash-bar-fill{height:100%;border-radius:9px;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 55%,#001),var(--accent),color-mix(in srgb,var(--accent) 75%,#fff));transition:width 1.2s cubic-bezier(.4,.2,.2,1);position:relative;overflow:hidden;box-shadow:0 0 10px var(--accent),0 0 25px color-mix(in srgb,var(--accent) 60%,transparent),0 0 50px color-mix(in srgb,var(--accent) 25%,transparent),inset 0 1px 0 rgba(255,255,255,0.3),inset 0 -1px 2px rgba(0,0,0,0.3)}
+.dash-bar-fill::before{content:'';position:absolute;top:0;left:0;right:0;height:45%;border-radius:9px 9px 50% 50%;background:linear-gradient(180deg,rgba(255,255,255,0.45) 0%,rgba(255,255,255,0.10) 100%);pointer-events:none}
+.dash-bar-fill::after{content:'';position:absolute;top:0;left:0;height:100%;width:70%;background:radial-gradient(ellipse at center,rgba(255,255,255,0.55) 0%,rgba(255,255,255,0.20) 40%,transparent 70%);animation:dashBarFlow 2.8s linear infinite;pointer-events:none;filter:blur(3px)}
+@keyframes dashBarFlow{0%{transform:translateX(-80%)}100%{transform:translateX(180%)}}
+[data-theme="light"] .dash-bar{background:rgba(0,0,0,0.08);box-shadow:inset 0 1px 2px rgba(0,0,0,0.12),0 0 6px color-mix(in srgb,var(--accent) 10%,transparent)}
+[data-theme="light"] .dash-bar-fill{box-shadow:0 0 4px color-mix(in srgb,var(--accent) 30%,transparent),0 0 10px color-mix(in srgb,var(--accent) 15%,transparent),inset 0 1px 0 rgba(255,255,255,0.4)}
+.dash-updated{font:500 10px/1 'DM Sans',sans-serif;color:var(--text3);margin-top:4px;position:relative}
+.dash-spinner{position:absolute;right:calc(100% + 5px);top:50%;margin-top:-4px;width:8px;height:8px;border:1.5px solid var(--text3);border-top-color:transparent;border-radius:50%;animation:dashSpin .8s linear infinite}
+@keyframes dashSpin{to{transform:rotate(360deg)}}
+.dash-error{font:500 13px/1.4 'DM Sans',sans-serif;color:var(--danger);margin-top:8px}
+.dash-retry{margin-top:8px;padding:6px 16px;border-radius:8px;border:1px solid var(--glass-border);background:var(--seg);color:var(--text2);font:600 12px/1 'DM Sans',sans-serif;cursor:pointer;transition:all .15s}
+.dash-retry:hover{background:var(--seg-active);color:var(--text)}
+@keyframes dash-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.dash-loading{animation:dash-pulse 1.5s ease-in-out infinite}
+/* ── Final-10 excitement ── */
+.dash-final10 .dash-number{text-shadow:0 0 30px var(--accent),0 0 60px color-mix(in srgb,var(--accent) 40%,transparent);transition:text-shadow .5s}
+.dash-final10 .dash-bar{box-shadow:inset 0 2px 4px rgba(0,0,0,0.5),0 0 18px rgba(255,215,0,0.4),0 0 40px rgba(255,165,0,0.15)}
+.dash-final10 .dash-bar-fill{background:linear-gradient(90deg,#cc6600,#ff8c00,#ffd700,#fff68f,#ffd700,#ff8c00,#cc6600);background-size:350% 100%;animation:dashBarShimmer 2.5s linear infinite;box-shadow:0 0 12px #ffd700,0 0 30px rgba(255,215,0,0.6),0 0 60px rgba(255,165,0,0.25),inset 0 1px 0 rgba(255,255,255,0.4),inset 0 -1px 2px rgba(0,0,0,0.3)}
+.dash-final10 .dash-bar-fill::after{background:radial-gradient(ellipse at center,rgba(255,255,255,0.7) 0%,rgba(255,255,200,0.3) 35%,transparent 65%);animation:dashBarFlow 1.8s ease-in-out infinite;filter:blur(3px)}
+@keyframes dashBarShimmer{0%{background-position:0% 0}100%{background-position:350% 0}}
+/* ── 500K Celebration ── */
+@keyframes confettiFall{0%{transform:translateY(-20px) rotateZ(0deg) rotateY(0deg);opacity:1}100%{transform:translateY(100vh) rotateZ(var(--cf-spin,720deg)) rotateY(360deg);opacity:0.6}}
+@keyframes celebratePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes celebrateRainbow{0%{color:#ffd700}14%{color:#ff6347}28%{color:#ff1493}42%{color:#00ff00}57%{color:#00bfff}71%{color:#8a2be2}85%{color:#ff4500}100%{color:#ffd700}}
+@keyframes celebrateGlow{0%,100%{text-shadow:0 0 40px rgba(255,215,0,0.8),0 0 80px rgba(255,215,0,0.4)}50%{text-shadow:0 0 80px rgba(255,215,0,1),0 0 140px rgba(255,165,0,0.6),0 0 200px rgba(255,100,0,0.3)}}
+@keyframes celebrateBgPulse{0%,100%{box-shadow:inset 0 0 80px rgba(255,215,0,0.05),inset 0 0 160px rgba(255,100,0,0.03)}50%{box-shadow:inset 0 0 120px rgba(255,215,0,0.12),inset 0 0 200px rgba(255,100,0,0.08)}}
+@keyframes fireworkParticle{0%{transform:translate(0,0) scale(1);opacity:1}70%{opacity:.8}100%{transform:translate(var(--fw-x),var(--fw-y)) scale(0);opacity:0}}
+.dash-celebrate{overflow:hidden !important;animation:celebrateBgPulse 3s ease-in-out infinite}
+.dash-celebrate .dash-number{font-size:min(96px,14vw) !important;animation:celebratePulse 1.5s ease-in-out infinite,celebrateRainbow 3s linear infinite,celebrateGlow 2s ease-in-out infinite !important;letter-spacing:5px !important}
+.dash-celebrate .dash-label{animation:celebrateRainbow 2.5s linear infinite;font-size:14px !important;letter-spacing:3px !important}
+.dash-celebrate .dash-remaining{font-size:24px !important;font-weight:800 !important;animation:celebrateRainbow 2s linear infinite;text-shadow:0 0 20px currentColor}
+.confetti-piece{position:absolute;top:-20px;opacity:0.85;animation:confettiFall linear forwards;pointer-events:none;z-index:10}
+.firework-particle{position:absolute;border-radius:50%;animation:fireworkParticle ease-out forwards;pointer-events:none;z-index:10}
+.celebrate-sparkle{position:absolute;width:3px;height:3px;border-radius:50%;animation:strobe 0.4s infinite;pointer-events:none;z-index:10}
 
 /* Glass cards */
 .glass{background:var(--glass);backdrop-filter:blur(24px) saturate(1.5);-webkit-backdrop-filter:blur(24px) saturate(1.5);border:1px solid var(--glass-border);border-radius:18px;box-shadow:var(--shadow),var(--top-hl);position:relative;overflow:visible}
@@ -340,19 +388,20 @@ body.win10[data-theme="disco"] .glass-strong{background:rgba(40,0,50,0.82)}
 
 /* Custom tooltips */
 [data-tip]{position:relative}
-[data-tip]::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);font:600 9px/1 'DM Sans',sans-serif;color:var(--text);white-space:nowrap;opacity:0;transition:opacity .15s;pointer-events:none;padding:4px 8px;border-radius:6px;background:rgba(10,10,20,0.85);border:1px solid rgba(255,255,255,0.12);z-index:100;backdrop-filter:blur(16px);box-shadow:0 4px 12px rgba(0,0,0,0.3)}
+[data-tip]::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);font:600 9px/1 'DM Sans',sans-serif;color:var(--text);white-space:nowrap;opacity:0;transition:opacity .15s;pointer-events:none;padding:4px 8px;border-radius:6px;background:rgba(10,10,20,0.95);border:1px solid rgba(255,255,255,0.12);z-index:100;backdrop-filter:blur(16px);box-shadow:0 4px 12px rgba(0,0,0,0.3)}
 [data-theme="light"] [data-tip]::after{background:rgba(255,255,255,0.92);color:#1a1a2e;border-color:rgba(0,0,0,0.1);box-shadow:0 4px 12px rgba(0,0,0,0.12)}
 [data-tip]:hover::after{opacity:1}
 #weather[data-tip]::after{bottom:auto;top:calc(100% + 6px)}
+#cnt-load-indicator[data-tip]::after{bottom:auto;top:calc(100% + 6px)}
 #btn-whats-new[data-tip]::after{bottom:auto;top:calc(100% + 6px)}
-#user-badge[data-tip]::after{bottom:auto;top:calc(100% + 6px);text-transform:none}
+#user-badge[data-tip]::after{bottom:auto;top:calc(100% + 6px);text-transform:none;left:auto;right:0;transform:none}
 .sidebar [data-tip]{overflow:visible}
 .sidebar [data-tip]::after{bottom:auto;top:50%;left:auto;right:calc(100% + 8px);transform:translateY(-50%)}
 #btn-install-oda[data-tip]::after{top:auto;bottom:calc(100% + 6px);left:50%;right:auto;transform:translateX(-50%)}
 .sidebar div[style*="flex"] [data-tip]:last-child::after{right:auto;left:50%;top:auto;bottom:calc(100% + 6px);transform:translateX(-50%)}
 
 /* Toolbar */
-.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-shrink:0;z-index:5}
+.toolbar{display:flex;align-items:center;gap:10px;margin-top:-4px;margin-bottom:6px;flex-shrink:0;z-index:5}
 .toolbar-utils{display:inline-flex;gap:1px;padding:3px;border-radius:11px;border:1px solid var(--glass-border);background:var(--seg);position:absolute;right:0;top:50%;transform:translateY(-50%)}
 .toolbar-utils button{width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;position:relative}
 .toolbar-utils button:hover{background:var(--accent-soft);color:var(--accent)}
@@ -377,8 +426,7 @@ body.win10[data-theme="disco"] .glass-strong{background:rgba(40,0,50,0.82)}
 .cnt-btn.active{background:var(--accent);color:var(--seg-tx);border-color:var(--accent);box-shadow:0 0 12px color-mix(in srgb,var(--accent) 25%,transparent)}
 .cnt-btn.inactive{background:var(--cnt-dim);color:var(--cnt-dim-tx)}
 .cnt-btn.active{position:relative}
-.cnt-btn.active::before{content:none}
-.cnt-btn.active::after{content:'';position:absolute;top:-4px;right:-4px;width:9px;height:9px;border-radius:50%;background:#f5a623;box-shadow:0 0 6px rgba(245,166,35,0.5);z-index:10}
+.cnt-btn.active::before{content:'';position:absolute;top:-4px;right:-4px;width:9px;height:9px;border-radius:50%;background:#f5a623;box-shadow:0 0 6px rgba(245,166,35,0.5);z-index:10}
 [data-theme="tron"] .cnt-btn.active{box-shadow:0 0 16px color-mix(in srgb,var(--accent) 30%,transparent)}
 
 /* Rev-check warning */
@@ -404,6 +452,7 @@ body.win10[data-theme="disco"] .glass-strong{background:rgba(40,0,50,0.82)}
 /* File list */
 .file-list{flex:1;overflow-y:auto;overflow-x:hidden;padding:4px 0;min-height:0}
 .file-row{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;transition:background .12s;border-left:3px solid transparent}
+.file-row:has(.dwg-copy-btn){padding-left:6px}
 .file-row:hover{background:var(--row-hover)}
 .file-row.selected{background:var(--sel-bg);border-left-color:var(--sel-border)}
 .file-row.selected .enter-hint{display:block}
@@ -421,6 +470,10 @@ body.win10[data-theme="disco"] .glass-strong{background:rgba(40,0,50,0.82)}
 .section-header.empty{opacity:.4}
 .section-header .chevron{font-size:9px;transition:transform .15s;width:12px;text-align:center;flex-shrink:0}
 .section-header .chevron.collapsed{transform:rotate(-90deg)}
+.wc-expand .chevron{transition:transform .15s;display:inline-block;font-size:7px;vertical-align:middle}
+.wc-expand .chevron.collapsed{transform:rotate(-90deg)}
+.wc-expand{cursor:pointer;padding:4px 8px;border-radius:6px;margin-left:4px;display:inline-flex;align-items:center;justify-content:center}
+.wc-expand:hover{background:var(--accent-soft);color:var(--accent)}
 .section-header .section-count{font-weight:400;color:var(--text3);font-size:9px;margin-left:auto}
 .file-row.subfolder-file{padding-left:36px}
 .file-name{font-size:13.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -429,6 +482,7 @@ body.win10[data-theme="disco"] .glass-strong{background:rgba(40,0,50,0.82)}
 .dwg-copy-btn{background:none;border:none;cursor:pointer;color:var(--text3);padding:3px 5px;margin-left:3px;border-radius:5px;opacity:0;transition:opacity .15s,color .15s,background .15s;vertical-align:middle}
 .file-row:hover .dwg-copy-btn,.dwg-result:hover .dwg-copy-btn{opacity:.6}
 .dwg-copy-btn:hover{opacity:1!important;color:var(--accent);background:var(--accent-soft)}
+.dwg-copy-btn[data-tip]::after{bottom:auto;top:calc(100% + 4px);left:0;right:auto;transform:none}
 [data-theme="tron"] .file-num{text-shadow:0 0 10px color-mix(in srgb,var(--file-color,var(--text)) 35%,transparent)}
 .file-badge{font:600 10px/1 'IBM Plex Mono',monospace;padding:2px 7px;border-radius:5px;text-transform:uppercase;flex-shrink:0;opacity:.6}
 
@@ -453,7 +507,10 @@ body.win10[data-theme="disco"] .glass-strong{background:rgba(40,0,50,0.82)}
 .dwg-alert{margin-top:8px;padding:8px 12px;border-radius:8px;background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.2);color:var(--amber);font:600 11px/1.3 'DM Sans',sans-serif}
 .dwg-tabular-notice{margin-top:8px;padding:8px 12px;border-radius:8px;background:var(--accent-soft);border:1px solid var(--accent);color:var(--accent);font:600 11px/1.3 'DM Sans',sans-serif}
 .dwg-hint{margin-top:10px;font:500 10px/1 'DM Sans',sans-serif;color:var(--text3);opacity:.6}
+.ts-tl-pill:hover{background:color-mix(in srgb,var(--accent) 18%,transparent) !important;border-color:color-mix(in srgb,var(--accent) 50%,transparent) !important}
+.ts-tl-pill:active{background:color-mix(in srgb,var(--accent) 25%,transparent) !important}
 .file-list-card.card-glow{border-color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent),inset 0 0 12px var(--input-focus);transition:border-color .3s,box-shadow .3s}
+.file-list-card.card-glow-pdf{border-color:var(--pdf);box-shadow:inset 0 0 0 1.5px var(--pdf),inset 0 0 12px color-mix(in srgb,var(--pdf) 15%,transparent);transition:border-color .3s,box-shadow .3s}
 .field-input.dimmed{border-color:var(--input-border) !important;box-shadow:none !important}
 
 /* Context menu */
@@ -524,25 +581,63 @@ body.win10[data-theme="disco"] .glass-strong{background:rgba(40,0,50,0.82)}
 .line-pill.current{background:var(--accent);color:var(--seg-tx);border-color:var(--accent)}
 
 /* Chat room */
-.chat-container{display:none;flex:1;min-height:0;flex-direction:column;padding:14px 18px;border-radius:18px}
+.chat-container{display:none;flex:1;min-height:0;flex-direction:column;padding:0 18px;border-radius:18px;position:relative}
 .chat-container.active{display:flex}
+#chat-toolbar{position:relative;z-index:3}
+#chat-mobile-link:hover{background:var(--accent-soft) !important;color:var(--accent) !important}
+#chat-mute-btn:hover{background:var(--accent-soft) !important}
+#chat-mute-btn[data-tip]::after{bottom:auto;top:calc(100% + 6px);white-space:nowrap}
 .marketing-container{display:none;flex:1;min-height:0;flex-direction:column;padding:14px 18px;border-radius:18px}
 .marketing-container.active{display:flex}
-.mkt-results{flex:1;overflow-y:auto;padding:8px 0;min-height:0;min-width:0;scrollbar-gutter:stable}
+.mkt-results{flex:1;overflow-y:auto;padding:8px 6px 8px 0;min-height:0;min-width:0;scrollbar-gutter:stable}
 .mkt-line-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;background:var(--glass);border:1px solid var(--glass-border);margin-bottom:4px;cursor:pointer;transition:background .15s}
 .mkt-line-item:hover{background:var(--accent-soft)}
+.mkt-split{display:inline-flex;position:relative}
+.mkt-split-main{border-radius:10px 0 0 10px !important;border-right:none !important;padding-right:12px !important}
+.mkt-split-arrow{border-radius:0 10px 10px 0 !important;padding:0 8px !important;min-width:0 !important;border-left:1px solid rgba(255,255,255,0.15) !important}
+.mkt-split-menu{position:absolute;top:calc(100% + 4px);left:0;min-width:140px;background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(28px) saturate(1.8);-webkit-backdrop-filter:blur(28px) saturate(1.8);border:1px solid var(--glass-border);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.25);padding:4px;z-index:100;opacity:0;visibility:hidden;transform:translateY(-4px);transition:opacity .12s,transform .12s,visibility 0s .12s}
+.mkt-split-menu.show{opacity:1;visibility:visible;transform:translateY(0);transition:opacity .12s,transform .12s,visibility 0s}
+.mkt-split-menu div{padding:6px 12px;border-radius:7px;font:500 11px/1.3 'DM Sans',sans-serif;color:var(--text);cursor:pointer;white-space:nowrap}
+.mkt-split-menu div:hover{background:var(--accent-soft);color:var(--accent)}
 .chat-messages{flex:1;overflow-y:auto;padding:8px 0;min-height:0;margin:0 -8px;padding-left:8px;padding-right:8px}
-.chat-msg{display:flex;gap:10px;padding:8px 8px;animation:fadeIn .2s ease}
-.chat-avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font:700 11px/28px 'DM Sans',sans-serif;text-align:center;flex-shrink:0;text-transform:uppercase}
-.chat-bubble{flex:1;min-width:0}
+.chat-msg{display:flex;gap:8px;padding:4px 8px;max-width:100%}
+.chat-avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font:700 11px/28px 'DM Sans',sans-serif;text-align:center;flex-shrink:0;text-transform:uppercase;margin-top:2px;background-size:cover;background-position:center;position:relative}
+.chat-avatar.active::after{content:'';position:absolute;bottom:-1px;right:-1px;width:8px;height:8px;border-radius:50%;background:#00b894;border:2px solid var(--bg)}
+.chat-bubble{max-width:75%;position:relative;background:var(--glass);border:1px solid var(--glass-border);border-radius:4px 16px 16px 16px;padding:8px 12px;display:table}
 .chat-name{font:700 11px/1 'DM Sans',sans-serif;color:var(--accent);margin-bottom:3px}
 .chat-text{font:400 13px/1.4 'DM Sans',sans-serif;color:var(--text);word-break:break-word}
-.chat-time{font:400 9px/1 'DM Sans',sans-serif;color:var(--text3);margin-top:2px}
+.chat-time{font:400 9px/1 'DM Sans',sans-serif;color:var(--text3);margin-top:3px}
 .chat-msg.mine{flex-direction:row-reverse}
-.chat-msg.mine .chat-bubble{text-align:right}
+.chat-msg.mine .chat-bubble{background:var(--accent);border-color:transparent;border-radius:16px 4px 16px 16px;text-align:right}
+.chat-msg.mine .chat-text{color:#fff}
+.chat-msg.mine .chat-text a{color:#fff !important;text-decoration:underline}
+.chat-msg.mine .chat-time{color:rgba(255,255,255,.55)}
 .chat-msg.mine .chat-name{display:none}
-.chat-msg.system{justify-content:center;padding:4px 8px}
-.chat-msg.system .chat-text{font:500 11px/1.4 'DM Sans',sans-serif;color:var(--text3);text-align:center}
+.chat-edited{font:400 9px/1 'DM Sans',sans-serif;color:var(--text3);margin-top:1px;font-style:italic}
+.chat-msg.mine .chat-edited{color:rgba(255,255,255,.45)}
+.chat-msg.system{justify-content:center;padding:4px 8px;max-width:100%}
+.chat-msg.system .chat-text{font:500 11px/1.4 'DM Sans',sans-serif;color:var(--text3);text-align:center;background:none;border:none;padding:0}
+.chat-new-divider{display:flex;align-items:center;gap:10px;padding:6px 8px}
+.chat-new-divider::before,.chat-new-divider::after{content:'';flex:1;height:1px;background:#ff3b30;opacity:.4}
+.chat-new-divider span{font:600 9px/1 'DM Sans',sans-serif;color:#ff3b30;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.chat-reactions{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.chat-reaction{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:10px;border:1px solid var(--glass-border);background:var(--glass);font-size:12px;cursor:pointer;transition:background .12s,border-color .12s;user-select:none;position:relative;overflow:visible}
+.chat-reaction:hover{background:var(--accent-soft);border-color:var(--accent)}
+.chat-reaction.mine{border-color:var(--accent);background:var(--accent-soft)}
+.chat-reaction .r-count{font:600 10px/1 'DM Sans',sans-serif;color:var(--text2)}
+.chat-react-btn{opacity:0;position:absolute;bottom:-4px;right:-4px;width:22px;height:22px;border-radius:50%;background:var(--glass-strong);border:1px solid var(--glass-border);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .12s;z-index:5}
+.chat-msg:hover .chat-react-btn{opacity:1}
+.chat-msg.mine .chat-react-btn{right:auto;left:-4px}
+.chat-react-picker{display:none;position:absolute;bottom:calc(100% + 4px);left:0;background:var(--glass-strong);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--glass-border);border-radius:12px;padding:4px 6px;gap:2px;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.chat-react-picker.show{display:flex}
+.chat-msg.mine .chat-react-picker{left:auto;right:0}
+.chat-react-picker span{cursor:pointer;padding:2px 4px;border-radius:6px;font-size:16px;transition:background .1s}
+.chat-react-picker span:hover{background:var(--accent-soft)}
+.chat-msg-actions{display:none;position:absolute;bottom:4px;right:36px;gap:2px;z-index:5}
+.chat-msg:hover .chat-msg-actions{display:flex}
+.chat-msg.mine .chat-msg-actions{right:auto;left:36px}
+.chat-action-btn{width:20px;height:20px;border-radius:50%;background:var(--glass-strong);border:1px solid var(--glass-border);font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:.7;transition:opacity .12s}
+.chat-action-btn:hover{opacity:1}
 .chat-input-row{display:flex;gap:8px;padding:8px 0;flex-shrink:0}
 .chat-input{flex:1;height:36px;border-radius:10px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font:400 13px/1 'DM Sans',sans-serif;padding:0 12px;outline:none}
 .chat-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--input-focus)}
@@ -676,8 +771,7 @@ body.win10[data-theme="disco"] .glass-strong{background:rgba(40,0,50,0.82)}
 [data-theme="disco"] .file-num{animation:discoText 1.5s linear infinite}
 /* disco beta handled above */
 [data-theme="disco"] .field-label{color:#e0a0d0 !important}
-[data-theme="disco"] .titlebar .logo-color{display:none !important}
-[data-theme="disco"] .titlebar .logo-white{display:inline !important}
+[data-theme="disco"] .titlebar .logo-svg{color:#fff !important}
 [data-theme="disco"] .orb-1{background:radial-gradient(circle,rgba(255,20,147,0.12),transparent 65%) !important;animation:orbFloat1 8s ease-in-out infinite !important}
 [data-theme="disco"] .orb-2{background:radial-gradient(circle,rgba(255,215,0,0.10),transparent 65%) !important;animation:orbFloat2 10s ease-in-out infinite !important}
 [data-theme="disco"] .cnt-btn.active{animation:discoHue 2s linear infinite}
@@ -706,14 +800,15 @@ body.win10[data-theme="disco"] .glass-strong{background:rgba(40,0,50,0.82)}
 [data-theme="classic"] .titlebar{background:#c0c0c0}
 [data-theme="classic"] .titlebar .app-name{font-weight:700;letter-spacing:0;text-shadow:none}
 [data-theme="classic"] .titlebar .beta{display:none}
-[data-theme="classic"] .titlebar .logo-color,[data-theme="classic"] .titlebar .logo-white{display:none}
+[data-theme="classic"] .titlebar .logo-svg{display:none}
 /* Mode segment → radio buttons */
 [data-theme="classic"] #mode-seg{border:2px groove #c0c0c0 !important;background:#c0c0c0 !important;border-radius:0 !important;padding:4px 8px !important;gap:8px !important}
 [data-theme="classic"] #mode-seg .pill{display:none !important}
-[data-theme="classic"] #mode-seg button{background:transparent !important;border:none !important;border-radius:0 !important;color:#000 !important;font:400 12px/1 'Tahoma','Microsoft Sans Serif',sans-serif !important;padding:2px 4px 2px 18px !important;letter-spacing:0 !important;position:relative}
-[data-theme="classic"] #mode-seg button::after{display:none !important}
+[data-theme="classic"] #mode-seg button{background:transparent !important;border:none !important;border-radius:0 !important;color:#000 !important;padding:2px 4px 2px 18px !important;letter-spacing:0 !important;position:relative;gap:0 !important;height:auto !important}
+[data-theme="classic"] #mode-seg button svg{display:none !important}
+[data-theme="classic"] #mode-seg button .tab-label{display:inline !important;max-width:none !important;opacity:1 !important;margin-left:0 !important;overflow:visible !important;font:400 12px/1 'Tahoma','Microsoft Sans Serif',sans-serif !important;color:#000 !important;transition:none !important}
 [data-theme="classic"] #mode-seg button::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:12px;height:12px;border-radius:50%;border:1px solid #808080;background:#fff;box-shadow:inset 1px 1px 2px rgba(0,0,0,0.15)}
-[data-theme="classic"] #mode-seg button.active::after{display:block !important;content:'';position:absolute;left:3px;top:50%;transform:translateY(-50%);width:8px;height:8px;border-radius:50%;background:#000;bottom:auto;opacity:1;padding:0;border:none;box-shadow:none}
+[data-theme="classic"] #mode-seg button.active::before{background:radial-gradient(circle at center, #000 40%, #fff 40%) !important}
 /* Segment label */
 [data-theme="classic"] #mode-seg::before{content:'Look In';position:absolute;top:-8px;left:8px;font:700 11px/1 'Tahoma',sans-serif;color:#000;background:#c0c0c0;padding:0 4px;z-index:1}
 [data-theme="classic"] .toolbar{margin-bottom:6px}
@@ -739,7 +834,7 @@ body.win10[data-theme="disco"] .glass-strong{background:rgba(40,0,50,0.82)}
 [data-theme="classic"] .side-btn:hover{background:#d4d0c8 !important;box-shadow:none !important}
 [data-theme="classic"] .side-btn:active{border-style:inset !important}
 [data-theme="classic"] .side-btn.ready:not(:disabled),[data-theme="classic"] .cnt-btn.active{background:#c0c0c0 !important;border:2px outset #dfdfdf !important;color:#000 !important;box-shadow:none !important}
-[data-theme="classic"] .cnt-btn.active::after{background:#c00 !important;box-shadow:none !important}
+[data-theme="classic"] .cnt-btn.active::before{background:#c00 !important;box-shadow:none !important}
 /* Buttons */
 [data-theme="classic"] .btn-glass{border:2px outset #dfdfdf !important;border-radius:0 !important;background:#c0c0c0 !important;color:#000 !important;backdrop-filter:none !important;box-shadow:none !important}
 [data-theme="classic"] .btn-glass:hover{background:#d4d0c8 !important}
@@ -772,10 +867,18 @@ body.win10[data-theme="disco"] .glass-strong{background:rgba(40,0,50,0.82)}
 [data-theme="classic"] .chat-input{border:2px inset #c0c0c0 !important;border-radius:0 !important;background:#fff !important;color:#000 !important}
 [data-theme="classic"] .chat-send{border:2px outset #dfdfdf !important;border-radius:0 !important;background:#c0c0c0 !important;color:#000 !important}
 [data-theme="classic"] .chat-avatar{border-radius:0 !important;font-family:'Tahoma',sans-serif !important}
+[data-theme="classic"] .chat-bubble{border-radius:0 !important;border:2px outset #dfdfdf !important;background:#e0e0e0 !important}
+[data-theme="classic"] .chat-msg.mine .chat-bubble{background:#0078d4 !important;border:2px outset #5cacee !important}
 /* Marketing container */
 [data-theme="classic"] .marketing-container{border:2px inset #c0c0c0 !important;border-radius:0 !important;background:#c0c0c0 !important}
+/* Dashboard container */
+[data-theme="classic"] .dashboard-container{border:2px inset #c0c0c0 !important;border-radius:0 !important;background:#c0c0c0 !important}
 [data-theme="classic"] .mkt-line-item{border:none !important;border-radius:0 !important;background:#fff !important;border-bottom:1px solid #c0c0c0 !important}
 [data-theme="classic"] .mkt-line-item:hover{background:#e8e8e8 !important}
+[data-theme="classic"] .mkt-split-main,[data-theme="classic"] .mkt-split-arrow{border-radius:0 !important;border:2px outset #dfdfdf !important}
+[data-theme="classic"] .mkt-split-menu{border-radius:0 !important;backdrop-filter:none !important;background:#c0c0c0 !important;border:2px outset #dfdfdf !important;box-shadow:2px 2px 0 #808080 !important}
+[data-theme="classic"] .mkt-split-menu div{border-radius:0 !important;color:#000}
+[data-theme="classic"] .mkt-split-menu div:hover{background:#000080 !important;color:#fff !important}
 /* Rev banner, comments section */
 [data-theme="classic"] .rev-banner{border-radius:0 !important;background:#c0c0c0 !important;border:2px outset #dfdfdf !important}
 [data-theme="classic"] #comments-section{border-radius:0 !important}
@@ -888,11 +991,12 @@ html[lang="tlh"] [data-tip]::after{font-family:'IBM Plex Sans',sans-serif}
 .cnt-badge{display:inline-block;padding:4px 12px;border-radius:5px;font:700 10px/1.2 'DM Sans',sans-serif;letter-spacing:1.5px;text-transform:uppercase;flex-shrink:0;white-space:nowrap}
 .cnt-badge-code{background:rgba(255,59,48,0.12);color:#ff453a;border:1px solid rgba(255,59,48,0.25)}
 .cnt-badge-noncode{background:color-mix(in srgb,var(--text) 8%,transparent);color:var(--text3);border:1px solid var(--glass-border)}
+.cnt-badge-nuclear{background:rgba(48,209,88,0.12);color:#30d158;border:1px solid rgba(48,209,88,0.25)}
 .cnt-info{font:500 11px/1.3 'DM Sans',sans-serif;color:var(--text2);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cnt-info b{color:var(--text);font-weight:600}
 .cnt-bp-toggle{display:flex;align-items:center;gap:6px;font:500 10px/1 'DM Sans',sans-serif;color:var(--text3);cursor:pointer;user-select:none}
 .cnt-std-proc{text-align:center;padding:32px 24px}
-.cnt-std-proc-title{font:600 18px/1.2 'DM Sans',sans-serif;color:var(--text)}
+.cnt-std-proc-title{font:600 18px/1.2 'DM Sans',sans-serif;color:var(--success)}
 .cnt-std-proc-sub{font:400 12px/1.4 'DM Sans',sans-serif;color:var(--text3);margin-top:6px}
 .cnt-bp-toggle input{display:none}
 .cnt-bp-switch{width:28px;height:16px;border-radius:8px;background:color-mix(in srgb,var(--text) 15%,transparent);position:relative;transition:background .2s;flex-shrink:0}
@@ -920,6 +1024,7 @@ html[lang="tlh"] [data-tip]::after{font-family:'IBM Plex Sans',sans-serif}
 [data-theme="tron"] .cnt-actions button:not(#cnt-close):hover{border-color:rgba(0,230,255,0.4);box-shadow:0 0 10px rgba(0,230,255,0.1)}
 [data-theme="tron"] .cnt-order{text-shadow:0 0 20px color-mix(in srgb,var(--accent) 30%,transparent)}
 [data-theme="tron"] .cnt-badge-code{background:rgba(255,59,48,0.15);border-color:rgba(255,59,48,0.35);text-shadow:0 0 8px rgba(255,59,48,0.3)}
+[data-theme="tron"] .cnt-badge-nuclear{background:rgba(48,209,88,0.15);border-color:rgba(48,209,88,0.35);text-shadow:0 0 8px rgba(48,209,88,0.3)}
 @media print{
   @page{size:letter portrait;margin:0.6in 0.75in}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -939,6 +1044,7 @@ html[lang="tlh"] [data-tip]::after{font-family:'IBM Plex Sans',sans-serif}
   .cnt-badge{font-size:8pt !important;padding:2px 8px !important}
   .cnt-badge-code{background:#ffebee !important;color:#c00 !important;border:1px solid #c00 !important}
   .cnt-badge-noncode{background:#f5f5f5 !important;color:#666 !important;border:1px solid #999 !important}
+  .cnt-badge-nuclear{background:#e8f5e9 !important;color:#2e7d32 !important;border:1px solid #2e7d32 !important}
   .cnt-info{font-size:9pt !important;color:#333 !important}
   .cnt-sticky-footer{display:none !important}
 }
@@ -1005,16 +1111,16 @@ html[lang="tlh"] [data-tip]::after{font-family:'IBM Plex Sans',sans-serif}
 <div class="app" id="app">
   <!-- Title bar -->
   <div class="titlebar">
-    <img class="logo-img logo-color" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAAAcCAYAAADC8vmmAAAMq0lEQVR42u1Ze7BV5XX/re/be5/HfT95Gqiow0MTAmbSaidA4iQk6jRoz5lQq4g6MBiRakBIqOyzAZFbBaNgzQ1tAYEEz0XGiW1IIgrGZqItxkGFKCYBH8C93Pd57se3v9U/zuVyL0/j2Grarpk9Z5/Z32Ot3/r2evw28D8p9h4DAKwVP94gHvkZy7W7OLJi6+0Dn33a5BNRiq14qE0TYIZhxjQ+xSI+mW0Z4L7rUy4C/y8fO0D0CelKnwxAti1g7zGQZol0Wp5zZDotwSxK7wcBaZaw7QsDzEylsXsMdBXlH6VdIl2ax0wAGNS37/n0HDg3zbJvLmCz6EsE1G/PwHVO//9HOcrmfiBsQAwa8WFAOk3Mpmd+gHW7GY89x5HVT88+SxajgXue3PcM4M91qgbMPeug8z0/zR4jYj/5sKquG0FaM+UyrYF9072wWcAhBsB999r6+43fVOVVc1cQjSKQJzj8TeyDww/lnIVvwbYFHEef4cGWpI4ufOIqNeyiBQxWws33qqXfmgcivoCHGA5xdOmmLwUVFTMZ9PkVRJWCdYFIvClzvU/5RLsGjR9ovEM6snTDVFVZN4uJLodGlAitwnd3DX195xMfOFS0nG0JFY3NBOhi6FCSEG8b2d6tvjP7mYH2GNDhLg3azdFyUFk1rGWb2n2HHoS9x8CEqYwkheayzU2qYcR9mhmQElAKMK2JhdHWN83FT3w5cObtP6lYv6LjGwgAB9VVc8Oq+gQAsFfcWUKdz1FeMIGB8cmU9fbnxv/AK6uazaYJSAMgAbAGQjVZR8tmGSu3tzS898Ktx5ubiwAIRP3OlMs2OX7dsGUsZGmeEECoLuequmuOTUwkjM/dcDioHjKTWQNClrKpDi8PyqtvNFPbHgtSNy04uZbwVsx+3ug8fjOFATjf66qqhgei9zw6Bc40hSSFxrJNC9SQz9ynfS+gwIPIdB0Wbt5HIRfoSLxWV9Q+OXnyHBNIDXw/Cc40VXfbogoW1leR6VSU6QqpmFlfenyO0scGgQhvfXbs9rB++GwOVUiBB9F14pDobv256G3fT14BrHyt6ocn2kd9ZTuIgBQItm3AIW3dv+Va3XjRMg58hcCHyHV1yp72d6iQBed6WZdV/rmqapjJbl6T70Jkun4vcj1HoQJwIR+oxuF3W86TN8IhDds2BOw9RrDy9q2yu20jReJRTUL7w0ZtvWT69Ii5ZMPksLphLXtFXxCZVk/H/LFbnhpr9Zz4qmBW8ApKV9V99vWvXzUDjqNh75F9AU8AQHb42CkcLx8CEga5+SMj33vp1wBALMIz0TliwCFt2ptnc92wGcj1+gKsje72OWO3pa/Q301Mv3/JX08yu9tvFKzzyGf9sLrxetP+l9mlkztBAICKRb/DWmsYphRe/iexY29PmPj06glWT+c1xOhFGIZwCz4JKWRv+92f37FqXPUbe8bLQmYzTNNgpbQy43eVdEppgdTUEOm0HPHC7jtFpnM/hJA6WjbyyNW37AwrazazkERWxJI9Hcu9FbeuP/h4WrsPzn2RCtnHEIkbrEMOo9F5pQWn9h2NBAAgjMQTLCTDMEFBsOPdzZvdc4ee0QqJhAwjZfey72qyIpbI9iwJls/acPBgiw8ADqD9lbftlJnOb0MaFitfh5HyBUgkJJykX7eoqYKFvBxhIEj5YVnrB/flH1va9uqcZngP3vG8cHMbEYlKGJZFxexravnsda/u26e6tq3LmNnWZeR7CmEoWNC4YXPsOBzSAkSMAwf43Rc3u7KjNSmUn4MKtKqo/QZb0QkwLJLd7c8Hy2+x0bzPRHsLw7aF6buPUzHrQiliK3ZVZGHzGDikkUhLJCmsu21RBUtzOkJF5BW0yHZtP29qc6Yp65JrLmXDGAetBeUyvRXHf7ej0t5QW7XkH2tqFjdXVS14pLrS3lBbe+LIz0Ux1wrNAoY53hrzpTEAUKBoFYA4SAKh7jar64+DmXDsD4REWgppvQGtASnB0jwI2xZItZgAUyRTzEKr3lKOplhGoPxUoeg4GrZt+GvnHzK62v+WCBpB4LOUWuR7Dse7fpuEzQLHng2RTIZIpeA+cNv70is+B9NijpVZYWVZshSc8yYAyo64YirHyxtBAuS7vwkevms/mveZ5y0wLGs0rJiADrWWMt5z8cRXsvH6A5maYQd7ahvfygwf/dtsvP7AidET97OUlQgDX1sxhGXVowGAlXEqY5PQFK9gEDGGdzNakiFIDM6ejqMxvJsBYhRcPq2EOK1ZnTCBS/FBZ8DgUkZhgIRUssFCCoxUXxBOpQQAFn5xA2l9PYOhDetbAJqA0QoAhxErwcJgEEj4/nYNMI5lJYDgnDWlliaIGMwMwzS5rHLowAw+SLQGQgWKlYG72mr+e7t52xZIJHT879YOc2vq0wwYMC2CCqDjFZ/xqut32kR/6aSZAIfgOCHAGPberc+9H7vuCMcqRrMVuyL2vQ1XFp1p/1k1y67OSmM6tCLhFT3Z3f60AgC067Nk9n5v6dBth/IJQgryiz0y13M/DIMBOm0eiz4gCW6BjTB42S0F/4+PGQh8KgHU3GyipkYTkfZXpbfoaFk9mGH0djyrTWucNsyLdU3jX6x0tq5Gku6DvceAM03B3mu862x25fKv/QiG8T02DPJj5bMB/Edx9CXXcKy8AUIyguCX3qP3HClVr3vPMIA4DJFmCbSg8qUDB3sq6zrZitWSFSuLHn17d2790rcuZIvqd7f66PRA4NEgt8XLNew9hsDcuQElk6FYsf1RVVH7FYSBFm7h/auX/c0NZq5rLgGC3YKvqxsWWYt/OAPONFXqWUrGykJus3DzCoHPHInfVPVXs6rDSGQ6S5MJTFJ520r10V5x6qR4KFVnhEB5Y5GkEMlk2LXOyZAKdiISIy2EKFw0bkf0O+tHnW5LfFHzJPnwsy8by7feAwBobjY/MjCv9mEbDRVAITQD0ogopaNwpilDrti2lqU5KYxXToHveiRkxOw4OutFQOGBOS9Ie0uTbhixmL1ioOqH/HNkwYOvecnkkdJrmZb+6uQh8cBTu1BZdr1mLst+8dpfsTAbESqiYjYTefe9nwYAIzU1RGqvBADy1e8hDEIh6+to+V1yzb+OMQrZf/Lun/kLs+uDFWxGZuhoWb02IxP8xhGvyJXpnRQGvwNRREvzC65pfl2bkSgNGfXFyNKNvjd39uODyCbm0nX25pn7jm7pd9hlDGbqJMqJVS2dTKKepWn4I8c+LVduf0lw3Yh7dFXDFDCDyiojsrst5T307T2lDj8tb3B+spR6O3+NSNTUsYqaYOilOzDLjvaXO8wkM5228F2GYQgdrxrPUtbDMJnC8Ke5jUvbkU7LUv+1VwNMsphpEfmeAuIVFgujPGwYmQit+JUA4K5d+H6k+8R1wnePIRKDjlUMCWsa5qm6YWtU3dBVurp+ho6VR4kI1N3+q5DDVwY1mEQWDJMgxJmniohgmKULdCpBlRzHwnU3UbxcgiB1Ve0Xwrrh9wrq7WylQva4CPw35bHDd6vltzpIpyWcaQoHDnALWkKz9fDNMp89TIVMG8fKL7NG/dliOI5GC4AUKGi68zXZ3XaLUP5hCjwXgCKtSHr5HwEADhygU+VEirymeUfMzo5rRT77SwqDo6K3vY2gO0oJI20VV899JfrOy1fKTNfDws0fonzGpWIOlM+C8pkeUcj+u9HTfvuNS26Yolbdse9UPCNNOmyjwOukULWjo2MQPjJwffK9TvK9TqFUZmANBmZSy29eY7YeSQmt3qFCto16O1qpasEj1SIa556mub18sgYY3G0TAB6ZSMSy478RkTC0l8tG82vuPDGIS0kmw8o5S8fkxlz5uo6WxUUhc3TI4TcuO/5Dp3BGxz1gj7pFTRUq3ih7uzJFrFvg9WfVvm568uTJ5pvXLRhFnt8gIhGPCz2t7kPzj/FJ1exlp5gE2xY17vAK7Vokom3c3bQkM3DfS+bPj7TXTooBQDTXEbStWZQ/K5UEyF/YGyvQ03MWUuxcpNeFvlak09JwfrwQ63Yz1u1muSK97rxfK2wW512Xmc45l5n6dP34WcYzMGCm85JPg6iIk2P5VNc+p9k8uahY1XII3/8Z05p/4+h3n7i6nxf6MOuejx/qSwgXBHWQPecY9+Hs7bf1Y/OAtXzL0qCycSUTtMj3vqlfa5mE8eP5DCLtT0w+2nexvhgSX7h+qFdZm2JpXhpEY1/mUAUUjZlGIWP7LS3hh+R4/xcClEoRAFamrNU1jXOZBOC7ICtiis6j/+CvvOOZUlefDP9vAtR/kpSiXK8PaYQE/Qcz0/6ol5q1oY+P/pMHBwD+C0csctylqJ2BAAAAAElFTkSuQmCC" alt="xylem" style="height:18px">
-    <img class="logo-img logo-white" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAAAcCAYAAADC8vmmAAAJCklEQVR42u1Zb2wcRxV/s3N7ZztJc06UNqR1ZeKEDxDUUhAKglCQ0qqNCB8iRWojpDb5YBAgCEJFJFBOQhVBokVCIBEDRaJtKLqoaSpBoKjoguIYDK6dgmnqc8zFTmL77nzrvdu73dn5s48PnQnby/nitrSB0JFWup3ZN++937x57zdzAG9jQ8QEAABj7HAYhhiGIQZBsDc+9t/WrolRqVQK/leaBe+0dwB6uwEi18jWa6LXQkQLERP6oW0SLEVECwCQEBJ/b9symczl+QGAvs6kTrUsefUVie6jy5SlWhZifpL4OABAzJ+r20cIaaXMWmollwNSi/kO47/bFVVMA2G1i3btMFlifusq+q3ljiUajcahrq6udwOAklLO2LZ9ABEtQkhkkCaEKMdxdnZ2dvZblrWREBJKKf9aqVQeJYRMxr+PKyKERAsLCx9eu3btfgAAzrmTSqW+CADYxkBCCEEAQMdxPpZMJvfYtn0bAKQBoK6U+ofv+78ihPy+6fvX6HUcZ1tHR8deSukWy7JSSql5IcRvTp06NUAICWu12i7btvdQSvsAAJRS5zjnvyCE/Po1/pTL5U/GVhOr1epDZkXNqjYajW9ji8Y5X5ibm9uiQ9RqxXl83/+5+T4IgqN67GetIshETjabTfq+/xNs04IgeGpoaKgzHknGBt/3Dy4lxxgbDILgiTbzfu+KSKpUKvcbeaWUrFQqHzFjnud9QY8JDcqklDIw74yxFzOZTCI+oTF4ZGSkSwhxERGFUkqWSqU79fhPlwDIAgASBMFRPaa0zpfDMPwdY2xM90eIiPV6/TkAIIho5XK5BABAtVq9V38jtWyJc35WCBE1YaEQEYUQeSHEjFlzRMTFxcVdAAC5XC4BsSgZMIKc8+mBgQG7VCp9QAghEZFHUYS1Wq1/YGDALhaLHxVC1A1ItVptVzxqTLJzXfeeWLRNnDhxItUmB3UAACwuLj6o+0MpJavX6w8MDAzYJv85jvNpIYRrnHEc5wEtnwQACMPwBQ1g5Pv+s/l8fl02m6WlUulOIYSjgeOIqFzX/Wwmk0nkcrmVvu+bqFa+7+cuR5GpDNlsNskYGzFW1+v15zjnL8VW65tayNYrdcispu/7L8TD0gDUaDQub69Go/HI1ZJ0NpuljLG/m9X1PO/LrfKU4zh7jDOMsbHdu3dTQggMDg6uEkIUERGllOLcuXOb4zbX6/VHjdIwDP8Sj/aLFy/2SClDHVWzQ0NDnVdk7mKx2CeEqBkDY/v2t0aRKe8XLly4RQjha2PC6enpjQAA2WyWAgCcOXNmBed8DhFRb9st7QDSRr5HKSW1kZWJiYmbZ2Zm1kxPT3dPTU2tLhQK6ZmZmTWjo6PrOOezWjcvFoubAADy+fwtnPO67i8tLCzcoAPARkQrDMO9RqkQ4imdv5KISMbGxtKc87KO9uro6Oi6K3iDTto7lVIcEUNEVEKIyUKhkG5KhhQAIAiCZ2IR9rXYViHVanVHDODh+EouBZDrunebyFBKhVLKuaUepVRD2yhc170bAGBycrLHAISI84i4qknvg3GA4mO5XO4yQGEY1k6fPn1jSyaNiDVdhg3HSERRlIr3nTx5kiAi8X3/cdOXTCbv078lAKBt27tNORdCPK3nolfhYLaWQcuykpTS9Us9lmV1AUASABKc8+639DRvGPLU1NRN3d3dWcuybON4IpHo3bBhQ5YQ8gkdRUgIUYgIw8PDf9i+ffs/bdveSCm9vVwu30EIGR0ZGVmdSCTuBQCilApKpdIxrS9qd4TgnJf0uyWldBhj37IsCyzLapazKKWolCKUUpRS/hkAIIqi6D92xLCsV/3XIRYRQpTv+08mEokbdUJ7NpVKvc+27U0dHR0f9zzvO4SQA7pSSQBI7NixI/Q874ht2w9blkVWrFixFwBe7O3t3W7b9k0AgEqpP/b19c3oRbjCAaWUMlt2eHh4Ip1OLyQSibWEkFXz8/PPb968+dxynYqiCN8oII1GI87KMZVKRYiYsAghQoPz/c7OzrsAIBJCTO/bt2+367r92jGxcuXKrzuO8ylCiNQORZqUPaGUEnpbfeb48eOrurq67jFbknN+ROeuy9s5DMPIbL8wDDcRQhQhRG3durXGGDsGAIRSSnt6eo5NTU3d2uxMsVi8LQiCP3metz+eR95Mk1JKAFAAAJTSVGdnp00IkeC67mOaOxiiiKVSaVuMKD5iqIwQojw5OdkTOwtRDdLxWNl9SQhR0pWkMj4+viZ2vjJk7qum2iqlqpzzXwZBcBcAwMTExM2mVOuKMuf7/o8ajcaXfN9/KAiCo0KIhhmvVCqfM7aePXt2A+fc04VjbokkHSFiJIR4Ms7gAYAwxv6meZIMw3CoVqs9Bs1Uu1arHYwJUgCwGGOn4hUpn8+nDECISBzHeb+UUjVNFQVBcCRe9UwlvHTp0q2aaMbbQeNouVz+EOd8Bq/SGGMny+XyBw1N0QCFenihBUD7YlXs6eYjled5+5t1AGNsTko5K4Q447ru55sdAgAoFAq9nPNzSql5KWXNdd1vNF2BgOu69wkh8kop3zDsSqWyQx8FaDPnchxnG2MsJ4S4oOftjzPi2dnZdY1G47uc81eklL6u/ZEQwgnD8KRh0PE5x8fH1zPGZqSUC0qplxFxZRwgKeX9UsoFKeUCY+xwE/snmUzGqtfrD3POJ4QQ85zzOXAcZ/XU1NTq5nNU83uhUOgoFArpfD5/w+zs7LpWHGpsbKxXCOHprTEzNDTUqQ+yLecEABgcHFy1uLiYzufzqVZXDv39/XaxWOwLw/COxcXF28+fP/+u+NVM/NtMJmMZQmlIYlzv+Ph4slAopAuFQvrSpUtdbVISHRsbSzuOs7olWWx1BXG1fysQkXqe9xUTmr7v/6DdvxXt7nOac9YSY/St4D1XzKuVkWUIkvhjFtEcP3RFegURoyiKcH5+fms70Jer31yBxB6yXDvfyPhyv3ndzXXdAyY5M8bG9FXr/+efAgbZ8fHx9dVq9cdhGD4fvzNyHGfncqLnegbI0qfn9zaXRc/zDl1P4Lypf1YppZIxximlMoqiySAIftjd3f24vtNV1wNA/wJNJ2w9mS7pJwAAAABJRU5ErkJggg==" alt="xylem" style="height:18px">
+    <svg class="logo-svg" height="18" viewBox="0 0 26.28 10.83" fill="currentColor"><path transform="translate(-6.661,-176.991)" d="m14.571 183.945h-.035c-.265 0-.413-.396-.677-1.112l-.435-1.205c-.41-1.121-.825-1.625-1.774-1.625-.797 0-1.207.48-1.7 1.149l-.36.484-1.157-1.557H7.193l1.783 2.337-.697.934c-.356.479-.576.622-.88.622h-.209v.874h.444c.514 0 .871-.174 1.176-.604l.763-1.07 1.224 1.675h1.248l-1.857-2.453.465-.613c.42-.564.62-.832.976-.832.377 0 .565.35.884 1.164l.53 1.356c.304.791.603 1.377 1.142 1.377h.069l-.275.689c-.213.54-.416.873-.978.873h-.246v.889c0 0 .192 0 .357 0 .833 0 1.428-.412 1.815-1.489l2.058-5.728h-1.114zm2.917-.544c0 1.021.418 1.444 1.287 1.444h.474v-.898h-.223c-.32 0-.498-.158-.498-.546v-5.882h-1.04zm3.296-1.334h2.591c-.12-.708-.585-1.169-1.273-1.169-.714 0-1.168.477-1.318 1.169m3.473 2.032c-.577.486-1.2.817-2.063.817-1.568 0-2.492-1.019-2.492-2.457 0-1.411.994-2.457 2.4-2.457 1.46 0 2.35 1.132 2.35 2.539 0 .177-.015.353-.015.353h-3.653c.137.691.558 1.122 1.407 1.122.596 0 1.015-.239 1.387-.579zm8.153-.128v.874h-.493c-.833 0-1.239-.434-1.239-1.406v-1.525c0-.476-.149-.966-.751-.966-.603 0-.794.49-.794.966v2.932h-1.051v-2.932c0-.476-.209-.966-.825-.966-.616 0-.814.49-.814.966v2.932h-1.044v-2.964c0-1.16.744-1.875 1.853-1.875.561 0 1.03.201 1.355.548.325-.347.788-.548 1.349-.548 1.026 0 1.755.659 1.755 1.875l.001 1.573c0 .359.164.517.468.517z"/></svg>
     <div class="sep"></div>
     <span class="app-name">XylemView Pro</span>
     <span class="beta" id="app-version">BETA</span>
-    <span id="cnt-load-indicator" style="display:none;margin-left:4px" data-tip="Contingency DB loading"><span class="deep-spinner" style="width:8px;height:8px;opacity:.5"></span></span>
+    <span id="cnt-load-indicator" style="display:none;margin-left:4px" data-tip="Loading contingency data"><span class="deep-spinner" style="width:8px;height:8px;opacity:.5"></span></span>
     <div class="spacer"></div>
     <span id="weather" class="no-drag" data-tip="" style="display:none;align-items:center;gap:3px;margin-right:6px;cursor:default;opacity:0;transition:opacity .5s"><span id="weather-icon" style="font-size:13px;line-height:1"></span><span id="weather-temp" style="font:600 10px/1 'DM Sans',sans-serif;color:var(--text2)"></span></span>
     <button class="no-drag" id="btn-whats-new" data-tip="What's new"><span class="wn-bell">&#128276;</span><span class="wn-dot"></span></button>
-    <div id="user-badge" class="no-drag" data-tip="" style="width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font:700 8.5px/1 'DM Sans',sans-serif;text-align:center;cursor:default;flex-shrink:0;margin-right:6px;text-transform:uppercase;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center"></div>
+    <div id="user-badge" class="no-drag" data-tip="" style="width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font:700 8.5px/1 'DM Sans',sans-serif;text-align:center;cursor:pointer;flex-shrink:0;margin-right:6px;text-transform:uppercase;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center"></div>
+    <input type="file" id="badge-pfp-file" accept="image/*" style="display:none">
     <div class="no-drag win-btns" style="display:flex;align-items:center;margin-left:auto;margin-right:-10px">
       <button class="win-btn no-drag" id="win-min"><svg viewBox="0 0 10 10"><line x1="0" y1="5" x2="10" y2="5"/></svg></button>
       <button class="win-btn close no-drag" id="win-close"><svg viewBox="0 0 10 10"><line x1="0" y1="0" x2="10" y2="10"/><line x1="10" y1="0" x2="0" y2="10"/></svg></button>
@@ -1040,10 +1146,11 @@ html[lang="tlh"] [data-tip]::after{font-family:'IBM Plex Sans',sans-serif}
   <div class="toolbar no-drag" style="position:relative">
     <div class="seg no-drag" id="mode-seg">
       <div class="pill"></div>
-      <button data-val="orders" data-hint="Shortcut: o" class="active">Orders</button>
-      <button data-val="drawings" data-hint="Shortcut: d">Drawings</button>
-      <button data-val="marketing" data-hint="Shortcut: m" id="btn-mode-marketing" style="display:none">Marketing</button>
-      <button data-val="chat" data-hint="Shortcut: c">Chat</button>
+      <button data-val="orders" data-hint="o" data-label="Orders" data-tip="Orders (O)" class="active"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="1.5" width="10" height="13" rx="1.5"/><line x1="5.5" y1="5" x2="10.5" y2="5"/><line x1="5.5" y1="8" x2="10.5" y2="8"/><line x1="5.5" y1="11" x2="8" y2="11"/></svg><span class="tab-label">Orders</span></button>
+      <button data-val="drawings" data-hint="d" data-label="Drawings" data-tip="Drawings (D)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10" y1="10" x2="14" y2="14"/></svg><span class="tab-label">Drawings</span></button>
+      <button data-val="marketing" data-hint="c" data-label="Checklists" data-tip="Checklists (C)" id="btn-mode-marketing" style="display:none"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="10" height="10" rx="1.5"/><path d="M8 1v8"/><path d="M5.5 6.5L8 9l2.5-2.5"/></svg><span class="tab-label">Checklists</span></button>
+      <button data-val="chat" data-hint="m" data-label="Chat" data-tip="Chat (M)" style="position:relative"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h12a1 1 0 011 1v7a1 1 0 01-1 1H5l-3 3V4a1 1 0 011-1z"/></svg><span class="tab-label">Chat</span><span id="chat-unread-badge" style="display:none;position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:50%;background:#ff3b30"></span></button>
+      <button data-val="dashboard" data-hint="h" data-label="Dashboard" data-tip="Dashboard (H)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7l6-5 6 5v6.5a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 13.5z"/><path d="M6 14V9h4v5"/></svg><span class="tab-label">Dashboard</span></button>
     </div>
     <div class="toolbar-utils no-drag">
       <button class="no-drag disco-mute-btn" id="btn-disco-mute" data-tip="Mute music" style="display:none;font-size:14px;line-height:1">&#9835;</button>
@@ -1106,19 +1213,19 @@ html[lang="tlh"] [data-tip]::after{font-family:'IBM Plex Sans',sans-serif}
     </div>
 
     <!-- Sidebar -->
-    <div class="sidebar no-drag" style="display:flex;flex-direction:column;gap:5px;width:90px;flex-shrink:0;padding-top:4px;overflow:visible">
+    <div class="sidebar no-drag" style="display:flex;flex-direction:column;gap:5px;width:100px;flex-shrink:0;padding-top:4px;overflow:visible">
       <button class="side-btn cnt-btn inactive no-drag" id="cnt-btn" style="padding:8px 4px;font-size:11px">Contingency</button>
       <span class="cnt-ident" id="cnt-ident" style="font-size:9px;color:var(--text3);text-align:center;min-height:0;display:none"></span>
       <button class="side-btn no-drag" id="btn-route" disabled style="opacity:.4;padding:11px 4px;font-size:11px">Route</button>
       <button class="side-btn no-drag" id="btn-bom-extract" disabled style="opacity:.4;padding:8px 4px;font-size:11px;display:none">Extract BOM</button>
       <div style="display:flex;gap:4px" id="sidebar-row-mf">
-        <button class="side-btn no-drag" id="btn-marketing" disabled style="opacity:.4;flex:1;padding:8px 0" data-tip="Checklist"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2.5" width="10" height="12" rx="1.5"/><path d="M6 2.5V1.5h4v1"/><path d="M5.5 7l1.5 1.5L10 5.5"/><path d="M5.5 11h5"/></svg></button>
-        <button class="side-btn no-drag" id="btn-explorer" disabled style="opacity:.4;flex:1;padding:8px 0" data-tip="Folder"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h4.5l1.5 1.5H14v8H2z"/><path d="M2 4v-1.5h4l1.5 1.5"/></svg></button>
+        <button class="side-btn no-drag" id="btn-marketing" disabled style="opacity:.4;flex:1;padding:8px 0" data-tip="Checklist"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2.5" width="10" height="12" rx="1.5"/><path d="M6 2.5V1.5h4v1"/><path d="M5.5 7l1.5 1.5L10 5.5"/><path d="M5.5 11h5"/></svg></button>
+        <button class="side-btn no-drag" id="btn-explorer" disabled style="opacity:.4;flex:1;padding:8px 0" data-tip="Folder"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h4.5l1.5 1.5H14v8H2z"/><path d="M2 4v-1.5h4l1.5 1.5"/></svg></button>
       </div>
       <div id="sidebar-gap1" style="border-top:1px solid var(--glass-border);margin:1px 10px"></div>
       <div style="display:flex;gap:4px" id="sidebar-row-lr">
-        <button class="side-btn no-drag" id="btn-link" disabled style="opacity:.4;flex:1;padding:8px 0" data-tip="Link"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9.5a3.5 3.5 0 005 0l2-2a3.5 3.5 0 00-5-5l-1 1"/><path d="M9.5 6.5a3.5 3.5 0 00-5 0l-2 2a3.5 3.5 0 005 5l1-1"/></svg></button>
-        <button class="side-btn no-drag" id="btn-resubmit" disabled style="opacity:.4;flex:1;padding:8px 0" data-tip="Resubmit"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 11V3"/><path d="M4.5 6.5L8 3l3.5 3.5"/><path d="M3 13h10"/></svg></button>
+        <button class="side-btn no-drag" id="btn-link" disabled style="opacity:.4;flex:1;padding:8px 0" data-tip="Link"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9.5a3.5 3.5 0 005 0l2-2a3.5 3.5 0 00-5-5l-1 1"/><path d="M9.5 6.5a3.5 3.5 0 00-5 0l-2 2a3.5 3.5 0 005 5l1-1"/></svg></button>
+        <button class="side-btn no-drag" id="btn-resubmit" disabled style="opacity:.4;flex:1;padding:8px 0" data-tip="Resubmit"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 11V3"/><path d="M4.5 6.5L8 3l3.5 3.5"/><path d="M3 13h10"/></svg></button>
       </div>
       <div id="sidebar-gap2" style="border-top:1px solid var(--glass-border);margin:1px 10px"></div>
       <div id="sidebar-export-label" style="font:700 8px/1 'DM Sans',sans-serif;color:var(--text);letter-spacing:1px;text-align:center;opacity:.5;white-space:nowrap">CONVERT DWG</div>
@@ -1158,8 +1265,23 @@ html[lang="tlh"] [data-tip]::after{font-family:'IBM Plex Sans',sans-serif}
   <div id="birthday" style="text-align:center;font-size:11px;font-weight:600;color:var(--text);margin-top:8px;margin-bottom:4px;flex-shrink:0"></div>
 
   <!-- Chat container (shown only in chat mode) -->
-  <div class="chat-container glass-strong no-drag" id="chat-container">
+  <div class="chat-container glass-strong no-drag" id="chat-container" style="position:relative">
+    <div id="chat-toolbar" style="display:flex;align-items:center;gap:6px;padding:6px 8px;flex-shrink:0">
+      <a href="#" id="chat-mobile-link" class="no-drag" style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:8px;background:var(--glass);border:1px solid var(--glass-border);font:500 10px/1 'DM Sans',sans-serif;color:var(--text2);text-decoration:none;transition:background .12s,color .12s">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>
+        gasketedplate.com
+      </a>
+      <div style="flex:1"></div>
+      <button id="chat-mute-btn" class="no-drag" data-tip="Mute notifications" style="width:28px;height:28px;border-radius:50%;background:var(--glass);border:1px solid var(--glass-border);backdrop-filter:blur(16px);cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;overflow:visible;transition:background .12s">
+        <svg id="chat-mute-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <path id="mute-waves" d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14"/>
+          <line id="mute-slash" x1="1" y1="1" x2="23" y2="23" stroke-dasharray="32" stroke-dashoffset="32" style="transition:stroke-dashoffset .25s ease"/>
+        </svg>
+      </button>
+    </div>
     <div class="chat-messages" id="chat-messages"></div>
+    <button id="chat-scroll-bottom" style="position:absolute;bottom:60px;left:50%;transform:translateX(-50%);width:32px;height:32px;border-radius:50%;background:var(--glass-strong);border:1px solid var(--glass-border);backdrop-filter:blur(16px);cursor:pointer;font-size:14px;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .2s ease">↓</button>
     <div class="chat-input-row">
       <input class="chat-input no-drag" id="chat-input" placeholder="Type a message…">
       <button class="chat-send no-drag" id="chat-send">Send</button>
@@ -1168,6 +1290,9 @@ html[lang="tlh"] [data-tip]::after{font-family:'IBM Plex Sans',sans-serif}
 
   <!-- Marketing container (shown only in marketing mode) -->
   <div class="marketing-container glass-strong no-drag" id="marketing-container" style="display:none"></div>
+
+  <!-- Dashboard container (shown only in dashboard mode) -->
+  <div class="dashboard-container glass-strong no-drag" id="dashboard-container" style="display:none"></div>
 </div>
 
 <!-- Context menu (hidden) -->
@@ -1192,6 +1317,7 @@ let S = {
   platform: 'win32',
   revWarnings: {},  // {filepath: {currentRev, newestRev}}
   recentOrders: [],
+  recentMktOrders: [],
   recentDrawings: [],
   otpDigits: [],
   otpComplete: false,
@@ -1390,10 +1516,13 @@ function applyLanguage() {
   if (splashSub) splashSub.textContent = t('BETA');
 
   // ── Mode segment buttons ──
-  const modeMap = { orders: 'Orders', drawings: 'Drawings', marketing: 'Marketing', chat: 'Chat' };
+  const modeMap = { orders: 'Orders', drawings: 'Drawings', marketing: 'Checklists', chat: 'Chat', dashboard: 'Dashboard' };
   document.querySelectorAll('#mode-seg button').forEach(btn => {
     const key = modeMap[btn.dataset.val];
-    if (key) btn.textContent = t(key);
+    if (key) btn.dataset.label = t(key);
+    // Update existing label span if present (active tab)
+    const lbl = btn.querySelector('.tab-label');
+    if (lbl && key) lbl.textContent = t(key);
   });
 
   // ── Theme segment buttons ──
@@ -1544,14 +1673,32 @@ function initSeg(container, onChange) {
   function activate(val) {
     btns.forEach(b => b.classList.toggle('active', b.dataset.val === val));
     const active = container.querySelector(`button[data-val="${val}"]`);
-    if (active) updatePill(active);
+    if (active) {
+      // Smoothly interpolate pill from current position to the expanding target
+      pill.style.transition = 'none';
+      const startLeft = parseFloat(pill.style.left) || 0;
+      const startWidth = parseFloat(pill.style.width) || 0;
+      const startTime = performance.now();
+      const duration = 320;
+      const ease = t => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3) / 2;
+      const follow = (now) => {
+        const t = Math.min((now - startTime) / duration, 1);
+        const e = ease(t);
+        const tgtL = active.offsetLeft, tgtW = active.offsetWidth;
+        pill.style.left = (startLeft + (tgtL - startLeft) * e) + 'px';
+        pill.style.width = (startWidth + (tgtW - startWidth) * e) + 'px';
+        if (t < 1) requestAnimationFrame(follow);
+        else updatePill(active);
+      };
+      requestAnimationFrame(follow);
+    }
   }
 
   pill.style.transition = 'none';
 
   btns.forEach(btn => {
     btn.addEventListener('click', () => {
-      pill.style.transition = '';
+      pill.style.transition = ''; // re-enable CSS slide transition
       activate(btn.dataset.val);
       onChange(btn.dataset.val);
     });
@@ -1560,7 +1707,7 @@ function initSeg(container, onChange) {
   // Position pill after layout — transition is 'none' so it snaps instantly
   requestAnimationFrame(() => {
     const active = container.querySelector('button.active');
-    if (active) updatePill(active);
+    if (active) requestAnimationFrame(() => updatePill(active));
   });
 
   return { activate };
@@ -1623,7 +1770,7 @@ function renderSearchCard() {
   } else {
     card.innerHTML = `
       <div style="flex:1">
-        <div class="field-label">${t('DRAWING NUMBER')}</div>
+        <div class="field-label" style="display:flex;align-items:center;gap:5px;margin-bottom:3px">${t('DRAWING NUMBER')}<span data-tip="Wildcards: _ = single char, * or % = multiple" style="cursor:help;opacity:.5;display:inline-flex"><svg width="13" height="13" viewBox="0 0 16 16" fill="var(--text3)"><circle cx="8" cy="8" r="7.5"/><text x="8.5" y="11.5" text-anchor="middle" fill="var(--bg)" font-family="DM Sans,sans-serif" font-weight="700" font-size="10">?</text></svg></span></div>
         <div style="position:relative">
           <input class="field-input" id="inp-dwg" style="width:100%;padding:0 40px 0 14px;font-size:22px;font-weight:600;letter-spacing:.5px;font-family:'DM Sans',sans-serif" placeholder="">
           <button id="btn-recent-dwg" class="btn-recent-dwg no-drag" title="${t('RECENT SEARCHES')}">
@@ -1647,7 +1794,7 @@ function renderSearchCard() {
 
     inp.addEventListener('input', () => {
       const cardEl = $('#file-list-card');
-      if (cardEl) cardEl.classList.remove('card-glow');
+      if (cardEl) cardEl.classList.remove('card-glow', 'card-glow-pdf');
       inp.classList.remove('dimmed');
       hideRecentDropdown();
       // Count how many raw (non-hyphen) chars are before the cursor
@@ -1667,6 +1814,27 @@ function renderSearchCard() {
           parts = [alnum.slice(0,1), alnum.slice(1,4), alnum.slice(4,6), alnum.slice(6,9), alnum.slice(9,12)];
         }
         display = parts.filter(p => p).join('-');
+      } else if (alnum.length >= 2 && !/[*%_]/.test(alnum) && /^TL/i.test(alnum)) {
+        // TL tube layout: TL-{size}{type}{gauge}-{C?tubes}{style}-{pass}
+        display = (function(s) {
+          const rest = s.slice(2);
+          if (!rest) return 'TL';
+          const si = rest.search(/[SU]/);
+          if (si === -1) return 'TL-' + rest;
+          const st = rest.slice(0, si + 1), af = rest.slice(si + 1);
+          if (!af) return 'TL-' + st;
+          const g2 = ['10','12','14','16','20','24'], g1 = ['3','4','6','8'];
+          let gl = 0;
+          if (af.length >= 2 && g2.includes(af.slice(0,2))) gl = 2;
+          else if ('12'.includes(af[0]) && af.length === 1) return 'TL-' + st + af;
+          else if (g1.includes(af[0])) gl = 1;
+          if (!gl) return 'TL-' + rest;
+          const ag = af.slice(gl);
+          if (!ag) return 'TL-' + st + af.slice(0, gl);
+          const sm = ag.match(/^(C?\d+)([TS])(\d*)$/);
+          if (sm) return sm[3] ? `TL-${st}${af.slice(0,gl)}-${sm[1]}${sm[2]}-${sm[3]}` : `TL-${st}${af.slice(0,gl)}-${sm[1]}${sm[2]}`;
+          return `TL-${st}${af.slice(0,gl)}-${ag}`;
+        })(alnum);
       }
       inp.value = display;
       // Restore cursor: find the position in display string where rawBefore chars have passed
@@ -1690,7 +1858,7 @@ function renderSearchCard() {
     });
     ['focus', 'click'].forEach(evt => inp.addEventListener(evt, () => {
       const cardEl = $('#file-list-card');
-      if (cardEl) cardEl.classList.remove('card-glow');
+      if (cardEl) cardEl.classList.remove('card-glow', 'card-glow-pdf');
       inp.classList.remove('dimmed');
       // Auto-show recent searches popover if no results are displayed
       if (!S.dwgResult) showRecentSearchedDrawings();
@@ -1741,7 +1909,7 @@ function renderFiles() {
   const list = $('#file-list');
   // Reset flex for file list mode
   const listCard = $('#file-list-card');
-  if (listCard) { listCard.style.flex = '1'; listCard.style.alignSelf = ''; }
+  if (listCard) { listCard.style.flex = '1'; listCard.style.alignSelf = ''; listCard.style.minWidth = ''; }
   if (!S.files.length) { list.innerHTML = ''; return; }
 
   list.innerHTML = S.files.map((f, i) => {
@@ -1793,10 +1961,12 @@ function renderFiles() {
       }
     } else if (f.displayName !== f.name && f.revDisplay) {
       const dwgNorm = f.displayName.replace(/-/g, '');
-      nameHtml = `<span class="file-num" style="color:var(${nameColor})">${escHtml(f.displayName)}</span><span class="file-rev" style="color:var(${nameColor})"> ʀ${escHtml(f.revDisplay)}</span><button class="dwg-copy-btn no-drag" data-dwg="${escHtml(dwgNorm)}" title="Copy ${escHtml(dwgNorm)}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>`;
+      const copyBtn = `<button class="dwg-copy-btn no-drag" data-dwg="${escHtml(dwgNorm)}" data-tip="Copy drawing number"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>`;
+      nameHtml = `${copyBtn}<span class="file-num" style="color:var(${nameColor})">${escHtml(f.displayName)}</span><span class="file-rev" style="color:var(${nameColor})"> ʀ${escHtml(f.revDisplay)}</span>`;
     } else if (f.displayName !== f.name) {
       const dwgNorm = f.displayName.replace(/-/g, '');
-      nameHtml = `<span class="file-num" style="color:var(${nameColor})">${escHtml(f.displayName)}</span><button class="dwg-copy-btn no-drag" data-dwg="${escHtml(dwgNorm)}" title="Copy ${escHtml(dwgNorm)}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>`;
+      const copyBtn = `<button class="dwg-copy-btn no-drag" data-dwg="${escHtml(dwgNorm)}" data-tip="Copy drawing number"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>`;
+      nameHtml = `${copyBtn}<span class="file-num" style="color:var(${nameColor})">${escHtml(f.displayName)}</span>`;
     } else {
       // Keep extension visible for obscure/technical file types
       const KEEP_EXT = ['U1','U2','U1A','U1P','U4','U5','UT','INI','FIL','DAT','DRS','BOM','BAT','LDF','LGA','HOL','CNT','QBP','NC','NT'];
@@ -1807,11 +1977,13 @@ function renderFiles() {
 
     const modStr = f.mtime ? timeAgo(new Date(f.mtime).getTime()) : '';
     const smallText = (is00 || f.section) && !isAck ? 'font-size:10.5px;' : '';
+    // Inline expand arrow for wildcard grouping
+    const expandHtml = f._expandSection ? `<span class="wc-expand no-drag" data-section="${escHtml(f._expandSection)}" title="${f._olderCount} older"><span class="chevron${S.collapsedSections[f._expandSection] !== false ? ' collapsed' : ''}">\u25BC</span></span>` : '';
 
     return divider + `<div class="file-row${subClass}${warnClass} ${i === S.selected ? 'selected' : ''}" data-idx="${i}" data-name="${escHtml(f.name)}"
       style="${hidden}${smallText}animation-delay:${i * 0.02}s;--file-color:var(${badgeColor})">
       <span class="file-prefix" style="color:var(${nameColor})">${f.section ? '' : '\u00A0'}</span>
-      <span class="file-name">${nameHtml}</span>
+      <span class="file-name">${nameHtml}${expandHtml}</span>
       ${rawExt ? `<span class="file-badge" style="color:var(${badgeColor});background:color-mix(in srgb,var(${badgeColor}) 12%,transparent);width:38px;text-align:center">${rawExt}</span>` : ''}
       ${modStr ? `<span style="font-size:9px;color:var(--text3);flex-shrink:0;width:38px;text-align:right">${modStr}</span>` : ''}
     </div>`;
@@ -1827,8 +1999,8 @@ function renderFiles() {
   });
   list.querySelectorAll('.file-row').forEach(row => {
     const idx = +row.dataset.idx;
-    row.addEventListener('click', () => { if (S.files[idx]?.type !== 'section-header') selectFile(idx); });
-    row.addEventListener('dblclick', () => { if (S.files[idx]?.type !== 'section-header') openFile(idx); });
+    row.addEventListener('click', (e) => { if (S.files[idx]?.type !== 'section-header' && !e.target.closest('.wc-expand')) selectFile(idx); });
+    row.addEventListener('dblclick', (e) => { if (S.files[idx]?.type !== 'section-header' && !e.target.closest('.wc-expand')) openFile(idx); });
     row.addEventListener('contextmenu', e => { if (S.files[idx]?.type !== 'section-header') showContextMenu(e, idx); });
   });
   // Drawing number copy buttons
@@ -1839,6 +2011,17 @@ function renderFiles() {
       const svg = btn.innerHTML;
       btn.innerHTML = '<span style="font-size:9px;font-weight:600;color:var(--accent)">OK</span>';
       setTimeout(() => { btn.innerHTML = svg; }, 800);
+    });
+  });
+  // Wildcard expand/collapse arrows
+  list.querySelectorAll('.wc-expand').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const name = el.dataset.section;
+      S.collapsedSections[name] = !S.collapsedSections[name];
+      const chev = el.querySelector('.chevron');
+      if (chev) chev.classList.toggle('collapsed', S.collapsedSections[name]);
+      renderFiles();
     });
   });
 }
@@ -1857,6 +2040,19 @@ function selectFile(idx) {
 }
 
 function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function linkify(html) {
+  return html.replace(/(https?:\/\/[^\s<]+|(?<![\/\w])(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+(?:com|org|net|io|gov|edu|co|app|dev|me|info|biz|us|uk|ca|au)\b[^\s<]*)/gi, (match) => {
+    // Strip trailing punctuation that's not part of the URL
+    const cleaned = match.replace(/[!?,.:;)]+$/, '');
+    const trailing = match.slice(cleaned.length);
+    const href = cleaned.startsWith('http') ? cleaned : 'https://' + cleaned;
+    return `<a href="${href}" style="color:var(--accent);text-decoration:underline" onclick="event.preventDefault();window.api.openExternal(this.href)">${cleaned}</a>${trailing}`;
+  });
+}
+
+function shortFolderTip(p) {
+  return p.replace(/^L:\\Group\\/i, '').replace(/^\\\\01ckfp02-1\\vol1\\Group\\/i, '').replace(/^L:\\Drawings\\/i, '').replace(/^\\\\01ckfp02-1\\vol1\\Drawings\\/i, '') || 'Folder';
+}
 
 function timeAgo(ts) {
   const diff = Date.now() - ts;
@@ -2137,7 +2333,7 @@ async function doDrawingSearch() {
   const raw = $('#inp-dwg')?.value || '';
   let cleaned = raw.trim().replace(/[\s-]/g,'');
   const h = cleaned.indexOf('#'); if (h !== -1) cleaned = cleaned.slice(0, h);
-  if (!cleaned) { setStatus('⚠  ' + t('Enter a drawing number.')); return; }
+  if (!cleaned) { setStatus(t('Enter a drawing number.')); return; }
   hideRecentDropdown();
   // Show searching state
   $('#main-area').style.display = 'flex';
@@ -2197,18 +2393,17 @@ async function doDrawingSearch() {
       const newestRev = files[0]._rev;
       const newestFiles = files.filter(f => f._rev === newestRev);
       const olderFiles = files.filter(f => f._rev !== newestRev);
-      displayFiles.push(...newestFiles);
+      // Mark the first newest file as the "heading" with expand arrow if older revs exist
       if (olderFiles.length) {
         const sectionName = `older-${baseNum}`;
-        const uniqueRevs = [...new Set(olderFiles.map(f => f._rev))];
-        displayFiles.push({
-          type: 'section-header', sectionName,
-          displayLabel: `${uniqueRevs.length} older rev${uniqueRevs.length !== 1 ? 's' : ''}`,
-          fileCount: olderFiles.length, isEmpty: false,
-        });
+        newestFiles[0]._expandSection = sectionName;
+        newestFiles[0]._olderCount = olderFiles.length;
         olderFiles.forEach(f => { f.section = sectionName; });
-        displayFiles.push(...olderFiles);
         S.collapsedSections[sectionName] = true;
+        displayFiles.push(...newestFiles);
+        displayFiles.push(...olderFiles);
+      } else {
+        displayFiles.push(...newestFiles);
       }
     }
     S.files = displayFiles; S.selected = -1;
@@ -2273,7 +2468,7 @@ function renderDrawingResult() {
       fmtOrig = `${orig[0]}-${orig.slice(1,4)}-${orig[4]}-${orig.slice(5,7)}-${orig.slice(7,10)}-${orig.slice(10,12)}`;
     else if ('045'.includes(f) && orig.length === 12)
       fmtOrig = `${orig[0]}-${orig.slice(1,4)}-${orig.slice(4,6)}-${orig.slice(6,9)}-${orig.slice(9,12)}`;
-    tabularHtml = `<div class="dwg-tabular-notice no-drag">No exact match for <b>${escHtml(fmtOrig)}</b> — showing tabular drawing</div>`;
+    tabularHtml = `<div class="dwg-tabular-notice no-drag">Tabular drawing</div>`;
   }
 
   // Warnings
@@ -2282,14 +2477,13 @@ function renderDrawingResult() {
   if (r.bakWarning) alertHtml += `<div class="dwg-alert no-drag">⚠ ${escHtml(r.bakWarning)}</div>`;
 
   card.innerHTML = `<div class="dwg-result">
-    <div style="display:flex;align-items:baseline">
-      <span class="dwg-result-num">${escHtml(dispName)}</span>
+    <div style="display:flex;align-items:baseline;white-space:nowrap;gap:6px">
+      <button class="dwg-copy-btn no-drag" id="dwg-card-copy" data-dwg="${escHtml(r.base)}" data-tip="Copy drawing number" style="opacity:.4;padding:5px 7px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+      <span class="dwg-result-num" style="color:var(${ext === 'PDF' ? '--pdf' : '--accent'})">${r.tabularFallback ? escHtml(dispName.slice(0, dispName.lastIndexOf('-'))) + '<span style="color:#2ecc40">' + escHtml(dispName.slice(dispName.lastIndexOf('-'))) + '</span>' : escHtml(dispName)}</span>
       <span class="dwg-result-rev">REV ${escHtml(rev)}</span>
-      <button class="dwg-copy-btn no-drag" id="dwg-card-copy" data-dwg="${escHtml(r.base)}" title="Copy ${escHtml(r.base)}" style="opacity:.4;padding:4px 6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
       ${altHtml}
     </div>
     <div class="dwg-result-meta">
-      <span><span class="dwg-result-label">FORMAT</span> ${ext}</span>
       <span><span class="dwg-result-label">LOCATION</span> ${loc}</span>
       ${owner ? `<span><span class="dwg-result-label">OWNER</span> ${escHtml(owner)}</span>` : ''}
       ${modified ? `<span><span class="dwg-result-label">MODIFIED</span> ${modified}</span>` : ''}
@@ -2297,8 +2491,56 @@ function renderDrawingResult() {
     ${revsHtml}
     ${tabularHtml}
     ${alertHtml}
+    <div id="ts-info" style="display:none"></div>
     <div class="dwg-hint">Enter or double-click to open</div>
   </div>`;
+
+  // Tubesheet async scan (3440-3540 range)
+  const tsPrefix = parseInt((r.base || '').slice(0, 4));
+  if (tsPrefix >= 3440 && tsPrefix <= 3540 && p && !r.wildcard) {
+    // Find the DWG file (need DWG for DXF conversion, not PDF)
+    const tsDwgFile = (r.files || []).find(f => /\.dwg$/i.test(f.name)) || p;
+    const tsEl = card.querySelector('#ts-info');
+    if (tsEl) {
+      tsEl.style.display = '';
+      tsEl.innerHTML = `<div class="ts-shimmer" style="padding:10px 0 4px">
+        <div class="shimmer-bar" style="width:140px;height:13px;margin-bottom:7px"></div>
+        <div style="display:flex;gap:16px"><div class="shimmer-bar" style="width:90px;height:10px"></div><div class="shimmer-bar" style="width:70px;height:10px"></div></div>
+      </div>`;
+      // Fire async — card is already interactive
+      window.api.scanTubesheet(tsDwgFile.filepath).then(ts => {
+        if (!tsEl.isConnected) return; // card was replaced
+        if (!ts || !ts.ok) { tsEl.style.display = 'none'; return; }
+        let html = '<div class="ts-data" style="padding:10px 0 2px;border-top:1px solid color-mix(in srgb,var(--text3) 20%,transparent);margin-top:4px">';
+        if (ts.tlRef) {
+          const tlSearch = ts.tlRef.replace(/-/g, '');
+          const tlHyph = escHtml(ts.tlRef);
+          const best = ts.tlFiles && ts.tlFiles.length ? (ts.tlFiles.find(f => /\.dwg$/i.test(f.name)) || ts.tlFiles[0]) : null;
+          html += `<div style="margin-bottom:6px"><span class="dwg-result-label">TUBE LAYOUT</span> <a href="#" class="ts-tl-pill no-drag" data-tl="${escHtml(tlSearch)}"${best ? ` data-fp="${escHtml(best.filepath)}"` : ''} style="display:inline-block;padding:4px 10px;border-radius:7px;background:color-mix(in srgb,var(--accent) 10%,transparent);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);text-decoration:none;cursor:pointer;font-size:13.5px;font-weight:700;color:var(--accent);letter-spacing:.3px;transition:background .15s,border-color .15s">${tlHyph}</a></div>`;
+        }
+        // Specs row
+        const specs = [];
+        if (ts.material) specs.push(`<span><span class="dwg-result-label">MATERIAL</span> ${escHtml(ts.material)}</span>`);
+        if (ts.tubeHoleDia) specs.push(`<span><span class="dwg-result-label">TUBE HOLES</span> ${escHtml(ts.tubeHoleDia).replace('-', '\u2013')}\u2033 dia</span>`);
+        if (ts.diameters && ts.diameters.length) {
+          const od = Math.max(...ts.diameters);
+          specs.push(`<span><span class="dwg-result-label">OD</span> ${od.toFixed(3)}\u2033</span>`);
+        }
+        if (specs.length) html += `<div class="dwg-result-meta" style="flex-wrap:wrap">${specs.join('')}</div>`;
+        if (!ts.tlRef && !specs.length) { tsEl.style.display = 'none'; return; }
+        html += '</div>';
+        tsEl.innerHTML = html;
+        // TL pill click — open file directly if available, otherwise search
+        tsEl.querySelectorAll('.ts-tl-pill').forEach(a => {
+          a.addEventListener('click', e => {
+            e.preventDefault();
+            if (a.dataset.fp) { window.api.openFile(a.dataset.fp); return; }
+            const inp = $('#inp-dwg'); if (inp) { inp.value = a.dataset.tl; inp.dispatchEvent(new Event('input')); setTimeout(() => { const cardEl = $('#file-list-card'); if (cardEl) cardEl.classList.remove('card-glow','card-glow-pdf'); doDrawingSearch(); }, 60); }
+          });
+        });
+      }).catch(() => { if (tsEl.isConnected) tsEl.style.display = 'none'; });
+    }
+  }
 
   // Event: copy drawing number
   const cardCopyBtn = $('#dwg-card-copy');
@@ -2333,7 +2575,7 @@ function renderDrawingResult() {
 
   // Transfer glow from search input to card (card mode only)
   if (cardParent && !r.wildcard) {
-    cardParent.classList.add('card-glow');
+    cardParent.classList.add(ext === 'PDF' ? 'card-glow-pdf' : 'card-glow');
     const inp = $('#inp-dwg');
     if (inp) inp.classList.add('dimmed');
   }
@@ -2360,7 +2602,7 @@ function updateOpenBtn() {
   if (dxfBtn) { dxfBtn.disabled = !hasDwg; dxfBtn.style.opacity = hasDwg ? '1' : '.4'; }
   const bomExtBtn = $('#btn-bom-extract');
   if (bomExtBtn && !bomExtBtn.querySelector('.deep-spinner')) {
-    const bomOk = hasDwg && S._hasOda;
+    const bomOk = f && f.ext.replace(']','') === 'DWG' && S._hasOda;
     bomExtBtn.disabled = !bomOk;
     bomExtBtn.style.opacity = bomOk ? '1' : '.4';
   }
@@ -2372,9 +2614,23 @@ function updateOpenBtn() {
     if (!S._hasAccore) { pdfBtn.innerHTML = '<span style="font-size:9px;opacity:.7">&#128274;</span> PDF'; }
     else { pdfBtn.textContent = 'PDF'; }
   }
-  // Folder button — enable when a folder is loaded
+  // Folder button — enable when a folder is loaded (or a file is selected in wildcard mode)
   const folderBtn = $('#btn-explorer');
-  if (folderBtn) { folderBtn.disabled = !S.currentFolder; folderBtn.style.opacity = S.currentFolder ? '1' : '.4'; }
+  const wcSelected = S.dwgResult && S.dwgResult.wildcard && S.selected >= 0 && S.files[S.selected] && S.files[S.selected].type !== 'section-header';
+  const hasFolder = S.currentFolder && !(S.dwgResult && S.dwgResult.wildcard) || wcSelected;
+  if (folderBtn) {
+    folderBtn.disabled = !hasFolder;
+    folderBtn.style.opacity = hasFolder ? '1' : '.4';
+    // Show short folder path as tooltip
+    let tipPath = null;
+    if (wcSelected) {
+      const fp = S.files[S.selected].filepath;
+      tipPath = fp.substring(0, Math.max(fp.lastIndexOf('\\'), fp.lastIndexOf('/')));
+    } else if (S.currentFolder) {
+      tipPath = S.currentFolder;
+    }
+    folderBtn.dataset.tip = tipPath ? shortFolderTip(tipPath) : 'Folder';
+  }
   const routeBtn = $('#btn-route');
   if (routeBtn && !routeBtn.classList.contains('route-ready') && !routeBtn.classList.contains('route-locked')) { routeBtn.disabled = true; routeBtn.style.opacity = '.4'; }
   // Resubmit button — enable for BOM or DRS files
@@ -2503,7 +2759,7 @@ function showContextMenu(e, idx) {
     items.push({ label: t('Copy source drawing'), action: async () => {
       const target = await window.api.readLink(f.filepath);
       if (target) { window.api.copyFileToClipboard(target); setStatus(t('Source drawing copied')); }
-      else setStatus('⚠  Could not read link target');
+      else setStatus('Could not read link target');
     }});
     items.push({ label: t('Copy link file'), action: () => window.api.copyFileToClipboard(f.filepath) });
     if (S.currentFolder) items.push({ label: t('Paste file here'), action: doPaste });
@@ -2512,7 +2768,7 @@ function showContextMenu(e, idx) {
     items.push({ label: t('Copy drawing file path'), action: async () => {
       const target = await window.api.readLink(f.filepath);
       if (target) { const r = await window.api.copyText(target); setStatus(r.ok ? t('Path copied') : t('Copy failed')); }
-      else setStatus('⚠  Could not read link target');
+      else setStatus('Could not read link target');
     }});
     if (e.shiftKey) items.push({ label: t('Copy link file path'), action: async () => { const r = await window.api.copyText(f.filepath); setStatus(r.ok ? t('Path copied') : t('Copy failed')); } });
     if (isDwg) {
@@ -2521,7 +2777,7 @@ function showContextMenu(e, idx) {
         ? { label: t('Open in Viewer'), action: () => window.api.openInViewer(f.filepath) }
         : { label: t('Open in AutoCAD'), action: async () => {
             const r = await window.api.openInAutocad(f.filepath);
-            if (!r.ok) setStatus('⚠  ' + r.msg);
+            if (!r.ok) setStatus(r.msg);
             else if (r.autoDetected) setStatus('AutoCAD found: ' + r.autoDetected);
           }});
     }
@@ -2538,7 +2794,7 @@ function showContextMenu(e, idx) {
         ? { label: t('Open in Viewer'), action: () => window.api.openInViewer(f.filepath) }
         : { label: t('Open in AutoCAD'), action: async () => {
             const r = await window.api.openInAutocad(f.filepath);
-            if (!r.ok) setStatus('⚠  ' + r.msg);
+            if (!r.ok) setStatus(r.msg);
             else if (r.autoDetected) setStatus('AutoCAD found: ' + r.autoDetected);
           }});
     }
@@ -2613,8 +2869,8 @@ async function applyTheme(t) {
     if (muteBtn) muteBtn.style.display = 'none';
   }
   window.api.saveConfig({ theme: t });
-  // Re-render chat with new theme colors
-  if (S.mode === 'chat') { lastChatCount = 0; pollChat(); }
+  // Re-render chat with new theme colors — force re-render by resetting count
+  if (S.mode === 'chat') { lastChatCount = 0; window.api.chatRead().then(msgs => { if (msgs.length) handleChatUpdate(msgs); }); }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -2831,8 +3087,9 @@ function playDiscoMusic(ctx) {
 // ═══════════════════════════════════════════════════════════════════════
 //  💬 Chat Room
 // ═══════════════════════════════════════════════════════════════════════
-let chatPollTimer = null;
+let chatPollTimer = null;  // kept for fallback polling if Firebase is slow
 let lastChatCount = 0;
+let _chatListenerActive = false;
 
 function fixName(raw) {
   if (!raw) return raw;
@@ -2892,13 +3149,56 @@ async function getCachedUsername() {
   return _cachedUsername;
 }
 
+const REACT_EMOJIS = ['👍','😂','❤️','😮','😢','🎉'];
+
+function renderReactions(reactions, msgId, me) {
+  if (!reactions || Object.keys(reactions).length === 0) return '';
+  let html = '<div class="chat-reactions">';
+  for (const [emoji, users] of Object.entries(reactions)) {
+    if (!users || users.length === 0) continue;
+    const isMine = users.includes(me);
+    const names = users.map(u => resolveName(u, _nicknames[u] || u)).join(', ');
+    html += `<span class="chat-reaction${isMine ? ' mine' : ''}" data-msg="${msgId}" data-emoji="${emoji}" data-tip="${escHtml(names)}">${emoji}<span class="r-count">${users.length}</span></span>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+let _chatPfps = {};  // username → data URL
+let _chatLastSeen = {};  // username → timestamp ms
+let _lastPfpFetch = 0;
+
+async function refreshPresenceData() {
+  if (Date.now() - _lastPfpFetch < 120000) return;
+  _lastPfpFetch = Date.now();
+  try {
+    const raw = await window.api.chatGetPfps() || {};
+    _chatPfps = {};
+    _chatLastSeen = {};
+    for (const [k, v] of Object.entries(raw)) {
+      if (v.pfp) _chatPfps[k] = v.pfp;
+      _chatLastSeen[k] = v.lastSeen || 0;
+    }
+  } catch {}
+}
+
 function renderChatMessages(msgs) {
+  refreshPresenceData();  // non-blocking, throttled to every 2 min
   const el = $('#chat-messages');
   const me = _cachedUsername || '';
+  const isAdmin = me === 'wboisso';
+  const wasAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
   el.innerHTML = msgs.map(m => {
+    const divider = m._newDivider ? '<div class="chat-new-divider"><span>new messages</span></div>' : '';
     if (m.system) {
-      return `<div class="chat-msg system">
+      return divider + `<div class="chat-msg system">
         <div class="chat-text">${escHtml(resolveName(m.user, m.name))} ${escHtml(m.text)}</div>
+      </div>`;
+    }
+    if (m.unsent) {
+      const who = resolveName(m.unsendBy || m.user, m.name);
+      return divider + `<div class="chat-msg system">
+        <div class="chat-text">${escHtml(who)} unsent a message</div>
       </div>`;
     }
     const initials = getInitials(m.name || m.user || '?');
@@ -2906,51 +3206,102 @@ function renderChatMessages(msgs) {
     const color = userColor(m.name || m.user || '?');
     const bigEmoji = isEmojiOnly(m.text || '');
     const isMine = me && (m.user || '').toLowerCase() === me;
-    return `<div class="chat-msg${isMine ? ' mine' : ''}">
-      <div class="chat-avatar" style="background:${color};--user-color:${color}">${escHtml(initials)}</div>
+    const pickerHtml = REACT_EMOJIS.map(e => `<span data-msg="${m.id}" data-emoji="${e}">${e}</span>`).join('');
+    const ageMs = Date.now() - (m.ts || 0);
+    const canUnsend = isMine && ageMs < 2 * 60 * 1000;
+    const canEdit = isMine && ageMs < 15 * 60 * 1000;
+    const adminDelete = isAdmin && !isMine;
+    let actionsHtml = '';
+    if (canUnsend || canEdit || adminDelete) {
+      actionsHtml = '<div class="chat-msg-actions">';
+      if (canEdit) actionsHtml += `<button class="chat-action-btn" data-action="edit" data-msgid="${m.id}" title="Edit">✏️</button>`;
+      if (canUnsend || adminDelete) actionsHtml += `<button class="chat-action-btn" data-action="unsend" data-msgid="${m.id}" title="Unsend">🗑️</button>`;
+      actionsHtml += '</div>';
+    }
+    const editedHtml = m.edited ? '<div class="chat-edited">edited</div>' : '';
+    const userKey = (m.user || '').toLowerCase();
+    const pfp = _chatPfps[userKey];
+    const pfpStyle = pfp ? `background-image:url(${pfp});color:transparent` : `background:${color};--user-color:${color}`;
+    const isActive = _chatLastSeen[userKey] && (Date.now() - _chatLastSeen[userKey] < 180000);
+    return divider + `<div class="chat-msg${isMine ? ' mine' : ''}">
+      <div class="chat-avatar${isActive ? ' active' : ''}" style="${pfpStyle}">${escHtml(initials)}</div>
       <div class="chat-bubble">
+        ${actionsHtml}
+        <button class="chat-react-btn" data-msgid="${m.id}">😊</button>
+        <div class="chat-react-picker" id="picker-${m.id}">${pickerHtml}</div>
         <div class="chat-name" style="color:${color}">${escHtml(resolveName(m.user, m.name))}</div>
-        <div class="chat-text"${bigEmoji ? ' style="font-size:28px;line-height:1.2"' : ''}>${escHtml(m.text)}</div>
+        <div class="chat-text"${bigEmoji ? ' style="font-size:28px;line-height:1.2"' : ''}>${linkify(escHtml(m.text))}</div>
         <div class="chat-time">${ago}</div>
+        ${editedHtml}
+        ${renderReactions(m.reactions, m.id, me)}
       </div>
     </div>`;
   }).join('');
-  el.scrollTop = el.scrollHeight;
+  if (wasAtBottom) el.scrollTop = el.scrollHeight;
 }
 
 let _chatInitialized = false;
+let _chatLastSeenCount = 0;  // tracks what user has "seen" (on chat tab)
 
-async function pollChat() {
-  try {
-    const msgs = await window.api.chatRead();
-    if (msgs.length !== lastChatCount) {
-      const hadMessages = lastChatCount > 0;
-      const newMsgs = hadMessages ? msgs.slice(lastChatCount) : [];
-      lastChatCount = msgs.length;
-      renderChatMessages(msgs);
+// Handle real-time messages pushed from Firebase via main process
+function handleChatUpdate(msgs) {
+  const countChanged = msgs.length !== lastChatCount;
+  const hadMessages = lastChatCount > 0;
+  const newMsgs = (countChanged && hadMessages) ? msgs.slice(lastChatCount) : [];
+  lastChatCount = msgs.length;
 
-      // Notify for new messages from others (not on first load)
-      if (_chatInitialized && newMsgs.length > 0) {
-        const userInfo = await window.api.getUserInfo();
-        const fromOthers = newMsgs.filter(m => (m.user || '').toLowerCase() !== (userInfo.username || '').toLowerCase());
-        if (fromOthers.length > 0 && !S.config.mute_chat) {
-          playChatBubble();
-          const focused = await window.api.isWindowFocused();
-          const onChatTab = S.mode === 'chat';
+  // On first load, mark everything as "seen" so there's no false unread
+  if (!_chatInitialized) _chatLastSeenCount = msgs.length;
+
+  // Insert "new messages" divider if not on chat tab and there are unread
+  const onChatTab = S.mode === 'chat';
+  if (onChatTab) _chatLastSeenCount = msgs.length;
+  if (_chatInitialized && _chatLastSeenCount > 0 && _chatLastSeenCount < msgs.length) {
+    msgs[_chatLastSeenCount]._newDivider = true;
+  }
+
+  renderChatMessages(msgs);
+
+  // Update unread badge
+  const badge = $('#chat-unread-badge');
+  if (badge) {
+    const unread = msgs.length - _chatLastSeenCount;
+    badge.style.display = (unread > 0 && !onChatTab) ? '' : 'none';
+  }
+
+  if (countChanged) {
+
+    // Notify for new messages from others (not on first load)
+    if (_chatInitialized && newMsgs.length > 0) {
+      const me = _cachedUsername || '';
+      const fromOthers = newMsgs.filter(m => (m.user || '').toLowerCase() !== me);
+      if (fromOthers.length > 0 && !S.config.mute_chat) {
+        playChatBubble();
+        window.api.isWindowFocused().then(focused => {
           if (!focused || !onChatTab) {
             const last = fromOthers[fromOthers.length - 1];
             const name = resolveName(last.user, last.name);
             window.api.notifyChat('XylemView Pro', name + ': ' + last.text);
           }
-        }
+        });
       }
-      _chatInitialized = true;
     }
+    _chatInitialized = true;
+  }
+}
+
+// Fallback polling (only used if Firebase listener hasn't kicked in)
+async function pollChat() {
+  if (_chatListenerActive) return;  // Firebase is handling it
+  try {
+    const msgs = await window.api.chatRead();
+    handleChatUpdate(msgs);
   } catch (e) {}
 }
 
 function startChatPoll(fast) {
-  const interval = fast ? 2500 : 10000;  // 2.5s on chat tab, 10s background
+  if (_chatListenerActive) return;  // Firebase is handling it
+  const interval = fast ? 2500 : 10000;
   if (chatPollTimer) clearInterval(chatPollTimer);
   pollChat();
   chatPollTimer = setInterval(pollChat, interval);
@@ -2958,8 +3309,6 @@ function startChatPoll(fast) {
 
 function stopChatPoll() {
   if (chatPollTimer) { clearInterval(chatPollTimer); chatPollTimer = null; }
-  lastChatCount = 0;
-  _chatInitialized = false;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -3856,6 +4205,15 @@ function gpheExtractBomData(parsed) {
     if (KANBAN_SUPPORT.has(pn)) hasSupportColumn = true;
   }
 
+  // Plate count from DXF text — look for "AP110-418-TKTL-63%" style model strings
+  let plateCount = 0;
+  if (parsed.texts) {
+    for (const t of parsed.texts) {
+      const m = t.value.match(/^A[FW]?P\d+\w*[-\u2013](\d+)[-\u2013]/);
+      if (m) { plateCount = parseInt(m[1], 10); break; }
+    }
+  }
+
   return {
     linerCount: Math.round(linerCount),
     boltCount: Math.round(boltCount),
@@ -3864,6 +4222,7 @@ function gpheExtractBomData(parsed) {
     hasGuideBar,
     hasSupportColumn,
     bomItemCount: bomItems.length,
+    plateCount,
   };
 }
 
@@ -3954,7 +4313,9 @@ function gpheCalculateRouting(drawingNum, bomData) {
 
   const nonConfig = parseInt(digits.substring(1, 4));
   const pressureDigit = parseInt(digits[5]);
-  const plates = digits.length >= 13 ? parseInt(digits.substring(6, 10)) : parseInt(digits.substring(6, 9));
+  const platesFromDwgNum = digits.length >= 13 ? parseInt(digits.substring(6, 10)) : parseInt(digits.substring(6, 9));
+  const hasBomPlates = bomData && bomData.plateCount > 0;
+  const plates = Math.min(hasBomPlates ? bomData.plateCount : platesFromDwgNum, 1500);
 
   // Try non-config code first, then convert config→non-config (add 5 to tens digit)
   let modelRow = GPHE_MODELS.find(r => r[1] === nonConfig);
@@ -4094,6 +4455,8 @@ function gpheCalculateRouting(drawingNum, bomData) {
       hasGuideBar: bomData.hasGuideBar,
       hasSupportColumn: bomData.hasSupportColumn,
       boltsChanged: bomData.boltCount > 0 && bomData.boltCount !== boltsFromDrawing,
+      platesFromDxf: hasBomPlates,
+      platesChanged: hasBomPlates && bomData.plateCount !== platesFromDwgNum,
     } : { used: false },
   };
 }
@@ -4219,6 +4582,56 @@ function askSessionLetter() {
   });
 }
 
+async function handleSoapUpload(allOps, btn, defaultBasis) {
+  // Resolve BPCS part number
+  let pn = null;
+  btn.textContent = 'Resolving...';
+  if (S.currentOrder && S.currentLine) {
+    try {
+      const r = await window.api.bpcsGetItemNumber('SANDBOX', S.currentOrder, S.currentLine);
+      if (r.ok && r.result && r.result.trim()) pn = r.result.trim();
+    } catch (e) { /* fall through to prompt */ }
+  }
+  if (!pn) {
+    btn.textContent = 'SOAP';
+    alert('Could not resolve BPCS part number. Search an order first so we can look up the item number.');
+    return;
+  }
+
+  // Flatten ops
+  const flatOps = [];
+  let opNum = 10;
+  for (const { ops } of allOps) {
+    for (const op of ops) {
+      flatOps.push({ op: opNum, wc: op.wc, desc: (op.op || '').slice(0, 30), run: op.run || 0, setup: op.setup || 0, basis: op.basis || defaultBasis || '' });
+      opNum += 10;
+    }
+  }
+
+  // Confirmation
+  const msg = `Upload ${flatOps.length} operations to SANDBOX for:\n${pn}\n\nOps: ${flatOps.map(o => o.op + ' ' + o.desc).join(', ')}\n\nProceed?`;
+  if (!confirm(msg)) { btn.textContent = 'SOAP'; return; }
+
+  btn.textContent = 'Uploading...';
+  btn.disabled = true;
+  try {
+    const r = await window.api.bpcsUploadRouting('SANDBOX', pn, flatOps);
+    if (r.ok) {
+      btn.textContent = `Done! ${r.summary.succeeded}/${r.summary.total}`;
+      btn.style.background = 'var(--accent)'; btn.style.color = '#fff';
+    } else {
+      const details = r.results.filter(x => !x.ok).map(x => `Op ${x.op}: ${x.error}`).join('\n');
+      btn.textContent = `${r.summary.succeeded}/${r.summary.total} ok`;
+      btn.style.background = '#c44'; btn.style.color = '#fff';
+      alert(`Upload partial:\n${r.summary.succeeded} succeeded, ${r.summary.failed} failed, ${r.summary.skipped} skipped\n\n${details}`);
+    }
+  } catch (e) {
+    btn.textContent = 'Error';
+    alert('SOAP upload failed: ' + e.message);
+  }
+  btn.disabled = false;
+}
+
 function showRoutingResults(overlay, allOps, allVars, warnings, scanNames) {
   const modal = overlay.querySelector('.modal');
   const fmt = rtFmt, fmtTotal = rtFmtTotal;
@@ -4293,11 +4706,14 @@ function showRoutingResults(overlay, allOps, allVars, warnings, scanNames) {
     <div class="route-action-bar">
       <button class="btn-route-action no-drag" id="route-copy-excel">${t('Copy to Excel')}</button>
       <button class="btn-route-action no-drag" id="route-pcomm" style="background:var(--accent);color:#fff">Route-O-Matic</button>
+      <button class="btn-route-action no-drag" id="route-soap" style="font-size:10px" data-tip="Upload via BPCS web service (sandbox)">SOAP</button>
       <!-- ACS Route-O-Matic button (disabled for now — macro gen works, needs polish) -->
       <!-- <button class="btn-route-action no-drag" id="route-acs" style="font-size:10px" data-tip="Generate ACS macro file">ACS</button> -->
       <button class="btn-route-action btn-route-primary no-drag" id="route-close">Close</button>
     </div>`;
   modal.querySelector('#route-close').addEventListener('click', () => overlay.remove());
+  // SOAP upload
+  modal.querySelector('#route-soap').addEventListener('click', function() { handleSoapUpload(allOps, this); });
   // Copy to Excel — tab-separated values
   modal.querySelector('#route-copy-excel').addEventListener('click', function() {
     const tsvRows = [['WC', 'Operation', 'Run', 'Setup'].join('\t')];
@@ -4463,11 +4879,17 @@ function showGpheResults(overlay, result, filename) {
     <div class="route-action-bar">
       <button class="btn-route-action no-drag" id="route-copy-excel">${t('Copy to Excel')}</button>
       <button class="btn-route-action no-drag" id="route-pcomm" style="background:var(--accent);color:#fff">Route-O-Matic</button>
+      <button class="btn-route-action no-drag" id="route-soap" style="font-size:10px" data-tip="Upload via BPCS web service (sandbox)">SOAP</button>
       <!-- ACS Route-O-Matic button (disabled for now — macro gen works, needs polish) -->
       <!-- <button class="btn-route-action no-drag" id="route-acs" style="font-size:10px" data-tip="Generate ACS macro file">ACS</button> -->
       <button class="btn-route-action btn-route-primary no-drag" id="route-close">Close</button>
     </div>`;
   modal.querySelector('#route-close').addEventListener('click', () => overlay.remove());
+  // SOAP upload
+  modal.querySelector('#route-soap').addEventListener('click', function() {
+    const gpheAllOps = [{ type: 'gphe', ops: result.ops, vars: {} }];
+    handleSoapUpload(gpheAllOps, this);
+  });
   // Copy to Excel — tab-separated values (include extras)
   modal.querySelector('#route-copy-excel').addEventListener('click', function() {
     const tsvRows = [['WC', 'Operation', 'Run', 'Setup'].join('\t')];
@@ -4707,11 +5129,17 @@ function showBrazedResults(overlay, result, filename) {
     <div class="route-action-bar">
       <button class="btn-route-action no-drag" id="route-copy-excel">${t('Copy to Excel')}</button>
       <button class="btn-route-action no-drag" id="route-pcomm" style="background:var(--accent);color:#fff">Route-O-Matic</button>
+      <button class="btn-route-action no-drag" id="route-soap" style="font-size:10px" data-tip="Upload via BPCS web service (sandbox)">SOAP</button>
       <!-- ACS Route-O-Matic button (disabled for now — macro gen works, needs polish) -->
       <!-- <button class="btn-route-action no-drag" id="route-acs" style="font-size:10px" data-tip="Generate ACS macro file">ACS</button> -->
       <button class="btn-route-action btn-route-primary no-drag" id="route-close">Close</button>
     </div>`;
   modal.querySelector('#route-close').addEventListener('click', () => overlay.remove());
+  // SOAP upload
+  modal.querySelector('#route-soap').addEventListener('click', function() {
+    const brazedAllOps = [{ type: 'brazed', ops: result.ops, vars: {} }];
+    handleSoapUpload(brazedAllOps, this, '1'); // basis='1' for brazed
+  });
   modal.querySelector('#route-copy-excel').addEventListener('click', function() {
     const tsvRows = [['WC', 'Operation', 'Run'].join('\t')];
     tsvRows.push(['', 'BPHE ROUTING \u2014 ' + result.modTypeLabel, ''].join('\t'));
@@ -5320,6 +5748,405 @@ async function init() {
   const themeSeg = initSeg($('#theme-seg'), t => { applyTheme(t); });
   themeSeg.activate(S.theme);
 
+  // ─── Dashboard: 500k order countdown ────────────────────────────────
+  const DASH_MILESTONE = 500000;
+  const DASH_NOTIFY_THRESHOLD = DASH_MILESTONE - 10; // 499,990 — notify from 499,991+
+  const DASH_POLL_FAST = 5000;    // 5s when focused on dashboard
+  const DASH_POLL_SLOW = 120000;  // 2min when unfocused or other tab
+  let _dashInterval = null;
+  let _dashMaxOrder = parseInt(localStorage.getItem('dashMaxOrder'), 10) || null; // cached from last session
+  let _dashLastUpdate = parseInt(localStorage.getItem('dashMaxOrderTime'), 10) ? new Date(parseInt(localStorage.getItem('dashMaxOrderTime'), 10)) : null;
+  let _dashError = null;
+  let _dashFetching = false;
+  let _dashFocused = document.hasFocus();
+  let _dashLastPct = null; // track bar width to avoid re-animation
+  let _dashLastNotified = parseInt(localStorage.getItem('dash500kNotified'), 10) || null;
+  let _dashCelebrateStart = parseInt(localStorage.getItem('dash500kStart'), 10) || null;
+  let _celebrationTimers = [];
+  let _dashFanfarePlayed = !!localStorage.getItem('dash500kFanfare');
+
+  // Track window focus for adaptive polling
+  window.addEventListener('focus', () => { _dashFocused = true; if (S.mode === 'dashboard') resetDashPollRate(); });
+  window.addEventListener('blur', () => { _dashFocused = false; if (S.mode === 'dashboard') resetDashPollRate(); });
+
+  function resetDashPollRate() {
+    if (_dashInterval) clearInterval(_dashInterval);
+    const rate = _dashFocused ? DASH_POLL_FAST : DASH_POLL_SLOW;
+    _dashInterval = setInterval(fetchDashOrder, rate);
+  }
+
+  async function fetchDashOrder() {
+    _dashFetching = true;
+    if (S.mode === 'dashboard') renderDashboard();
+    try {
+      const res = await window.api.bpcsMaxOrder();
+      if (res.ok && res.maxOrder != null) {
+        _dashMaxOrder = res.maxOrder;
+        _dashLastUpdate = new Date();
+        _dashError = null;
+        localStorage.setItem('dashMaxOrder', String(_dashMaxOrder));
+        localStorage.setItem('dashMaxOrderTime', String(_dashLastUpdate.getTime()));
+      } else {
+        _dashError = res.error || 'No data returned';
+      }
+    } catch (e) {
+      _dashError = e.message || 'Network error';
+    }
+    _dashFetching = false;
+
+    // ── Chat notifications for the final 10 orders ──
+    if (_dashMaxOrder && _dashMaxOrder > DASH_NOTIFY_THRESHOLD) {
+      if (_dashLastNotified === null) {
+        // First fetch ever (or first since install) — seed to current so we don't spam history
+        _dashLastNotified = _dashMaxOrder;
+        localStorage.setItem('dash500kNotified', String(_dashLastNotified));
+      } else if (_dashMaxOrder > _dashLastNotified) {
+        // New orders in the final stretch — announce each one
+        const start = Math.max(DASH_NOTIFY_THRESHOLD + 1, _dashLastNotified + 1);
+        for (let ord = start; ord <= _dashMaxOrder; ord++) {
+          const rem = DASH_MILESTONE - ord;
+          let msg;
+          if (rem <= 0)     msg = '\u{1F389}\u{1F389}\u{1F389} ORDER 500,000 HAS BEEN ENTERED!!! \u{1F389}\u{1F389}\u{1F389}';
+          else if (rem === 1) msg = '\u{1F525} Order ' + ord.toLocaleString() + ' just entered \u{2014} ONE MORE until 500,000!!!';
+          else if (rem <= 3)  msg = '\u{1F680} Order ' + ord.toLocaleString() + ' \u{2014} only ' + rem + ' to go until 500,000!!';
+          else                msg = '\u{1F4E2} Order ' + ord.toLocaleString() + ' \u{2014} ' + rem + ' to go until 500,000!';
+          try { await window.api.chatSend(msg); } catch {}
+        }
+        _dashLastNotified = _dashMaxOrder;
+        localStorage.setItem('dash500kNotified', String(_dashLastNotified));
+      }
+    }
+
+    // ── Detect celebration start ──
+    if (_dashMaxOrder >= DASH_MILESTONE && !_dashCelebrateStart) {
+      _dashCelebrateStart = Date.now();
+      localStorage.setItem('dash500kStart', String(_dashCelebrateStart));
+    }
+
+    if (S.mode === 'dashboard') renderDashboard();
+  }
+
+  function dashboardPoll(active) {
+    if (_dashInterval) { clearInterval(_dashInterval); _dashInterval = null; }
+    if (!active) { stopCelebrationEffects(); return; }
+    fetchDashOrder();
+    resetDashPollRate();
+  }
+
+  // ── Celebration time window ──
+  function isCelebrationActive() {
+    if (!_dashMaxOrder || _dashMaxOrder < DASH_MILESTONE) return false;
+    if (!_dashCelebrateStart) return false;
+    // Get current ET time components
+    const nowETstr = new Date().toLocaleString('en-US', { timeZone: 'America/New_York', hour12: false });
+    const startETdate = new Date(_dashCelebrateStart).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
+    const [nowDate, nowTime] = nowETstr.split(', ');
+    const nowHour = parseInt(nowTime.split(':')[0], 10);
+    // Same calendar day (ET) as detection → always celebrate
+    if (nowDate === startETdate) return true;
+    // Next day(s) → celebrate until 7 AM ET
+    return nowHour < 7;
+  }
+
+  // ── Celebration effects: confetti, fireworks, sparkles ──
+  function startCelebrationEffects() {
+    if (_celebrationTimers.length) return; // already running
+    const el = $('#dashboard-container');
+    if (!el) return;
+    // Dense confetti rain
+    _celebrationTimers.push(setInterval(() => { if (S.mode === 'dashboard') spawnConfetti(el); }, 60));
+    // Firework bursts
+    _celebrationTimers.push(setInterval(() => { if (S.mode === 'dashboard') spawnFirework(el); }, 1800));
+    // Sparkles
+    _celebrationTimers.push(setInterval(() => { if (S.mode === 'dashboard') spawnSparkle(el); }, 50));
+    // Initial burst of fireworks
+    setTimeout(() => spawnFirework(el), 100);
+    setTimeout(() => spawnFirework(el), 500);
+    setTimeout(() => spawnFirework(el), 1000);
+    // Fanfare + Konami face rain (once ever)
+    if (!_dashFanfarePlayed) {
+      playFanfare();
+      _dashFanfarePlayed = true;
+      localStorage.setItem('dash500kFanfare', '1');
+      setTimeout(() => triggerKonamiCelebration(), 2000);
+    }
+  }
+
+  async function triggerKonamiCelebration() {
+    // Load faces + cursor silently (no spinner)
+    if (!_konamiFaces) _konamiFaces = await window.api.getKonamiFaces();
+    if (_konamiCursor === null) _konamiCursor = (await window.api.getKonamiCursor()) || false;
+    const faces = _konamiFaces && _konamiFaces.length ? _konamiFaces : null;
+    // Preload all face images
+    const preloaded = [];
+    if (faces) {
+      await Promise.all(faces.map(src => new Promise(resolve => {
+        const img = new Image();
+        img.onload = img.onerror = resolve;
+        img.src = src;
+        preloaded.push(img);
+      })));
+    }
+    // Swap cursor
+    if (_konamiCursor && !$('#konami-cursor')) {
+      await new Promise(resolve => { const img = new Image(); img.onload = img.onerror = resolve; img.src = _konamiCursor; });
+      document.body.style.cursor = 'url(' + _konamiCursor + '), auto';
+      const sheet = document.createElement('style');
+      sheet.id = 'konami-cursor';
+      sheet.textContent = '*{cursor:url(' + _konamiCursor + '),auto !important}body{-webkit-app-region:no-drag !important}.titlebar{-webkit-app-region:drag !important}';
+      document.head.appendChild(sheet);
+    }
+    // Rain faces
+    const endY = window.innerHeight + 80;
+    const interval = setInterval(() => {
+      const el = document.createElement('div');
+      const size = 50 + Math.random() * 60;
+      const rotation = -30 + Math.random() * 60;
+      const fallTime = 2.5 + Math.random() * 2;
+      if (preloaded.length) {
+        const img = preloaded[Math.floor(Math.random() * preloaded.length)].cloneNode();
+        img.style.cssText = 'width:' + size + 'px;height:auto;transform:rotate(' + rotation + 'deg)';
+        el.appendChild(img);
+      } else {
+        el.textContent = '\uD83C\uDF89';
+        el.style.fontSize = size + 'px';
+      }
+      const startY = -(size + 20);
+      el.style.cssText += 'position:fixed;top:' + startY + 'px;left:' + (Math.random() * 90) + '%;z-index:9999;pointer-events:none';
+      document.body.appendChild(el);
+      const t0 = performance.now();
+      function tick(now) {
+        const p = Math.min((now - t0) / (fallTime * 1000), 1);
+        el.style.top = (startY + (endY - startY) * p) + 'px';
+        if (p >= 0.8) el.style.opacity = String(Math.max(0, 1 - (p - 0.8) / 0.2));
+        if (p < 1) requestAnimationFrame(tick);
+        else el.remove();
+      }
+      requestAnimationFrame(tick);
+    }, 120);
+    setTimeout(() => clearInterval(interval), 6000);
+  }
+
+  function stopCelebrationEffects() {
+    _celebrationTimers.forEach(t => clearInterval(t));
+    _celebrationTimers = [];
+    const el = $('#dashboard-container');
+    if (el) el.classList.remove('dash-celebrate');
+  }
+
+  const _confettiColors = ['#ffd700','#ff1493','#00bfff','#00ff00','#ff4500','#8a2be2','#ff6347','#00ffcc','#fff','#ff69b4'];
+  function spawnConfetti(container) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    const color = _confettiColors[Math.floor(Math.random() * _confettiColors.length)];
+    const size = 5 + Math.random() * 9;
+    const dur = 2.5 + Math.random() * 3;
+    const spin = 360 + Math.random() * 720;
+    Object.assign(piece.style, {
+      left: Math.random() * 100 + '%',
+      width: size + 'px',
+      height: size * (0.5 + Math.random() * 1) + 'px',
+      backgroundColor: color,
+      borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+      animationDuration: dur + 's',
+      boxShadow: '0 0 6px ' + color,
+      '--cf-spin': spin + 'deg',
+    });
+    container.appendChild(piece);
+    setTimeout(() => piece.remove(), dur * 1000);
+  }
+
+  function spawnFirework(container) {
+    const colors = ['#ffd700','#ff1493','#00bfff','#ff4500','#00ff00','#8a2be2','#ff69b4','#00ffcc'];
+    const cx = 15 + Math.random() * 70;
+    const cy = 10 + Math.random() * 55;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const count = 24 + Math.floor(Math.random() * 16);
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.4;
+      const dist = 50 + Math.random() * 100;
+      const p = document.createElement('div');
+      p.className = 'firework-particle';
+      const sz = 2.5 + Math.random() * 3.5;
+      Object.assign(p.style, {
+        left: cx + '%', top: cy + '%',
+        width: sz + 'px', height: sz + 'px',
+        backgroundColor: color,
+        boxShadow: '0 0 ' + (sz * 3) + 'px ' + color,
+        '--fw-x': (Math.cos(angle) * dist) + 'px',
+        '--fw-y': (Math.sin(angle) * dist) + 'px',
+        animationDuration: (0.6 + Math.random() * 0.9) + 's',
+      });
+      container.appendChild(p);
+      setTimeout(() => p.remove(), 1600);
+    }
+  }
+
+  function spawnSparkle(container) {
+    const colors = ['#ffd700','#ff1493','#00bfff','#fff','#ff4500','#00ff00'];
+    const s = document.createElement('div');
+    s.className = 'celebrate-sparkle';
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    Object.assign(s.style, {
+      left: Math.random() * 100 + '%',
+      top: Math.random() * 80 + '%',
+      backgroundColor: color,
+      boxShadow: '0 0 6px ' + color,
+    });
+    container.appendChild(s);
+    setTimeout(() => s.remove(), 1500);
+  }
+
+  function playFanfare() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      // Ascending C major arpeggio into a triumphant chord
+      const melody = [
+        { f: 523.25, t: 0,    d: 0.3 },  // C5
+        { f: 659.25, t: 0.15, d: 0.3 },  // E5
+        { f: 783.99, t: 0.30, d: 0.3 },  // G5
+        { f: 1046.5, t: 0.45, d: 0.8 },  // C6 (held)
+        // Triumphant chord
+        { f: 523.25, t: 0.55, d: 0.9 },  // C5
+        { f: 659.25, t: 0.55, d: 0.9 },  // E5
+        { f: 783.99, t: 0.55, d: 0.9 },  // G5
+      ];
+      melody.forEach(({ f, t: time, d: dur }) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.value = f;
+        gain.gain.setValueAtTime(0.12, ctx.currentTime + time);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + time + dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + time);
+        osc.stop(ctx.currentTime + time + dur + 0.05);
+      });
+      // Close context after fanfare completes
+      setTimeout(() => ctx.close(), 3000);
+    } catch {}
+  }
+
+  // ── Render ──
+  function renderDashboard() {
+    const el = $('#dashboard-container');
+    if (!el) return;
+
+    const celebrating = isCelebrationActive();
+    el.classList.toggle('dash-celebrate', celebrating);
+
+    // No data at all (not even cached)
+    if (_dashMaxOrder == null && !_dashError) {
+      el.innerHTML = '<div class="dash-label dash-loading">Loading from BPCS&hellip;</div>';
+      return;
+    }
+    // Error with no data (not even cached)
+    if (_dashError && _dashMaxOrder == null) {
+      el.innerHTML = '<div class="dash-label">HIGHEST ORDER IN BPCS</div><div class="dash-error">' + _dashError + '</div>' +
+        '<button class="dash-retry">Retry</button>';
+      el.querySelector('.dash-retry').addEventListener('click', () => { el.innerHTML = '<div class="dash-label dash-loading">Retrying&hellip;</div>'; fetchDashOrder(); });
+      return;
+    }
+
+    if (celebrating) {
+      // Tear down normal DOM if switching to celebration
+      if (el.querySelector('.dash-num')) el.innerHTML = '';
+      renderCelebration(el);
+      startCelebrationEffects();
+      return;
+    }
+    stopCelebrationEffects();
+    // Tear down celebration DOM if switching back to normal
+    if (el.querySelector('.dash-celebrate-label')) el.innerHTML = '';
+
+    const remaining = DASH_MILESTONE - _dashMaxOrder;
+    const rangeStart = 499000;
+    const pct = Math.min(100, Math.max(0, ((_dashMaxOrder - rangeStart) / (DASH_MILESTONE - rangeStart)) * 100));
+    const formatted = _dashMaxOrder.toLocaleString();
+    const ago = _dashLastUpdate ? timeAgo(_dashLastUpdate.getTime()) : '';
+    const isFinal10 = remaining > 0 && remaining <= 10;
+
+    el.classList.toggle('dash-final10', isFinal10);
+
+    // Build DOM structure ONCE — subsequent renders only update text
+    if (!el.querySelector('.dash-num')) {
+      el.innerHTML =
+        '<div class="dash-label">Highest Order in BPCS</div>' +
+        '<div class="dash-number dash-num"></div>' +
+        '<div class="dash-remaining dash-rem"></div>' +
+        '<div class="dash-bar-wrap">' +
+          '<div class="dash-bar-label"><span>' + rangeStart.toLocaleString() + '</span><span>' + DASH_MILESTONE.toLocaleString() + '</span></div>' +
+          '<div class="dash-bar"><div class="dash-bar-fill dash-fill"></div></div>' +
+        '</div>' +
+        '<div class="dash-updated dash-ago"></div>' +
+        '<div class="dash-error dash-err" style="font-size:10px;margin-top:2px;display:none"></div>';
+      // Initial bar animation from 0 → target
+      requestAnimationFrame(() => {
+        const fill = el.querySelector('.dash-fill');
+        if (fill) fill.style.width = pct.toFixed(1) + '%';
+      });
+      _dashLastPct = pct;
+    }
+
+    // ── Update text content (no DOM rebuild) ──
+    el.querySelector('.dash-num').textContent = formatted;
+
+    const remEl = el.querySelector('.dash-rem');
+    if (remaining <= 0) {
+      remEl.textContent = 'WE HIT ' + DASH_MILESTONE.toLocaleString() + '!';
+      remEl.style.cssText = 'color:var(--accent);font-size:22px;font-weight:800';
+    } else if (remaining <= 3) {
+      remEl.textContent = 'Only ' + remaining + ' to go!!!';
+      remEl.style.cssText = 'color:var(--accent);font-weight:800;font-size:22px';
+    } else if (remaining <= 10) {
+      remEl.textContent = 'Only ' + remaining + ' to go!';
+      remEl.style.cssText = 'color:var(--accent);font-weight:800';
+    } else {
+      remEl.textContent = remaining.toLocaleString() + ' to go until ' + DASH_MILESTONE.toLocaleString();
+      remEl.style.cssText = '';
+    }
+
+    // Bar — only transition width when the value actually changes
+    if (_dashLastPct !== pct) {
+      el.querySelector('.dash-fill').style.width = pct.toFixed(1) + '%';
+      _dashLastPct = pct;
+    }
+
+    // Updated / refreshing indicator
+    const agoEl = el.querySelector('.dash-ago');
+    const agoLabel = ago ? 'Updated ' + ago + (_dashFocused ? ' \u2022 live' : '') : '';
+    if (_dashFetching) {
+      agoEl.innerHTML = '<span class="dash-spinner"></span>' + (agoLabel || 'Updating\u2026');
+    } else {
+      agoEl.textContent = agoLabel;
+    }
+
+    // Error line (stale data + error)
+    const errEl = el.querySelector('.dash-err');
+    if (_dashError) { errEl.textContent = _dashError; errEl.style.display = ''; }
+    else { errEl.style.display = 'none'; }
+  }
+
+  function renderCelebration(el) {
+    const ago = _dashLastUpdate ? timeAgo(_dashLastUpdate.getTime()) : '';
+    // Build celebration DOM once — don't clobber particles on re-renders
+    if (!el.querySelector('.dash-celebrate-label')) {
+      el.innerHTML =
+        '<div class="dash-label dash-celebrate-label">\u2726 MILESTONE REACHED \u2726</div>' +
+        '<div class="dash-number">' + DASH_MILESTONE.toLocaleString() + '</div>' +
+        '<div class="dash-remaining">\u{1F389} WE DID IT! \u{1F389}</div>' +
+        '<div class="dash-updated" style="margin-top:12px;font-size:12px">The 500,000th order has been entered into BPCS!</div>' +
+        '<div class="dash-updated dash-celebrate-ago"></div>';
+    }
+    // Update "Updated X ago" without rebuilding
+    const agoEl = el.querySelector('.dash-celebrate-ago');
+    if (agoEl) agoEl.textContent = ago ? 'Updated ' + ago : '';
+  }
+
+  // Fire one fetch on app startup so the dashboard has fresh data even before you visit it
+  fetchDashOrder();
+
   // Mode segment — save/restore state per mode
   const _modeState = { orders: null, drawings: null, marketing: null };
   function saveModeState() {
@@ -5338,7 +6165,7 @@ async function init() {
       }
       _modeState.orders = { files: S.files, cntFiles: S.cntFiles, selected: S.selected, currentFolder: S.currentFolder, currentOrder: S.currentOrder, currentLine: S.currentLine, otpDigits: [...S.otpDigits], otpComplete: S.otpComplete, revWarnings: { ...S.revWarnings }, collapsedSections: { ...S.collapsedSections }, _checklistPath: S._checklistPath, _checklistName: S._checklistName };
     } else if (S.mode === 'drawings') {
-      _modeState.drawings = { files: S.files, selected: S.selected, currentFolder: S.currentFolder, dwgResult: S.dwgResult };
+      _modeState.drawings = { files: S.files, selected: S.selected, currentFolder: S.currentFolder, dwgResult: S.dwgResult, collapsedSections: { ...S.collapsedSections } };
     } else if (S.mode === 'marketing') {
       _modeState.marketing = { mktDigits: [...S.mktDigits], mktComplete: S.mktComplete, mktResult: S.mktResult, mktOrder: S.mktOrder };
     }
@@ -5349,7 +6176,7 @@ async function init() {
       Object.assign(S, { files: saved.files, cntFiles: saved.cntFiles, selected: saved.selected, currentFolder: saved.currentFolder, currentOrder: saved.currentOrder, currentLine: saved.currentLine, otpDigits: saved.otpDigits, otpComplete: saved.otpComplete, revWarnings: saved.revWarnings, collapsedSections: saved.collapsedSections, _checklistPath: saved._checklistPath, _checklistName: saved._checklistName });
       return true;
     } else if (saved && m === 'drawings') {
-      Object.assign(S, { files: saved.files, selected: saved.selected, currentFolder: saved.currentFolder, dwgResult: saved.dwgResult });
+      Object.assign(S, { files: saved.files, selected: saved.selected, currentFolder: saved.currentFolder, dwgResult: saved.dwgResult, collapsedSections: saved.collapsedSections || {} });
       return true;
     } else if (saved && m === 'marketing') {
       Object.assign(S, { mktDigits: saved.mktDigits, mktComplete: saved.mktComplete, mktResult: saved.mktResult, mktOrder: saved.mktOrder });
@@ -5364,22 +6191,25 @@ async function init() {
     const isChat = m === 'chat';
     const isDwg = m === 'drawings';
     const isMkt = m === 'marketing';
+    const isDash = m === 'dashboard';
     // Don't reset route state when switching tabs — preserve glow for when user returns
     // Route state only resets when a new order search begins
     cancelShimmer();
 
     // Show/hide layout — clear cross-mode state
-    $('#search-card-wrap').style.display = (isChat || isMkt) ? 'none' : '';
+    $('#search-card-wrap').style.display = (isChat || isMkt || isDash) ? 'none' : '';
     hideRecentDropdown();
-    $('#status-bar').style.display = (isChat || isDwg || isMkt) ? 'none' : '';
+    $('#status-bar').style.display = (isChat || isDwg || isMkt || isDash) ? 'none' : '';
     if (m !== 'orders') $('#sibling-lines').style.display = 'none';
     const cardEl = $('#file-list-card');
-    if (cardEl) cardEl.classList.remove('card-glow');
-    document.querySelector('[id=section-label]').parentElement.style.display = (isChat || isMkt) ? 'none' : '';
-    $('#main-area').style.display = (isChat || isMkt) ? 'none' : 'flex';
+    if (cardEl) cardEl.classList.remove('card-glow', 'card-glow-pdf');
+    document.querySelector('[id=section-label]').parentElement.style.display = (isChat || isMkt || isDash) ? 'none' : '';
+    $('#main-area').style.display = (isChat || isMkt || isDash) ? 'none' : 'flex';
     $('#chat-container').classList.toggle('active', isChat);
     $('#marketing-container').classList.toggle('active', isMkt);
     $('#marketing-container').style.display = isMkt ? 'flex' : 'none';
+    $('#dashboard-container').classList.toggle('active', isDash);
+    $('#dashboard-container').style.display = isDash ? 'flex' : 'none';
     if (isChat) requestAnimationFrame(() => {
       const el = $('#chat-messages'); if (el) el.scrollTop = el.scrollHeight;
       const inp = $('#chat-input'); if (inp) inp.focus();
@@ -5389,9 +6219,14 @@ async function init() {
     // Hide order history when switching away from drawings
     if (!isDwg) hideBpcsHistory();
     startChatPoll(isChat);
+    if (isChat) {
+      _chatLastSeenCount = lastChatCount;
+      const badge = $('#chat-unread-badge'); if (badge) badge.style.display = 'none';
+    }
+    dashboardPoll(isDash);
 
-    // Hide sidebar in marketing + chat; hide order-only buttons in drawing mode
-    const sidebarHide = isChat || isMkt;
+    // Hide sidebar in marketing + chat + dashboard; hide order-only buttons in drawing mode
+    const sidebarHide = isChat || isMkt || isDash;
     $('#cnt-btn').style.display = (isDwg || sidebarHide) ? 'none' : '';
     $('#cnt-ident').style.display = (isDwg || sidebarHide) ? 'none' : '';
     $('#sidebar-row-mf').style.display = (isDwg || sidebarHide) ? 'none' : 'flex';
@@ -5421,7 +6256,12 @@ async function init() {
       renderMarketingContainer();
     }
 
-    if (!isChat && !isMkt) {
+    // Dashboard mode
+    if (isDash) {
+      renderDashboard();
+    }
+
+    if (!isChat && !isMkt && !isDash) {
       const restored = restoreModeState(m);
       if (restored) {
         renderSearchCard(); updateOtpDisplay(); renderFiles(); updateCnt(); updateOpenBtn(); updateSiblingLines(); updateMarketing();
@@ -5435,9 +6275,13 @@ async function init() {
         if (S.dwgResult && S.mode === 'drawings') {
           hideRecentDropdown();
           $('#main-area').style.display = 'flex';
-          if (!S.dwgResult.wildcard) $('#status-bar').style.display = 'none';
-          else $('#status-bar').style.display = '';
-          renderDrawingResult();
+          if (S.dwgResult.wildcard) {
+            $('#status-bar').style.display = '';
+            // renderFiles() already called above — don't call renderDrawingResult which clears the list
+          } else {
+            $('#status-bar').style.display = 'none';
+            renderDrawingResult();
+          }
         } else if (!S.dwgResult && S.mode === 'drawings') {
           showRecentSearchedDrawings();
         }
@@ -5466,6 +6310,7 @@ async function init() {
 
   // Search card
   S.recentOrders = await window.api.getRecentOrders();
+  S.recentMktOrders = await window.api.getRecentMktOrders();
   S.recentDrawings = await window.api.getRecentDrawings();
   renderSearchCard();
   updateCnt();
@@ -5494,20 +6339,62 @@ async function init() {
 
   // Cache username for chat and populate user badge
   await getCachedUsername();
+  // Load profile pictures first so badge can use them
+  try { await refreshPresenceData(); } catch {}
   try {
     const info = await window.api.getUserInfo();
     const badge = $('#user-badge');
     if (badge && info) {
       const initials = getInitials(info.fullName || info.username);
       badge.textContent = initials;
-      badge.dataset.tip = resolveName(info.username, info.fullName);
-      if (info.avatarDataUrl) {
+      badge.dataset.tip = resolveName(info.username, info.fullName) + ' (click to set picture)';
+      // Firebase pfp takes priority over AD avatar
+      const myPfp = _chatPfps[_cachedUsername];
+      if (myPfp) {
+        badge.textContent = '';
+        badge.style.backgroundImage = `url(${myPfp})`;
+      } else if (info.avatarDataUrl) {
         badge.textContent = '';
         badge.style.backgroundImage = `url(${info.avatarDataUrl})`;
-        badge.style.backgroundSize = 'cover';
       }
     }
   } catch (e) {}
+
+  // Badge click → upload profile picture
+  $('#user-badge').addEventListener('click', () => $('#badge-pfp-file').click());
+  $('#badge-pfp-file').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = async () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 96; canvas.height = 96;
+      const ctx = canvas.getContext('2d');
+      const size = Math.min(img.width, img.height);
+      const sx = (img.width - size) / 2, sy = (img.height - size) / 2;
+      ctx.drawImage(img, sx, sy, size, size, 0, 0, 96, 96);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      await window.api.chatSetPfp(dataUrl);
+      _chatPfps[_cachedUsername] = dataUrl;
+      // Update badge immediately
+      const badge = $('#user-badge');
+      badge.textContent = '';
+      badge.style.backgroundImage = `url(${dataUrl})`;
+      // Force chat re-render
+      lastChatCount = 0;
+      try { const msgs = await window.api.chatRead(); if (msgs.length) handleChatUpdate(msgs); } catch {}
+    };
+    img.src = URL.createObjectURL(file);
+    e.target.value = '';
+  });
+
+  // Firebase real-time chat listener — replaces polling
+  window.api.onChatUpdate(msgs => {
+    _chatListenerActive = true;
+    if (chatPollTimer) { clearInterval(chatPollTimer); chatPollTimer = null; }
+    handleChatUpdate(msgs);
+  });
+  // Fallback polling in case Firebase is slow to connect
   startChatPoll(false);
 
   // Opportunistic contingency preload — loads after 60s of inactivity
@@ -5517,9 +6404,11 @@ async function init() {
   window._cntLoading = false;
   window._cntLoaded = false;
   window.updateCntIndicator = function() {
-    if (!S._isDev) return;
     const el = $('#cnt-load-indicator');
-    if (el) el.style.display = window._cntLoading ? '' : 'none';
+    const tip = window._cntLoaded ? 'Refreshing contingency data' : 'Loading contingency data';
+    if (el) { el.style.display = window._cntLoading ? '' : 'none'; el.dataset.tip = tip; }
+    const btn = $('#cnt-btn');
+    if (btn) { if (window._cntLoading) btn.dataset.tip = tip; else delete btn.dataset.tip; }
   };
   function scheduleCntPreload() {
     if (window._cntLoaded || window._cntLoading) return;
@@ -5575,7 +6464,11 @@ async function init() {
       window.api.sendEmailWithBody('william.boissonnault@xylem.com', subj, '');
     }
   });
-  $('#btn-explorer').addEventListener('click', () => { if (S.currentFolder) window.api.openFolder(S.currentFolder); });
+  $('#btn-explorer').addEventListener('click', () => {
+    if (S.selected >= 0 && S.files[S.selected]?.filepath) {
+      window.api.showInFolder(S.files[S.selected].filepath);
+    } else if (S.currentFolder) { window.api.openFolder(S.currentFolder); }
+  });
   $('#btn-settings').addEventListener('click', showSettings);
   $('#btn-whats-new').addEventListener('click', showWhatsNew);
   $('#btn-disco-mute').addEventListener('click', () => {
@@ -5609,11 +6502,52 @@ async function init() {
     checkForUpdate();
   });
 
+  // Scroll-to-bottom button
+  const chatMsgsEl = $('#chat-messages');
+  const scrollBtn = $('#chat-scroll-bottom');
+  chatMsgsEl.addEventListener('scroll', () => {
+    const atBottom = chatMsgsEl.scrollHeight - chatMsgsEl.scrollTop - chatMsgsEl.clientHeight < 40;
+    scrollBtn.style.opacity = atBottom ? '0' : '1';
+    scrollBtn.style.pointerEvents = atBottom ? 'none' : 'auto';
+  });
+  scrollBtn.addEventListener('click', () => { chatMsgsEl.scrollTop = chatMsgsEl.scrollHeight; });
+
+  // Chat toolbar: mute icon + mobile link
+  function updateMuteIcon() {
+    const muted = !!S.config.mute_chat;
+    const waves = $('#mute-waves');
+    const slash = $('#mute-slash');
+    const btn = $('#chat-mute-btn');
+    waves.style.opacity = muted ? '0.2' : '1';
+    waves.style.transition = 'opacity .25s ease';
+    slash.style.strokeDashoffset = muted ? '0' : '32';
+    btn.dataset.tip = muted ? 'Unmute notifications' : 'Mute notifications';
+  }
+  updateMuteIcon();
+  $('#chat-mute-btn').addEventListener('click', () => {
+    S.config.mute_chat = !S.config.mute_chat;
+    window.api.saveConfig({ mute_chat: S.config.mute_chat });
+    updateMuteIcon();
+  });
+  $('#chat-mobile-link').addEventListener('click', e => {
+    e.preventDefault();
+    window.api.openExternal('https://gasketedplate.com');
+  });
+
   // Chat send
   $('#chat-send').addEventListener('click', async () => {
     const inp = $('#chat-input');
     const text = inp.value.trim();
     if (!text) return;
+    // Check if editing
+    const editId = inp.dataset.editMsgId;
+    if (editId) {
+      delete inp.dataset.editMsgId;
+      delete inp.dataset.editOriginal;
+      inp.value = '';
+      window.api.chatEdit(editId, text);
+      return;
+    }
     inp.value = '';
     playSendChime();
     // Optimistic: show message immediately
@@ -5625,11 +6559,62 @@ async function init() {
     const bigE = isEmojiOnly(text);
     el.innerHTML += `<div class="chat-msg mine"><div class="chat-avatar" style="background:${myColor};--user-color:${myColor}">${escHtml(initials)}</div><div class="chat-bubble"><div class="chat-name" style="color:${myColor}">${escHtml(resolveName(optimisticMsg.user, optimisticMsg.name))}</div><div class="chat-text"${bigE ? ' style="font-size:28px;line-height:1.2"' : ''}>${escHtml(text)}</div><div class="chat-time">just now</div></div></div>`;
     el.scrollTop = el.scrollHeight;
-    // Send in background
-    window.api.chatSend(text).then(msgs => { lastChatCount = msgs.length; });
+    // Send in background — Firebase listener will handle the update
+    window.api.chatSend(text);
   });
   $('#chat-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') $('#chat-send').click();
+  });
+
+  // Reactions — event delegation on the messages container
+  $('#chat-messages').addEventListener('click', e => {
+    // Toggle reaction picker
+    const reactBtn = e.target.closest('.chat-react-btn');
+    if (reactBtn) {
+      e.stopPropagation();
+      // Close any open pickers first
+      document.querySelectorAll('.chat-react-picker.show').forEach(p => p.classList.remove('show'));
+      const picker = document.getElementById('picker-' + reactBtn.dataset.msgid);
+      if (picker) picker.classList.toggle('show');
+      return;
+    }
+    // Pick a reaction from the picker
+    const pickerEmoji = e.target.closest('.chat-react-picker span');
+    if (pickerEmoji) {
+      e.stopPropagation();
+      window.api.chatReact(pickerEmoji.dataset.msg, pickerEmoji.dataset.emoji);
+      pickerEmoji.closest('.chat-react-picker').classList.remove('show');
+      return;
+    }
+    // Toggle existing reaction
+    const existing = e.target.closest('.chat-reaction');
+    if (existing) {
+      e.stopPropagation();
+      window.api.chatReact(existing.dataset.msg, existing.dataset.emoji);
+      return;
+    }
+    // Edit/unsend actions
+    const actionBtn = e.target.closest('.chat-action-btn');
+    if (actionBtn) {
+      e.stopPropagation();
+      const msgId = actionBtn.dataset.msgid;
+      const action = actionBtn.dataset.action;
+      if (action === 'unsend') {
+        window.api.chatUnsend(msgId);
+      } else if (action === 'edit') {
+        const bubble = actionBtn.closest('.chat-bubble');
+        const textEl = bubble.querySelector('.chat-text');
+        const oldText = textEl.textContent;
+        const inp = $('#chat-input');
+        inp.value = oldText;
+        inp.focus();
+        inp.dataset.editMsgId = msgId;
+        inp.dataset.editOriginal = oldText;
+      }
+      return;
+    }
+    // Close pickers on outside click
+    document.querySelectorAll('.chat-react-picker.show').forEach(p => p.classList.remove('show'));
   });
 
   // Comment send
@@ -5678,7 +6663,7 @@ async function init() {
       if (r.needsInstall) {
         showInstallPrompt('ODA File Converter', 'Free tool required for DXF conversion.', 'https://www.opendesign.com/guestfiles/oda_file_converter', 'ODA.ODAFileConverter');
       } else {
-        setStatus('\u26A0  ' + r.msg);
+        setStatus(r.msg);
       }
     }
   });
@@ -5753,7 +6738,7 @@ async function init() {
       setStatus(`\u2713 PDF saved to ${loc}`);
     } else {
       playError();
-      setStatus('\u26A0  ' + r.msg);
+      setStatus(r.msg);
     }
   });
 
@@ -5770,7 +6755,7 @@ async function init() {
     if (f.isLink) { try { const lnk = await window.api.readLink(fp); if (lnk) fp = lnk; } catch(e) {} }
     const r = await window.api.extractBom(fp);
     btn.textContent = t('Extract BOM'); btn.disabled = false;
-    if (!r.ok) { playError(); setStatus('\u26A0  ' + r.msg); return; }
+    if (!r.ok) { playError(); setStatus(r.msg); return; }
     playChime();
     setStatus(`\u2713 ${r.items.length} BOM lines found`);
     showBomModal(r.header, r.items, fp);
@@ -5915,7 +6900,7 @@ async function init() {
       } else {
         playError();
         saveBtn.disabled = false; saveBtn.textContent = 'Save';
-        setStatus('\u26A0  ' + result.msg);
+        setStatus(result.msg);
       }
     });
 
@@ -5926,11 +6911,18 @@ async function init() {
       const uploadBtn = overlay.querySelector('#bom-upload');
       uploadBtn.disabled = true; uploadBtn.textContent = 'Checking\u2026';
       try {
-        const chk = await window.api.bpcsCheckExistingBom('LIVE', fields.parentPn);
-        if (chk.ok && chk.result > 0) {
+        const pnChk = await window.api.bpcsCheckPnExists('LIVE', fields.parentPn);
+        if (pnChk.ok && !pnChk.result) {
           playError();
           uploadBtn.disabled = false; uploadBtn.textContent = 'Upload to BPCS';
-          setStatus(`\u26A0  BOM already exists for ${fields.parentPn}`);
+          setStatus(`Part number ${fields.parentPn} not found in BPCS`);
+          return;
+        }
+        const bomChk = await window.api.bpcsCheckExistingBom('LIVE', fields.parentPn);
+        if (bomChk.ok && bomChk.result > 0) {
+          playError();
+          uploadBtn.disabled = false; uploadBtn.textContent = 'Upload to BPCS';
+          setStatus(`BOM already exists for ${fields.parentPn}`);
           return;
         }
       } catch (e) {}
@@ -5943,7 +6935,7 @@ async function init() {
       } else {
         playError();
         uploadBtn.disabled = false; uploadBtn.textContent = 'Upload to BPCS';
-        setStatus('\u26A0  ' + result.msg);
+        setStatus(result.msg);
       }
     });
   }
@@ -5964,7 +6956,7 @@ async function init() {
       setStatus('✓ ' + r.msg);
     } else {
       playError();
-      setStatus('⚠  ' + r.msg);
+      setStatus(r.msg);
     }
   });
 
@@ -6252,7 +7244,7 @@ async function init() {
     const _activeEl = document.activeElement;
     const _onInput = (_activeEl?.tagName === 'INPUT' || _activeEl?.tagName === 'TEXTAREA') && _activeEl?.id !== 'inp-dwg';
     if (!e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey && !_hasModal && !_onInput) {
-      const modeKey = { o: 'orders', d: 'drawings', m: 'marketing', c: 'chat' }[e.key.toLowerCase()];
+      const modeKey = { h: 'dashboard', o: 'orders', d: 'drawings', c: 'marketing', m: 'chat' }[e.key.toLowerCase()];
       if (modeKey && modeKey !== S.mode) {
         e.preventDefault();
         modeSeg.activate(modeKey);
@@ -6260,10 +7252,10 @@ async function init() {
         return;
       }
     }
-    // Ctrl+Tab / Ctrl+Shift+Tab to cycle tabs
-    if (e.ctrlKey && e.key === 'Tab') {
+    // Tab / Shift+Tab to cycle tabs
+    if (e.key === 'Tab') {
       e.preventDefault();
-      const modes = ['orders','drawings','marketing','chat'];
+      const modes = ['orders','drawings','marketing','chat','dashboard'];
       const cur = modes.indexOf(S.mode);
       const next = modes[(cur + (e.shiftKey ? modes.length - 1 : 1)) % modes.length];
       modeSeg.activate(next);
@@ -6399,7 +7391,7 @@ async function init() {
 let _cntHideBp = true; // Hide boilerplate toggle — on by default each session
 
 const CNT_BP = {
-  Construction: ['asme code (section viii, div. i)', 'construction based on standard design calculations.'],
+  Construction: ['asme code (section viii, div. i)', 'construction based on standard design calculations.', 'commercial (non-code)'],
   Inspection: ['asme code inspection', 'a - standard procedure administered internally by qa.'],
   Testing: ['testing per qw-01-01-36 (hydro/code) where applicable.'],
   Cleaning: ['clean per e-06-01-001,...level a.'],
@@ -6514,13 +7506,31 @@ async function showContingencyViewer(orderLine) {
       const ssPsi = parseFloat(String(test.psi_SS || '').replace(/[^\d.]/g, '')) || 0;
       const tsPsi = parseFloat(String(test.psi_TS || '').replace(/[^\d.]/g, '')) || 0;
       const isRoutine = ssF === 'water (tap)' && tsF === 'water (tap)' && ssPsi < 500 && tsPsi < 500 && testNotesF.length === 0;
-      testLines = isRoutine ? [] : [ssLine, tsLine, ...testNotesF];
+      const isBlank = (ssF === 'n/a' || !ssF) && (tsF === 'n/a' || !tsF) && ssPsi === 0 && tsPsi === 0;
+      if (isRoutine) {
+        testLines = [];
+      } else if (isBlank) {
+        // Fluids/psi are default — omit them, but keep any special testing notes
+        testLines = testNotesF.length ? [...testNotesF] : [];
+      } else {
+        testLines = [ssLine, tsLine, ...testNotesF];
+      }
     } else {
       testLines = [ssLine, tsLine, ...testNotesF];
     }
 
     const cleanLines = bpf(notes(clean, 'Note', 6), 'Cleaning');
-    const paintLines = bpf(notes(paint, 'Note', 6), 'Painting');
+    let paintLines = bpf(notes(paint, 'Note', 6), 'Painting');
+    if (hideBp && paintLines.length) {
+      const allPaint = paintLines.map(l => l.replace(/<[^>]*>/g, '').trim().toLowerCase()).join(' ').trim();
+      if (allPaint === 'no paint' || allPaint === 'do not paint') {
+        const dwg = (oi.DwgNo || '').trim();
+        // Keep "no paint" for drawings starting with 4 or 5, except replacement bundles (41/42)
+        const isBundle = /^4[12]/.test(dwg);
+        const is4or5 = /^[45]/.test(dwg);
+        if (isBundle || !is4or5) paintLines = [];
+      }
+    }
 
     // Nameplates: Note1 is always the model name in the legacy app — skip it.
     // Also filter known bp phrases. Only show section if non-bp notes remain.
@@ -6568,6 +7578,9 @@ async function showContingencyViewer(orderLine) {
   const isStale = !r.loadedAt || !!r.dbChanged;
 
   const isAsme = !!(con.ConstrCode && con.ConstrCode.toUpperCase().includes('ASME'));
+  const isNuclear = !!(oi.BPCSpn && oi.BPCSpn.trim().toUpperCase().startsWith('%NS'));
+  const badgeClass = isNuclear ? 'cnt-badge-nuclear' : isAsme ? 'cnt-badge-code' : 'cnt-badge-noncode';
+  const badgeLabel = isNuclear ? 'Nuclear' : isAsme ? 'ASME Code' : 'Non-Code';
   const infoParts = [];
   if (oi.CustomerName) infoParts.push('<b>' + escHtml(oi.CustomerName.trim()) + '</b>');
   const itemStr = [oi.ItemDesc ? escHtml(oi.ItemDesc.trim()) : '', oi.BPCSpn ? '(' + escHtml(oi.BPCSpn.trim()) + ')' : ''].filter(Boolean).join(' ');
@@ -6586,7 +7599,7 @@ async function showContingencyViewer(orderLine) {
       </div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
         <div class="cnt-order" style="margin:0">${order}-${line}</div>
-        <span class="cnt-badge ${isAsme ? 'cnt-badge-code' : 'cnt-badge-noncode'}">${isAsme ? 'ASME Code' : 'Non-Code'}</span>
+        <span class="cnt-badge ${badgeClass}">${badgeLabel}</span>
       </div>
       ${infoLine ? '<div class="cnt-info">' + infoLine + '</div>' : ''}
       <div class="cnt-detail">
@@ -6644,7 +7657,7 @@ async function showContingencyViewer(orderLine) {
   function getPrintHtml() {
     return `
     <h2>CONTINGENCY INSTRUCTIONS</h2>
-    <div class="cnt-print-sub">${infoLine ? '<span class="cnt-print-info">' + infoLine + '</span>' : '<span></span>'}<span class="cnt-badge ${isAsme ? 'cnt-badge-code' : 'cnt-badge-noncode'}">${isAsme ? 'ASME CODE' : 'NON-CODE'}</span></div>
+    <div class="cnt-print-sub">${infoLine ? '<span class="cnt-print-info">' + infoLine + '</span>' : '<span></span>'}<span class="cnt-badge ${badgeClass}">${badgeLabel.toUpperCase()}</span></div>
     <div class="meta">ORDER: <b>${order}-${line}</b>&nbsp;&nbsp;&nbsp;${oi.DwgNo ? `Dwg: <b>${escHtml(oi.DwgNo)}</b>&nbsp;&nbsp;&nbsp;` : ''}${oi.Qty ? `Qty: <b>${escHtml(String(oi.Qty))}</b>&nbsp;&nbsp;&nbsp;` : ''}Doc Rev: <b>${escHtml(String(oi.RevNo || '0'))}</b>&nbsp;&nbsp;&nbsp;By: <b>${escHtml(displayName(oi.MadeBy))}</b></div>
     ${buildSections(_cntHideBp, pSection, 'label')}
     <div class="footer">${oi.CustomerName ? escHtml(oi.CustomerName.trim()) : ''}${oi.CustomerLoc ? ' \u2014 ' + escHtml(oi.CustomerLoc.trim()) : ''}</div>
@@ -6726,20 +7739,73 @@ function showInstallPrompt(name, desc, url, wingetId) {
 
 // ═══════════════════════════════════════════════════════════════════════
 //  Marketing Mode
+// Simple markdown → HTML for Claude's Analysis
+function renderMd(raw) {
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return raw.split('\n').map(line => {
+    let l = esc(line);
+    // Headings
+    l = l.replace(/^#{1,3}\s+(.+)/, '<b>$1</b>');
+    // Bold
+    l = l.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    // Italic
+    l = l.replace(/(?<!\*)\*([^*]+?)\*(?!\*)/g, '<i>$1</i>');
+    // Bullet lists
+    l = l.replace(/^(\s*)[\u2013\u2014\-]\s+/, '$1\u2022 ');
+    return l;
+  }).join('<br>');
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 function renderMarketingContainer() {
   const c = $('#marketing-container');
+  const showDisclaimer = !S.config.seen_mkt_disclaimer;
   c.innerHTML = `
     <div class="glass no-drag" style="padding:16px 22px;flex-shrink:0;margin-bottom:8px">
       <div class="field-label">${t('ORDER NUMBER')}</div>
       <div class="otp-container no-drag" id="mkt-otp">
         ${[0,1,2,3,4,5].map(i => `<div class="otp-box" data-idx="${i}"></div>`).join('')}
       </div>
+      ${(() => {
+        const currentOrder = S.mktOrder || '';
+        const recents = S.recentMktOrders.filter(r => r.order !== currentOrder).slice(0, 5);
+        if (!recents.length) return '';
+        return `<div class="recent-bar no-drag" id="mkt-recent-bar">${recents.map(r => `<button class="recent-pill no-drag" data-order="${r.order}">${r.order}</button>`).join('')}</div>`;
+      })()}
     </div>
+    ${showDisclaimer ? `<div id="mkt-disclaimer" style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;margin-bottom:8px;border-radius:12px;background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.18);flex-shrink:0">
+      <span style="font-size:14px;line-height:1;flex-shrink:0;margin-top:1px">\u26A0\uFE0F</span>
+      <div style="flex:1;font:400 11px/1.55 'DM Sans',sans-serif;color:var(--text2)"><b>Caution:</b> Checklist parsing is <b>experimental</b> and may contain errors. Always review the original checklist to confirm that the information on this tab is accurate.</div>
+      <button class="btn-glass" id="mkt-disclaimer-ok" style="font-size:10px;height:24px;padding:0 10px;flex-shrink:0;white-space:nowrap">Got it</button>
+    </div>` : ''}
     <div class="mkt-results" id="mkt-results"></div>
   `;
+  if (showDisclaimer) {
+    c.querySelector('#mkt-disclaimer-ok')?.addEventListener('click', () => {
+      c.querySelector('#mkt-disclaimer')?.remove();
+      S.config.seen_mkt_disclaimer = true;
+      window.api.saveConfig({ seen_mkt_disclaimer: true });
+    });
+  }
+  c.querySelectorAll('#mkt-recent-bar .recent-pill').forEach(el => {
+    el.addEventListener('click', () => {
+      S.mktDigits = el.dataset.order.split('');
+      S.mktComplete = false;
+      S.mktResult = null;
+      updateMktOtpDisplay();
+      setTimeout(doMarketingSearch, 50);
+    });
+  });
   updateMktOtpDisplay();
-  if (S.mktResult) renderMarketingResults();
+  if (S.mktOrder) {
+    // Restore both panels when switching back to the tab
+    const results = $('#mkt-results');
+    if (results) {
+      results.innerHTML = '<div id="mkt-eom-area"></div><div id="mkt-checklist-area" style="margin-top:12px"></div>';
+      if (S._mktEomData) loadEomPanel($('#mkt-eom-area'), S.mktOrder);
+      if (S.mktResult) renderMarketingChecklist();
+    }
+  }
 }
 
 function updateMktOtpDisplay() {
@@ -6765,42 +7831,66 @@ async function doMarketingSearch() {
   updateMktOtpDisplay();
 
   const results = $('#mkt-results');
-  results.innerHTML = `<div style="text-align:center;padding:40px">
-    <div class="deep-spinner" style="width:18px;height:18px;margin:0 auto 10px"></div>
-    <div style="font:500 11px/1.4 'DM Sans',sans-serif;color:var(--text2)">Parsing checklist\u2026</div>
-  </div>`;
+  results.innerHTML = `
+    <div id="mkt-eom-area"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+      <div style="font:600 9px/1 'DM Sans',sans-serif;color:var(--text3);letter-spacing:1px">ENGINEERING STATUS</div>
+      <div class="deep-spinner" style="width:10px;height:10px"></div>
+    </div></div>
+    <div id="mkt-checklist-area" style="margin-top:12px"><div style="text-align:center;padding:30px">
+      <div class="deep-spinner" style="width:14px;height:14px;margin:0 auto 8px"></div>
+      <div style="font:500 10px/1.4 'DM Sans',sans-serif;color:var(--text3)">Parsing checklist\u2026</div>
+    </div></div>`;
 
+  // EOM loads fast — render it as soon as it resolves
+  S._mktEomPromise = window.api.bpcsOrderEom(orderPad).catch(() => null);
+  S._mktEomPromise.then(eomData => {
+    if (S.mode !== 'marketing' || S.mktOrder !== orderPad) return;
+    S._mktEomData = eomData;
+    const eomArea = $('#mkt-eom-area');
+    if (eomArea) loadEomPanel(eomArea, orderPad);
+  });
+
+  // Checklist loads slower — render below when ready
   try {
     const r = await window.api.scanChecklists(orderPad);
-    if (S.mode !== 'marketing') return;
+    if (S.mode !== 'marketing' || S.mktOrder !== orderPad) return;
     S.mktResult = r;
-    renderMarketingResults();
+    if (r.found) S.recentMktOrders = await window.api.addRecentMktOrder(orderPad);
+    renderMarketingChecklist();
   } catch (e) {
     S.mktResult = { found: false, error: e.message };
-    renderMarketingResults();
+    renderMarketingChecklist();
   }
 }
 
-function renderMarketingResults() {
-  const area = $('#mkt-results');
+function renderMarketingChecklist() {
+  const area = $('#mkt-checklist-area');
   if (!area) return;
   const r = S.mktResult;
   const orderPad = S.mktOrder;
 
+  const folderBtnHtml = `<button class="btn-glass" id="mkt-open-folder" title="Open order folder" style="padding:6px 7px;border-radius:8px;flex-shrink:0"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l2-2h4l1 1h5a1 1 0 011 1v8a1 1 0 01-1 1H2a1 1 0 01-1-1V5a1 1 0 011-1z"/></svg></button>`;
+  function wireFolder() {
+    area.querySelector('#mkt-open-folder')?.addEventListener('click', () => { window.api.openMarketing(orderPad); });
+  }
   if (!r || !r.found || !r.checklists || !r.checklists.length) {
-    area.innerHTML = `<div style="text-align:center;padding:40px">
-      <div style="font:600 13px/1.4 'DM Sans',sans-serif;color:var(--text3);margin-bottom:6px">No checklist found</div>
-      <div style="font:400 11px/1.3 'DM Sans',sans-serif;color:var(--text3)">${orderPad}-00</div>
+    area.innerHTML = `<div style="text-align:center;padding:20px">
+      <div style="font:600 11px/1.4 'DM Sans',sans-serif;color:var(--text3);margin-bottom:4px">No checklist found</div>
+      <div style="font:400 10px/1.3 'DM Sans',sans-serif;color:var(--text3)">${orderPad}-00</div>
+      <div style="margin-top:8px">${folderBtnHtml}</div>
     </div>`;
+    wireFolder();
     return;
   }
 
   const cl = r.checklists[0];
   if (cl.error) {
-    area.innerHTML = `<div style="text-align:center;padding:40px">
-      <div style="font:600 12px/1.4 'DM Sans',sans-serif;color:var(--danger)">Error parsing checklist</div>
-      <div style="font:400 11px/1.4 'DM Sans',sans-serif;color:var(--text3);margin-top:6px">${escHtml(cl.error)}</div>
+    area.innerHTML = `<div style="text-align:center;padding:20px">
+      <div style="font:600 11px/1.4 'DM Sans',sans-serif;color:var(--danger)">Error parsing checklist</div>
+      <div style="font:400 10px/1.4 'DM Sans',sans-serif;color:var(--text3);margin-top:4px">${escHtml(cl.error)}</div>
+      <div style="margin-top:8px">${folderBtnHtml}</div>
     </div>`;
+    wireFolder();
     return;
   }
 
@@ -6812,7 +7902,7 @@ function renderMarketingResults() {
   // Format drawing number with hyphens if missing
   function fmtDwg(raw) {
     const alnum = raw.replace(/[^0-9A-Za-z]/g, '');
-    if (raw.includes('-') || alnum.length < 12 || !/^[0-5]/.test(alnum)) return raw;
+    if (alnum.length < 12 || !/^[0-5]/.test(alnum)) return raw;
     const f = alnum[0];
     const parts = '123'.includes(f)
       ? [alnum.slice(0,1), alnum.slice(1,4), alnum.slice(4,5), alnum.slice(5,7), alnum.slice(7,10), alnum.slice(10,12)]
@@ -6837,24 +7927,31 @@ function renderMarketingResults() {
     return s;
   }
 
-  // Build dates list
+  // Build dates list as [label, value] pairs
   const dateLines = [];
-  if (cl.date && cl.dateApproved && cl.date !== cl.dateApproved) dateLines.push('Submitted: ' + fmtDate(cl.date));
-  if (cl.dateApproved) dateLines.push('Approved: ' + fmtDate(cl.dateApproved));
-  if (r.ackDate) dateLines.push('Entered: ' + fmtDate(r.ackDate));
-  if (cl.fileDateCreated) dateLines.push('Filed: ' + fmtDate(cl.fileDateCreated));
+  if (cl.date && cl.dateApproved && cl.date !== cl.dateApproved) dateLines.push(['Submitted', fmtDate(cl.date)]);
+  if (cl.dateApproved) dateLines.push(['Approved', fmtDate(cl.dateApproved)]);
+  if (cl.date && !cl.dateApproved) dateLines.push(['Submitted', fmtDate(cl.date)]);
+  if (r.ackDate) dateLines.push(['Entered', fmtDate(r.ackDate)]);
+  if (cl.fileDateCreated) dateLines.push(['Filed', fmtDate(cl.fileDateCreated)]);
+  // Hide year suffix if all dates are in the current year
+  const curYr = new Date().getFullYear();
+  const yrSuffix = ', ' + curYr;
+  if (dateLines.length && dateLines.every(([,v]) => v.endsWith(yrSuffix))) {
+    dateLines.forEach(dl => { dl[1] = dl[1].slice(0, -yrSuffix.length); });
+  }
 
   const linkSvg = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9.5a3.5 3.5 0 005 0l2-2a3.5 3.5 0 00-5-5l-1 1"/><path d="M9.5 6.5a3.5 3.5 0 00-5 0l-2 2a3.5 3.5 0 005 5l1-1"/></svg>';
 
   const lineItemsHtml = cl.lineItems.map(li => `
-    <div class="mkt-line-item" data-dwg="${escHtml(li.dwgNorm)}" data-line="${escHtml(li.line)}" title="Double-click to open drawing">
+    <div class="mkt-line-item" data-dwg="${escHtml(li.dwgNorm)}" data-line="${escHtml(li.line)}" title="Go to drawing">
       <div style="font:700 13px/1 'IBM Plex Mono',monospace;color:var(--accent);min-width:24px">${li.line}</div>
       <div style="flex:1">
         <div style="display:flex;align-items:center;gap:2px">
           <span style="font:600 12px/1.3 'IBM Plex Mono',monospace;color:var(--dwg)">${escHtml(fmtDwg(li.dwgRaw))}</span>
           ${li.dwgNorm ? `<button class="dwg-copy-btn mkt-dwg-copy no-drag" data-dwg="${escHtml(li.dwgNorm)}" title="Copy ${escHtml(li.dwgNorm)}" style="opacity:.4" onclick="event.stopPropagation()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>` : ''}
         </div>
-        <div style="font:400 10px/1.3 'DM Sans',sans-serif;color:var(--text3);margin-top:2px">${escHtml(li.template)}${li.price ? ' \u2022 $' + escHtml(li.price) : ''}</div>
+        <div style="font:400 10px/1.3 'DM Sans',sans-serif;color:var(--text3);margin-top:2px">${escHtml(li.template)}${li.price ? ' \u2022 $' + escHtml(parseFloat(li.price).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})) : ''}</div>
       </div>
       <button class="mkt-link-btn btn-glass" data-dwg="${escHtml(li.dwgNorm)}" data-line="${escHtml(li.line)}" style="font-size:10px;height:30px;padding:0 10px;flex-shrink:0;display:flex;align-items:center;gap:4px" title="Link drawing to order folder" onclick="event.stopPropagation()"><span class="deep-spinner" style="width:10px;height:10px"></span></button>
       <div style="font:700 9px/1 'DM Sans',sans-serif;padding:3px 8px;border-radius:6px;background:${li.dwgNorm ? 'rgba(0,255,144,0.12);color:var(--success)' : 'rgba(255,152,32,0.12);color:var(--amber)'}">
@@ -6874,7 +7971,8 @@ function renderMarketingResults() {
           PO: <b>${escHtml(cl.poNumber || '?')}</b> \u2022 AE: <b>${escHtml(cl.ae || '?')}</b>
         </div>
       </div>
-      ${dateLines.length ? `<div style="text-align:right;font:400 10px/1.6 'DM Sans',sans-serif;color:var(--text3);flex-shrink:0">${dateLines.map(d => escHtml(d)).join('<br>')}</div>` : ''}
+      ${dateLines.length ? `<div style="text-align:right;font:400 10px/1.6 'DM Sans',sans-serif;color:var(--text3);flex-shrink:0">${dateLines.map(([lbl,val]) => `<b>${escHtml(lbl)}:</b> ${escHtml(val)}`).join('<br>')}</div>` : ''}
+      <button class="btn-glass" id="mkt-open-folder" title="Open order folder" style="padding:6px 7px;border-radius:8px;flex-shrink:0;align-self:flex-start"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l2-2h4l1 1h5a1 1 0 011 1v8a1 1 0 01-1 1H2a1 1 0 01-1-1V5a1 1 0 011-1z"/></svg></button>
     </div>
     <div style="font:600 9px/1 'DM Sans',sans-serif;color:var(--text3);letter-spacing:1px;margin-bottom:6px">LINE ITEMS${cl.lineNumberSource === 'unknown' ? ' <span style="opacity:.6;font-weight:400">(no ack \u2014 line #s unknown)</span>' : cl.lineNumberSource === 'estimated' ? ' <span style="opacity:.6;font-weight:400">(line #s estimated)</span>' : ''}</div>
     ${lineItemsHtml || '<div style="font:400 11px/1.4 \'DM Sans\',sans-serif;color:var(--text3);font-style:italic;padding:8px 12px">No line items found in checklist</div>'}
@@ -6886,64 +7984,82 @@ function renderMarketingResults() {
       <div style="font:600 9px/1 'DM Sans',sans-serif;color:var(--text3);letter-spacing:1px">COMMENTS</div>
       <button class="btn-glass mkt-copy-comments" style="font-size:8px;height:18px;padding:0 6px;opacity:.7" title="Copy comments" onclick="event.stopPropagation()">Copy</button>
     </div><div style="font:400 11px/1.5 'DM Sans',sans-serif;color:var(--text2);padding:8px 12px;border-radius:10px;background:var(--glass);border:1px solid var(--glass-border);user-select:text;cursor:text">${escHtml(cl.comments)}</div>` : ''}
-    <div style="font:600 9px/1 'DM Sans',sans-serif;color:var(--text3);letter-spacing:1px;margin-top:16px;margin-bottom:6px">CHECKLIST</div>
-    <div style="display:flex;gap:8px">
-      ${/\.pdf$/i.test(cl.filepath) ? `<button class="btn-accent" id="mkt-preview" style="font-size:11px;height:32px;padding:0 16px;display:flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="1" width="12" height="14" rx="1.5"/><line x1="5" y1="5" x2="11" y2="5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="8" y2="11"/></svg> Preview</button>` : ''}
-      <button class="btn-glass" id="mkt-view-pdf" style="font-size:11px;height:32px;padding:0 16px">${/\.xlsx?m?$/i.test(cl.filepath) ? 'Open in Excel' : 'Open in Acrobat'}</button>
-      <button class="btn-glass" id="mkt-copy-file" style="font-size:11px;height:32px;padding:0 16px">Copy file</button>
-    </div>
-    ${r.ackFilepath ? `
-    <div style="font:600 9px/1 'DM Sans',sans-serif;color:var(--text3);letter-spacing:1px;margin-top:12px;margin-bottom:6px">ACKNOWLEDGMENT</div>
-    <div style="display:flex;gap:8px">
-      <button class="btn-glass" id="mkt-ack-preview" style="font-size:11px;height:32px;padding:0 16px;display:flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="1" width="12" height="14" rx="1.5"/><line x1="5" y1="5" x2="11" y2="5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="8" y2="11"/></svg> Preview</button>
-      <button class="btn-glass" id="mkt-ack-open" style="font-size:11px;height:32px;padding:0 16px">Open in Acrobat</button>
-      <button class="btn-glass" id="mkt-ack-copy" style="font-size:11px;height:32px;padding:0 16px">Copy file</button>
-    </div>` : ''}
-    <div style="margin-top:12px">
-      <button class="btn-glass" id="mkt-open-folder" style="font-size:11px;height:32px;padding:0 16px;display:flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l2-2h4l1 1h5a1 1 0 011 1v8a1 1 0 01-1 1H2a1 1 0 01-1-1V5a1 1 0 011-1z"/></svg> Open Folder</button>
-      <button class="btn-accent" id="mkt-ask-claude" style="font-size:11px;height:32px;padding:0 16px;display:flex;align-items:center;gap:6px;margin-left:auto"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="5" r="3"/><path d="M3 14c0-3 2-5 5-5s5 2 5 5"/><path d="M11 2l1.5 1.5M5 2L3.5 3.5"/></svg> Ask Claude</button>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:16px;flex-wrap:wrap">
+      <div class="mkt-split">
+        ${/\.pdf$/i.test(cl.filepath) ? `<button class="btn-accent mkt-split-main" id="mkt-cl-action" style="font-size:11px;height:32px;padding:0 14px;display:flex;align-items:center;gap:5px"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="1" width="12" height="14" rx="1.5"/><line x1="5" y1="5" x2="11" y2="5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="8" y2="11"/></svg> Checklist</button><button class="btn-accent mkt-split-arrow" id="mkt-cl-arrow" style="font-size:10px;height:32px">\u25BE</button>`
+        : `<button class="btn-accent mkt-split-main" id="mkt-cl-action" style="font-size:11px;height:32px;padding:0 14px;display:flex;align-items:center;gap:5px;background:#217346;box-shadow:0 2px 10px rgba(33,115,70,0.25)"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="1" width="12" height="14" rx="1.5"/><line x1="5" y1="5" x2="11" y2="5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="8" y2="11"/></svg> Checklist</button><button class="btn-accent mkt-split-arrow" id="mkt-cl-arrow" style="font-size:10px;height:32px;background:#217346;box-shadow:none">\u25BE</button>`}
+        <div class="mkt-split-menu" id="mkt-cl-menu">
+          ${/\.pdf$/i.test(cl.filepath) ? '<div id="mkt-view-pdf">Open in Acrobat</div>' : ''}
+          <div id="mkt-copy-file">Copy file</div>
+        </div>
+      </div>
+      ${r.ackFilepath ? `<div class="mkt-split">
+        <button class="btn-glass mkt-split-main" id="mkt-ack-action" style="font-size:11px;height:32px;padding:0 14px;display:flex;align-items:center;gap:5px"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="1" width="12" height="14" rx="1.5"/><line x1="5" y1="5" x2="11" y2="5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="8" y2="11"/></svg> Ack</button><button class="btn-glass mkt-split-arrow" id="mkt-ack-arrow" style="font-size:10px;height:32px">\u25BE</button>
+        <div class="mkt-split-menu" id="mkt-ack-menu">
+          <div id="mkt-ack-open">Open in Acrobat</div>
+          <div id="mkt-ack-copy">Copy file</div>
+        </div>
+      </div>` : ''}
+      <div style="flex:1"></div>
+      <button class="btn-accent" id="mkt-ask-claude" style="font-size:11px;height:32px;padding:0 16px;display:flex;align-items:center;gap:6px;background:#DA7756;box-shadow:0 2px 10px rgba(218,119,86,0.25)"><svg width="14" height="14" viewBox="0 0 1200 1200" fill="currentColor"><path d="M234 800l235-132 4-11-4-7h-11l-40-2-134-4-116-5-113-6-28-6-27-35 3-18 24-16 34 3 76 5 113 8 82 5 122 13h19l3-8-7-5-5-5L347 496 220 412l-66-48-36-25-18-23-8-50 33-36 44 3 11 3 44 34 95 73 124 91 18 15 7-5 1-4-8-13-68-122-71-124-33-51-8-31c-3-13-5-23-5-36l37-50 21-7 49 7 21 18 31 70 50 111 77 151 23 44 12 42 4 12h8v-7l6-85 12-104 11-134 4-38 19-45 37-25 29 14 24 34-3 22-15 92-27 144-19 97h11l12-12 49-65 82-103 36-40 42-45 27-22 52 0 37 56-17 58-53 67-44 57-62 84-40 68 4 5h10l141-30 77-14 91-16 42 19 4 20-16 40-98 24-115 23-170 40-3 2 3 3 77 7 33 2 80 0 150 11 40 26 23 32-4 24-60 31-82-19-190-46-65-16-9 0v5l55 53 99 90 125 116 6 29-16 22-17-2-110-83-42-37-96-81h-6v9l22 32 117 175 6 54-9 17-30 11-33-6-68-96-71-108-57-96-7 4-33 361-16 18-36 14-30-23-16-37 16-74 19-96 16-76 14-94 9-32-1-2-7 1-71 98-108 146-86 92-21 8-35-18 3-33 20-30 119-151 71-93 46-54 0-8h-3L205 929l-56 7-24-22 3-37 11-12 95-65z"/></svg> Ask Claude</button>
     </div>
     <div id="mkt-claude-response" style="display:none;margin-top:12px">
       <div style="font:600 9px/1 'DM Sans',sans-serif;color:var(--accent);letter-spacing:1px;margin-bottom:6px">CLAUDE\u2019S ANALYSIS</div>
-      <div id="mkt-claude-text" style="font:400 11px/1.6 'DM Sans',sans-serif;color:var(--text);padding:12px 14px;border-radius:10px;background:var(--glass);border:1px solid var(--glass-border);user-select:text;cursor:text;white-space:pre-wrap"></div>
+      <div id="mkt-claude-text" style="font:400 11px/1.6 'DM Sans',sans-serif;color:var(--text);padding:12px 14px;border-radius:10px;background:var(--glass);border:1px solid var(--glass-border);user-select:text;cursor:text"></div>
     </div>
   `;
 
-  // Preview button — opens PDF in a lightweight popup window
-  area.querySelector('#mkt-preview')?.addEventListener('click', () => {
-    window.api.previewPdf(cl.filepath, `Checklist \u2014 ${orderPad}`);
+  // Split-button: Checklist
+  const isPdf = /\.pdf$/i.test(cl.filepath);
+  area.querySelector('#mkt-cl-action')?.addEventListener('click', () => {
+    if (isPdf) window.api.previewPdf(cl.filepath, `Checklist\u2014${orderPad}`);
+    else window.api.openFile(cl.filepath);
+  });
+  area.querySelector('#mkt-cl-arrow')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const menu = area.querySelector('#mkt-cl-menu');
+    area.querySelector('#mkt-ack-menu')?.classList.remove('show');
+    menu.classList.toggle('show');
   });
   area.querySelector('#mkt-view-pdf')?.addEventListener('click', () => {
     window.api.openFile(cl.filepath);
+    area.querySelector('#mkt-cl-menu')?.classList.remove('show');
   });
   area.querySelector('#mkt-copy-file')?.addEventListener('click', async () => {
-    const btn = area.querySelector('#mkt-copy-file');
-    const r = await window.api.copyFileToClipboard(cl.filepath);
-    if (r.ok) {
-      btn.textContent = 'Copied!'; btn.style.color = 'var(--success)';
-      setTimeout(() => { btn.textContent = 'Copy file'; btn.style.color = ''; }, 1500);
-    }
+    area.querySelector('#mkt-cl-menu')?.classList.remove('show');
+    const res = await window.api.copyFileToClipboard(cl.filepath);
+    if (res.ok) setStatus('\u2713 Checklist copied');
   });
-  // Acknowledgment buttons
+  // Split-button: Acknowledgment
   if (r.ackFilepath) {
-    area.querySelector('#mkt-ack-preview')?.addEventListener('click', () => {
-      window.api.previewPdf(r.ackFilepath, `Acknowledgment \u2014 ${orderPad}`);
+    area.querySelector('#mkt-ack-action')?.addEventListener('click', () => {
+      window.api.previewPdf(r.ackFilepath, `Acknowledgment\u2014${orderPad}`);
+    });
+    area.querySelector('#mkt-ack-arrow')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const menu = area.querySelector('#mkt-ack-menu');
+      area.querySelector('#mkt-cl-menu')?.classList.remove('show');
+      menu.classList.toggle('show');
     });
     area.querySelector('#mkt-ack-open')?.addEventListener('click', () => {
       window.api.openFile(r.ackFilepath);
+      area.querySelector('#mkt-ack-menu')?.classList.remove('show');
     });
     area.querySelector('#mkt-ack-copy')?.addEventListener('click', async () => {
-      const btn = area.querySelector('#mkt-ack-copy');
+      area.querySelector('#mkt-ack-menu')?.classList.remove('show');
       const res = await window.api.copyFileToClipboard(r.ackFilepath);
-      if (res.ok) {
-        btn.textContent = 'Copied!'; btn.style.color = 'var(--success)';
-        setTimeout(() => { btn.textContent = 'Copy file'; btn.style.color = ''; }, 1500);
-      }
+      if (res.ok) setStatus('\u2713 Acknowledgment copied');
     });
   }
-  // Open folder — uses open-marketing IPC which picks 00 root or Marketing subfolder
+  // Folder icon in header
   area.querySelector('#mkt-open-folder')?.addEventListener('click', () => {
     window.api.openMarketing(orderPad);
+  });
+  // Close split menus on outside click
+  area.addEventListener('click', (e) => {
+    if (!e.target.closest('.mkt-split')) {
+      area.querySelectorAll('.mkt-split-menu').forEach(m => m.classList.remove('show'));
+    }
   });
   // Ask Claude
   area.querySelector('#mkt-ask-claude')?.addEventListener('click', async () => {
@@ -6977,9 +8093,9 @@ function renderMarketingResults() {
     }
     btn.disabled = true;
     btn.innerHTML = '<span class="deep-spinner" style="width:10px;height:10px"></span> Reading docs\u2026';
-    responseDiv.style.display = ''; textDiv.textContent = ''; textDiv.style.color = '';
+    responseDiv.style.display = 'none'; textDiv.textContent = ''; textDiv.style.color = '';
     let chunks = '';
-    window.api.onClaudeChunk((text) => { chunks += text; textDiv.textContent = chunks; });
+    window.api.onClaudeChunk((text) => { chunks += text; responseDiv.style.display = ''; textDiv.innerHTML = renderMd(chunks); });
     btn.innerHTML = '<span class="deep-spinner" style="width:10px;height:10px"></span> Analyzing\u2026';
     const result = await window.api.askClaude(orderPad);
     if (result.error === 'invalid_key') {
@@ -6994,9 +8110,9 @@ function renderMarketingResults() {
       textDiv.textContent = result.msg || result.error; textDiv.style.color = 'var(--danger)';
       btn.disabled = false; btn.innerHTML = 'Ask Claude';
     } else {
-      if (!chunks) textDiv.textContent = result.text || '';
+      if (!chunks) textDiv.innerHTML = renderMd(result.text || '');
       btn.disabled = false;
-      btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="5" r="3"/><path d="M3 14c0-3 2-5 5-5s5 2 5 5"/><path d="M11 2l1.5 1.5M5 2L3.5 3.5"/></svg> Ask Again';
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 1200 1200" fill="currentColor"><path d="M234 800l235-132 4-11-4-7h-11l-40-2-134-4-116-5-113-6-28-6-27-35 3-18 24-16 34 3 76 5 113 8 82 5 122 13h19l3-8-7-5-5-5L347 496 220 412l-66-48-36-25-18-23-8-50 33-36 44 3 11 3 44 34 95 73 124 91 18 15 7-5 1-4-8-13-68-122-71-124-33-51-8-31c-3-13-5-23-5-36l37-50 21-7 49 7 21 18 31 70 50 111 77 151 23 44 12 42 4 12h8v-7l6-85 12-104 11-134 4-38 19-45 37-25 29 14 24 34-3 22-15 92-27 144-19 97h11l12-12 49-65 82-103 36-40 42-45 27-22 52 0 37 56-17 58-53 67-44 57-62 84-40 68 4 5h10l141-30 77-14 91-16 42 19 4 20-16 40-98 24-115 23-170 40-3 2 3 3 77 7 33 2 80 0 150 11 40 26 23 32-4 24-60 31-82-19-190-46-65-16-9 0v5l55 53 99 90 125 116 6 29-16 22-17-2-110-83-42-37-96-81h-6v9l22 32 117 175 6 54-9 17-30 11-33-6-68-96-71-108-57-96-7 4-33 361-16 18-36 14-30-23-16-37 16-74 19-96 16-76 14-94 9-32-1-2-7 1-71 98-108 146-86 92-21 8-35-18 3-33 20-30 119-151 71-93 46-54 0-8h-3L205 929l-56 7-24-22 3-37 11-12 95-65z"/></svg> Ask Again';
     }
   });
   // Copy requirements button
@@ -7013,9 +8129,9 @@ function renderMarketingResults() {
     btn.textContent = 'Copied!'; btn.style.color = 'var(--success)';
     setTimeout(() => { btn.textContent = 'Copy'; btn.style.color = ''; }, 1500);
   });
-  // Double-click line item to open drawing in Drawings tab
+  // Click line item to open drawing in Drawings tab
   area.querySelectorAll('.mkt-line-item').forEach(el => {
-    el.addEventListener('dblclick', () => {
+    el.addEventListener('click', () => {
       const dwg = el.dataset.dwg;
       if (dwg) {
         const modeBtn = document.querySelector('#mode-seg button[data-val="drawings"]');
@@ -7049,7 +8165,7 @@ function renderMarketingResults() {
         if (linked[line]) {
           // Already linked — show arrow to jump to that order line
           btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="var(--success)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12L12 5M12 5H6M12 5v6"/></svg>';
-          btn.title = 'Already linked \u2014 click to view';
+          btn.title = 'Already linked\u2014click to view';
           btn.style.color = 'var(--success)';
           btn.style.borderColor = 'var(--success)';
           btn.onclick = (e) => {
@@ -7085,6 +8201,296 @@ function renderMarketingResults() {
   } else {
     area.querySelectorAll('.mkt-link-btn').forEach(btn => { btn.innerHTML = linkSvg; });
   }
+
+}
+
+async function loadEomPanel(eomDiv, orderPad) {
+    const eomData = S._mktEomData || await window.api.bpcsOrderEom(orderPad);
+    if (!eomData.ok || !eomData.rows || !eomData.rows.length) {
+      eomDiv.innerHTML = `<div style="font:600 9px/1 'DM Sans',sans-serif;color:var(--text3);letter-spacing:1px;margin-bottom:6px">ENGINEERING STATUS</div>
+        <div style="font:400 10px/1.3 'DM Sans',sans-serif;color:var(--text3);padding:6px 0">${eomData.error ? escHtml(eomData.error) : 'Not in engineering backlog'}</div>`;
+      return;
+    }
+
+    // Workday calculator: add N workdays to a date
+    function addWorkdays(date, days) {
+      const d = new Date(date);
+      let added = 0;
+      const dir = days >= 0 ? 1 : -1;
+      const abs = Math.abs(days);
+      while (added < abs) {
+        d.setDate(d.getDate() + dir);
+        const dow = d.getDay();
+        if (dow !== 0 && dow !== 6) added++;
+      }
+      return d;
+    }
+
+    // Convert BPCS YYMMDD (28yr offset) to Date
+    function bpcsDate(val) {
+      const n = parseInt(val, 10);
+      if (!n || n < 10000) return null;
+      const yy = Math.floor(n / 10000);
+      const mm = Math.floor((n % 10000) / 100) - 1;
+      const dd = n % 100;
+      const realYear = yy + 28 > 100 ? (yy + 28 - 100) + 2000 : (yy + 28) + 1900;
+      return new Date(realYear, mm, dd);
+    }
+
+    // Count workdays between two dates
+    function workdaysBetween(a, b) {
+      let count = 0;
+      const d = new Date(a);
+      while (d < b) {
+        d.setDate(d.getDate() + 1);
+        const dow = d.getDay();
+        if (dow !== 0 && dow !== 6) count++;
+      }
+      return count;
+    }
+
+    function fmtShort(d) {
+      if (!d) return '\u2014';
+      return `${d.getMonth()+1}/${d.getDate()}/${String(d.getFullYear()).slice(-2)}`;
+    }
+
+    const svcParts = ['CRNREQ','CODECALCS','SEISMIC CALCS','CRTDWG','CROSSSECTDRAW','SPECIALMANUAL','WELDPROC'];
+    const linesHtml = eomData.rows.filter(row => {
+      // Include lines on engineering holds OR service/engineering line items
+      const eoStatus = (row.status || '').trim();
+      const prod = (row.prod || '').trim();
+      const isHold = eoStatus === 'OR' || eoStatus === 'UB' || eoStatus === 'CF' || eoStatus === 'LO';
+      const isSvcPart = svcParts.includes(prod) || prod.startsWith('%') && prod.includes('ENGSER');
+      return isHold || isSvcPart;
+    }).sort((a, b) => {
+      // Active holds (EO status matches current hold) first
+      const aActive = (a.status || '').trim() === (a.hold || '').trim() ? 0 : 1;
+      const bActive = (b.status || '').trim() === (b.hold || '').trim() ? 0 : 1;
+      return aActive - bActive;
+    }).map(row => {
+      const contract = (row.contract || '').trim();
+      const orderNum = contract.slice(0, 6);
+      const lineNum = contract.length > 6 ? contract.slice(6).replace(/^0+/, '') || '0' : '0';
+      const fmtContract = orderNum + '-' + lineNum.padStart(lineNum.length > 2 ? 3 : 2, '0');
+      const desc = (row.desc || '').trim();
+      const eoStatus = (row.status || '').trim();  // EO hold code (backlog entry)
+      const curHold = (row.hold || '').trim();      // current L2LRSN
+      const hold = eoStatus;                        // always display the EO hold code
+      const isFakeHold = /\d/.test(eoStatus);        // digit-containing codes (9N, 2A) = no real hold
+      const isActiveHold = isFakeHold || eoStatus === curHold;  // fake holds always show as active
+      const prod = (row.prod || '').trim();
+
+      // Calculate suggested ME/BOM date (20% of lead time)
+      const startDate = row.startDate && row.startDate !== '0001-01-01' ? new Date(row.startDate.slice(0, 10) + 'T00:00:00') : null;
+      const reqDate = bpcsDate(row.ludte1);
+      let suggestedMeDate = null;
+
+      if (prod === 'CRNREQ' || prod.startsWith('%') && prod.includes('CRNREQ')) {
+        // CRN: due date = customer-requested date
+        suggestedMeDate = reqDate;
+      } else if (hold === 'UB') {
+        // UB: due date = 2 weeks (10 workdays) after start date
+        suggestedMeDate = startDate ? addWorkdays(startDate, 10) : null;
+      } else if (startDate && reqDate && reqDate > startDate) {
+        // Standard: 20% of lead time in workdays
+        const totalWorkdays = workdaysBetween(startDate, reqDate);
+        const targetWorkdays = Math.round(totalWorkdays * 0.20);
+        suggestedMeDate = addWorkdays(startDate, targetWorkdays);
+      }
+
+      // PE/DFT offset from ME date depends on item class and hold
+      const cls = (row.icclas || '').trim();
+      let peOffset = -3; // default: 3 workdays before ME
+      if (prod === 'CRNREQ' || prod.includes('CRNREQ') || hold === 'UB') peOffset = 0; // same date as ME
+      else if (cls === '8H' || cls === '8J' || cls === '7B') peOffset = -5;
+      else if (cls === '8P') peOffset = -2;
+      const suggestedPeDate = suggestedMeDate ? addWorkdays(suggestedMeDate, peOffset) : null;
+
+      // Current dates from EOM
+      const curPe = row.pesidte && !row.pesidte.startsWith('0001') ? new Date(row.pesidte.slice(0, 10) + 'T00:00:00') : null;
+      const curMe = row.mesidte && !row.mesidte.startsWith('0001') ? new Date(row.mesidte.slice(0, 10) + 'T00:00:00') : null;
+
+      // Progress indicators
+      const peIcon = row.peckout === '1' ? '\u2705' : row.peckin === '1' ? '\u23F3' : '';
+      const dfIcon = row.dfckout === '1' ? '\u2705' : row.dfckin === '1' ? '\u23F3' : '';
+      const bmIcon = row.bmckout === '1' ? '\u2705' : row.bmckin === '1' ? '\u23F3' : '';
+      const activeHoldColor = eoStatus === 'OR' ? 'var(--accent)' : eoStatus === 'UB' ? 'var(--amber)' : eoStatus === 'CF' ? 'var(--danger)' : eoStatus === 'LO' ? 'var(--text2)' : 'var(--text3)';
+      const holdColor = isActiveHold ? activeHoldColor : 'var(--text3)';
+      const holdOpacity = isActiveHold ? '1' : '.45';
+
+      const needsCheckin = row.peckin !== '1';
+      const peAssigned = displayName((row.pename || '').trim());
+      // ISO date strings for the update
+      const peIso = suggestedPeDate ? suggestedPeDate.toISOString().slice(0, 10) : '';
+      const dfIso = suggestedPeDate ? suggestedPeDate.toISOString().slice(0, 10) : '';
+      const bmIso = suggestedMeDate ? suggestedMeDate.toISOString().slice(0, 10) : '';
+      const meIso = suggestedMeDate ? suggestedMeDate.toISOString().slice(0, 10) : '';
+
+      return `<div class="mkt-eom-line" data-contract="${escHtml(contract)}" data-status="${escHtml(row.status)}" data-pe-iso="${escHtml(peIso)}" data-df-iso="${escHtml(dfIso)}" data-bm-iso="${escHtml(bmIso)}" data-me-iso="${escHtml(meIso)}" style="padding:8px 12px;border-radius:10px;background:var(--glass);border:1px solid var(--glass-border);margin-bottom:4px;opacity:${holdOpacity}">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <span style="font:700 13px/1 'IBM Plex Mono',monospace;color:${holdColor}">${escHtml(hold)}</span>
+          <span style="font:600 11px/1 'IBM Plex Mono',monospace">${escHtml(fmtContract)}</span>
+          <span style="font:400 10px/1 'DM Sans',sans-serif;color:var(--text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(desc)}</span>
+          <span style="font:400 9px/1 'DM Sans',sans-serif;color:var(--text3)">${escHtml(row.icclas || '')}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font:400 10px/1.4 'DM Sans',sans-serif;color:var(--text2)">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:4px">PE/DFT ${peIcon} <input type="date" class="eom-date-pe" value="${escHtml(peIso)}" style="height:20px;padding:0 4px;border-radius:5px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text);font:400 10px/1 'DM Sans',sans-serif;width:110px"></div>
+            <div style="display:flex;align-items:center;gap:4px">ME/BOM ${bmIcon} <input type="date" class="eom-date-me" value="${escHtml(meIso)}" style="height:20px;padding:0 4px;border-radius:5px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text);font:400 10px/1 'DM Sans',sans-serif;width:110px"></div>
+          </div>
+          ${needsCheckin ? (() => {
+            // Determine repeat status from checklist line items (dwgNorm = has drawing = repeat)
+            const lineNum = contract.length > 6 ? contract.slice(6).replace(/^0+/, '') || '0' : '0';
+            const clLineItems = S.mktResult?.checklists?.[0]?.lineItems || [];
+            const isRepeat = clLineItems.some(li => parseInt(li.line, 10) === parseInt(lineNum, 10) && li.dwgNorm);
+            let defaultPe = 'wboisso';
+            if (['6L','8L','8H','8P'].includes(cls)) defaultPe = 'pequeue';
+            else if (['8J','7T','7L'].includes(cls)) defaultPe = 'mzoyhofski';
+            else if (['8B','8F','8T'].includes(cls) && !isRepeat) defaultPe = 'tshershn';
+            return `<select class="eom-pe-user" style="height:26px;padding:0 4px;border-radius:6px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text);font:400 10px/1 'DM Sans',sans-serif;width:90px">
+            <option value="wboisso"${defaultPe === 'wboisso' ? ' selected' : ''}>Will</option>
+            <option value="pequeue"${defaultPe === 'pequeue' ? ' selected' : ''}>PE Queue</option>
+            <option value="tshershn"${defaultPe === 'tshershn' ? ' selected' : ''}>Tatiana</option>
+            <option value="mzoyhofski"${defaultPe === 'mzoyhofski' ? ' selected' : ''}>Mark</option>
+          </select>
+          <button class="btn-accent eom-checkin-btn" style="font-size:10px;height:26px;padding:0 12px;white-space:nowrap">Check In</button>`;
+          })() : `<span style="font:600 10px/1 'DM Sans',sans-serif;color:var(--success)">\u2713 ${escHtml(peAssigned)}</span>`}
+        </div>
+      </div>`;
+    }).join('');
+
+    eomDiv.innerHTML = `<div style="font:600 9px/1 'DM Sans',sans-serif;color:var(--text3);letter-spacing:1px;margin-bottom:6px">ENGINEERING STATUS</div>${linesHtml}`;
+
+    // Wire up check-in buttons
+    eomDiv.querySelectorAll('.eom-checkin-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const lineDiv = btn.closest('.mkt-eom-line');
+        const contract = lineDiv.dataset.contract;
+        const status = lineDiv.dataset.status;
+        const userSelect = lineDiv.querySelector('.eom-pe-user');
+        const pename = userSelect ? userSelect.value : 'wboisso';
+        const peInput = lineDiv.querySelector('.eom-date-pe');
+        const meInput = lineDiv.querySelector('.eom-date-me');
+        const peIso = peInput ? peInput.value : '';
+        const dfIso = peIso; // DFT same as PE
+        const meIso = meInput ? meInput.value : '';
+        const bmIso = meIso; // BOM same as ME
+
+        btn.disabled = true;
+        btn.textContent = 'Checking in\u2026';
+
+        // Set dates first (if we have suggested dates)
+        if (peIso && bmIso) {
+          const dr = await window.api.eomSetDates(contract, status, peIso, dfIso, bmIso, meIso);
+          if (!dr.ok) {
+            btn.textContent = dr.error || 'Date error';
+            btn.style.color = 'var(--danger)';
+            setTimeout(() => { btn.textContent = 'Check In'; btn.style.color = ''; btn.disabled = false; }, 2000);
+            return;
+          }
+        }
+
+        // Then check in PE
+        const cr = await window.api.eomCheckin(contract, status, pename);
+        if (cr.ok) {
+          btn.textContent = '\u2713 Done';
+          btn.style.background = 'var(--success)';
+          if (userSelect) userSelect.style.display = 'none';
+          playChime();
+        } else {
+          btn.textContent = cr.error || 'Failed';
+          btn.style.color = 'var(--danger)';
+          setTimeout(() => { btn.textContent = 'Check In'; btn.style.color = ''; btn.disabled = false; }, 2000);
+        }
+      });
+    });
+}
+
+// ── Engineering Backlog Panel (for future Backlog tab) — reads via SOAP ──
+let _backlogCache = null;
+
+async function renderSaturnBacklog() {
+  const el = $('#saturn-backlog');
+  if (!el) return;
+
+  // Show loading
+  el.innerHTML = `
+    <div class="glass no-drag" style="padding:14px 20px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font:700 12px/1 'DM Sans',sans-serif">Orders to Check In</div>
+        <div class="deep-spinner" style="width:12px;height:12px"></div>
+      </div>
+    </div>`;
+
+  const data = _backlogCache || await window.api.bpcsBacklogCheckin();
+  if (!data.ok) {
+    el.innerHTML = `<div class="glass no-drag" style="padding:14px 20px">
+      <div style="font:700 12px/1 'DM Sans',sans-serif;margin-bottom:6px">Orders to Check In</div>
+      <div style="font:400 10px/1.3 'DM Sans',sans-serif;color:var(--danger)">${escHtml(data.error || 'Query failed')}</div>
+    </div>`;
+    return;
+  }
+
+  const rows = data.rows || [];
+  _backlogCache = data;
+
+  if (!rows.length) {
+    el.innerHTML = `<div class="glass no-drag" style="padding:14px 20px">
+      <div style="font:700 12px/1 'DM Sans',sans-serif">Orders to Check In</div>
+      <div style="font:400 10px/1.3 'DM Sans',sans-serif;color:var(--text3);margin-top:6px">All caught up!</div>
+    </div>`;
+    return;
+  }
+
+  const rowsHtml = rows.map(o => {
+    const contract = (o.contract || '').trim();
+    const order = contract.slice(0, 6);
+    const line = contract.slice(6, 9);
+    const desc = (o.desc || '').trim();
+    const customer = (o.customer || '').trim();
+    const hold = (o.hold || o.status || '').trim();
+    const pe = (o.pename || '').trim();
+    // Progress: which stage is it at?
+    let stage = 'New';
+    if (o.peckin === '1' && o.dfckin !== '1') stage = 'PE done';
+    else if (o.dfckin === '1' && o.bmckin !== '1') stage = 'DFT done';
+    else if (pe) stage = displayName(pe);
+    const holdColor = hold === 'OR' ? 'var(--accent)' : hold === 'UB' ? 'var(--amber)' : 'var(--text3)';
+    return `<div class="backlog-row" data-contract="${escHtml(contract)}" style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;cursor:pointer;transition:background .12s;font:400 11px/1.3 'DM Sans',sans-serif" onmouseover="this.style.background='var(--accent-soft)'" onmouseout="this.style.background=''">
+      <span style="font:700 9px/1 'IBM Plex Mono',monospace;color:${holdColor};min-width:20px">${escHtml(hold)}</span>
+      <span style="font:600 10px/1 'IBM Plex Mono',monospace;min-width:70px;color:var(--text)">${escHtml(order)}-${escHtml(line)}</span>
+      <span style="flex:1;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(desc)}</span>
+      <span style="color:var(--text3);font-size:9px;min-width:40px;text-align:right">${escHtml(stage)}</span>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="glass no-drag" style="padding:14px 20px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font:700 12px/1 'DM Sans',sans-serif">Orders to Check In</div>
+        <span style="font:400 10px/1 'DM Sans',sans-serif;color:var(--text3)">${rows.length}</span>
+        <button class="btn-glass" id="backlog-refresh" style="margin-left:auto;font-size:9px;height:22px;padding:0 10px">Refresh</button>
+      </div>
+      <div style="max-height:280px;overflow-y:auto;margin:0 -10px;padding:0 10px">${rowsHtml}</div>
+    </div>`;
+
+  el.querySelector('#backlog-refresh')?.addEventListener('click', async () => {
+    _backlogCache = null;
+    renderSaturnBacklog();
+  });
+
+  // Click a row → load that order number in the OTP boxes
+  el.querySelectorAll('.backlog-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const contract = row.dataset.contract;
+      if (!contract || contract.length < 6) return;
+      const orderDigits = contract.slice(0, 6);
+      S.mktDigits = orderDigits.split('');
+      S.mktComplete = false;
+      updateMktOtpDisplay();
+      doMarketingSearch();
+    });
+  });
 }
 
 async function showChecklistReview(orderPad) {
@@ -7286,6 +8692,72 @@ function showLinkDialog() {
 //  What's New
 // ═══════════════════════════════════════════════════════════════════════
 const CHANGELOG = [
+  { ver: '1.1.4', date: 'Apr 14, 2026', items: [
+    // --- Engineering Check-in ---
+    { type: 'feat', text: 'ODBC check-in \u2014 engineering check-in now uses a persistent ODBC connection instead of spawning a Java process. Check-ins complete in under 2 seconds.' },
+    { type: 'feat', text: 'Editable schedule dates \u2014 PE/DFT and ME/BOM dates are now date pickers, pre-filled with auto-calculated values. Override before clicking Check In.' },
+    { type: 'feat', text: 'Smart check-in defaults \u2014 PE dropdown pre-selects based on item class (6L/8L/8H/8P \u2192 PE Queue, 8J/7T/7L \u2192 Mark, 8B/8F/8T \u2192 Tatiana)' },
+    { type: 'feat', text: 'EOM loads independently \u2014 Engineering Status appears within 1 second, with checklist parsing running in the background below it' },
+    { type: 'feat', text: 'EO hold codes \u2014 shows the backlog hold code (ESTATUS) instead of the current one. Orders on OR/UB/CF/LO hold still appear after the hold clears.' },
+    { type: 'feat', text: 'Service line items \u2014 CRNREQ, CODECALCS, SEISMIC, CRTDWG, SPECIALMANUAL, WELDPROC, and %ENGSER lines now appear in Engineering Status' },
+    { type: 'feat', text: 'PE/DFT date offsets vary by item class \u2014 8H/8J/7B: 5 workdays, 8P: 2 workdays, CRNREQ/UB: same date, default: 3 workdays' },
+    // --- Chat ---
+    { type: 'feat', text: 'Online presence \u2014 green dots on avatars show who\u2019s currently active. Drops off after 3 minutes of inactivity.' },
+    { type: 'feat', text: 'Profile pictures \u2014 click your avatar in the title bar to upload. Syncs across desktop and web.' },
+    { type: 'feat', text: 'Unread badge + divider \u2014 red dot on the Chat tab and a red line marking where unread messages begin' },
+    { type: 'feat', text: 'Clickable URLs \u2014 links in messages auto-detected, including bare domains like gasketedplate.com' },
+    // --- Dashboard ---
+    { type: 'feat', text: '500K Celebration mode \u2014 when order 500,000 is entered, the Dashboard erupts with confetti, fireworks, sparkles, a fanfare, and a face rain until 7 AM the next morning' },
+    { type: 'feat', text: 'Final 10 countdown \u2014 the last 10 orders before 500,000 are announced in chat with escalating messages' },
+    { type: 'feat', text: 'Adaptive polling \u2014 Dashboard refreshes every 5 seconds when focused, every 2 minutes in the background' },
+    { type: 'ui',   text: 'Video-game power bar with glass-tube highlight, outer glow, and flowing energy shimmer. Final 10 upgrades to gold.' },
+    // --- Icon tabs ---
+    { type: 'ui',   text: 'Icon tabs \u2014 all tabs now show icons. The active tab smoothly expands to reveal its label. Hover inactive tabs to see names and shortcuts.' },
+    { type: 'ui',   text: 'Marketing tab renamed to Checklists; keyboard shortcuts remapped (C = Checklists, M = Chat, H = Dashboard)' },
+    // --- Checklists ---
+    { type: 'feat', text: 'Email attachment scanning \u2014 finds checklists inside .msg email attachments' },
+    { type: 'feat', text: 'Saturn login auto-fills your Xylem email from Active Directory' },
+    { type: 'feat', text: 'Recent orders pills below the order input for quick re-access' },
+    { type: 'feat', text: 'Nickname resolution \u2014 PE names show display names instead of raw usernames' },
+    // --- General polish ---
+    { type: 'ui',   text: 'Folder button tooltip shows the short path (e.g. "orders\\123456") instead of "Folder"; enabled in wildcard searches when a file is selected' },
+    { type: 'ui',   text: 'Open Folder in Drawings now selects the file in Explorer' },
+    { type: 'ui',   text: 'Dashboard counter loads from cache on startup; light mode bar glow toned down' },
+    { type: 'ui',   text: 'Tab / Shift+Tab cycles between tabs; OTP highlights dim when unfocused; contingency standard procedures shown in green' },
+    // --- Fixes ---
+    { type: 'fix',  text: 'Contingency orange dot no longer inflates during database loading (::after collision with tooltip system)' },
+    { type: 'fix',  text: 'Drawing link check matches the full number \u2014 no more false "already linked" from prefix collisions' },
+    { type: 'fix',  text: 'PO numbers starting with letters (e.g. POMD44672) now parsed correctly from PDF checklists' },
+    { type: 'fix',  text: 'Ampersands in BPCS descriptions no longer display as &amp;amp;' },
+    { type: 'fix',  text: 'EO hold codes with digits (9N, 2A) no longer cause lines to appear dimmed' },
+    { type: 'fix',  text: 'Engineering status dates no longer show NaN; chat no longer breaks on UTF-8 BOM' },
+    { type: 'fix',  text: 'Contingency worker and EOM helper now included in production builds' },
+    { type: 'fix',  text: 'Tab label descenders (g, y) no longer clipped; chat no longer blinks every 2.5s; false unread badge on restart fixed' },
+  ]},
+  { ver: '1.1.3', date: 'Apr 13, 2026', items: [
+    // --- Engineering backlog ---
+    { type: 'feat', text: 'Engineering check-in \u2014 search any order in the Marketing tab to see its backlog status, auto-calculated due dates, and a one-click Check In button that writes directly to BPCS. Assign to yourself, PE Queue, Tatiana, or Mark.' },
+    { type: 'feat', text: 'Auto-calculated due dates \u2014 PE/DFT and ME/BOM dates computed from 20% of lead time, adjusted by item class (8H/8J/7B: 5 days, 8P: 2 days, default: 3 days). CRNREQ uses the customer-requested date; UB gets 2 weeks.' },
+    // --- Chat overhaul ---
+    { type: 'feat', text: 'Cloud chat \u2014 Chat is now powered by Firebase. Messages sync instantly, no more polling delays or race conditions. Reactions, edit/unsend, and profile pictures.' },
+    { type: 'feat', text: 'Web chat \u2014 anyone can join from a browser at gasketedplate.com. Works on phones, tablets, and desktops.' },
+    // --- Dashboard ---
+    { type: 'feat', text: 'Dashboard tab \u2014 live count of the highest order number in BPCS, with a power bar counting down to order 500,000 and a celebration mode when it hits.' },
+    // --- Drawing card ---
+    { type: 'ui',   text: 'Drawing card redesign \u2014 PDF drawings show a red accent, DWG/PDF swap pill, repositioned copy buttons, and expandable wildcard results with collapsible revisions' },
+    // --- Marketing tab ---
+    { type: 'feat', text: 'Email checklist scanning \u2014 Marketing tab finds checklists inside .msg email attachments, not just loose files' },
+    { type: 'ui',   text: 'Compact document buttons \u2014 Checklist and Ack buttons are now split buttons with dropdown menus, freeing space for the backlog panel. Folder button moved to the header.' },
+    { type: 'feat', text: 'Ask Claude renders markdown and uses Claude\u2019s brand orange with the official logo' },
+    // --- Fixes ---
+    { type: 'fix',  text: 'Drawing numbers in Marketing always use standard hyphenation regardless of what the AE typed in the checklist' },
+    { type: 'fix',  text: 'Submitted/Approved dates now parse correctly from checklists where the date is on the same line as the label, or when Approved is left blank' },
+    { type: 'fix',  text: 'Checklist parser finds drawing numbers even without a separator (e.g. "%BY5262 5-262-06-048-133")' },
+    { type: 'fix',  text: 'Chat no longer shows blank when the shared JSON file has a UTF-8 BOM' },
+    { type: 'fix',  text: 'Prices from PDF checklists no longer truncated; Excel checklist dates no longer off by one day' },
+    // --- Polish ---
+    { type: 'ui',   text: 'Folder button tooltip shows the short folder path; keyboard shortcut H for Dashboard; Xylem logo upgraded to SVG' },
+  ]},
   { ver: '1.1.2', date: 'Apr 9, 2026', items: [
     // --- Big features ---
     { type: 'feat', text: 'Order History \u2014 search any drawing and instantly see every order it\u2019s been built on, with dates, customers, quantities, and click-to-copy item numbers. Powered by a live BPCS query.' },
@@ -7315,6 +8787,11 @@ const CHANGELOG = [
     { type: 'feat', text: 'Exported PDFs no longer have the "Sheets & Views" bookmark sidebar that forces Adobe into a cramped view' },
     // --- Infrastructure ---
     { type: 'feat', text: 'Diagnostics logging \u2014 local activity log with 1 MB rotation. Copy a full report from Settings, or it\u2019s auto-attached when you click Contact.' },
+    { type: 'feat', text: 'Weather in the title bar \u2014 live temperature and conditions, click to change your location with city search or auto-detect. Tooltip shows the precipitation forecast.' },
+    { type: 'feat', text: 'Windows 10 support \u2014 graceful visual fallback for systems without acrylic transparency, with layered gradient backgrounds that look intentionally designed' },
+    { type: 'feat', text: 'GPHE routing now analyzes the DXF drawing for exact bolt counts, expanded liners, and kanban parts \u2014 look for the DXF/EST badge showing the data source' },
+    { type: 'fix',  text: '13 GPHE routing formula corrections \u2014 hang setup, tighten run/setup, and hydro test all verified row-by-row against the master calculator spreadsheet' },
+    { type: 'feat', text: 'Open in AutoCAD reworked \u2014 now works with any variant (full, LT) and opens drawings as tabs in a running instance instead of launching a new one' },
     { type: 'feat', text: 'Chat join/leave messages \u2014 "[Name] has joined the chat" on install, and vice versa on uninstall' },
     { type: 'feat', text: 'Shared nicknames \u2014 display names for chat and contingency now come from a single nicknames.json file on the network drive' },
     // --- UI/UX polish ---
